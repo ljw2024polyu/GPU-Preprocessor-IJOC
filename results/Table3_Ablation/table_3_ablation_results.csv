@@ -1,0 +1,10 @@
+dataset,variant,solved,preprocessing_time_s,solve_time_s,total_time_s,r_m,r_n,r_nnz,source_batch
+Mittelmann,None,46,0.000,14.456,14.456,1.000,1.000,1.000,tables_3_5_mittelmann_no_preprocessing
+Mittelmann,Folding only,47,0.083,13.831,13.934,0.768,0.747,0.746,table_3_mittelmann_folding_only
+Mittelmann,Folding + presolve,49,0.184,5.615,5.797,0.583,0.580,0.572,tables_3_4_5_mittelmann_gpu_preprocessor
+MIPLIB Large,None,17,0.000,27.322,27.322,1.000,1.000,1.000,tables_3_5_miplib_large_no_preprocessing
+MIPLIB Large,Folding only,17,0.197,15.399,15.606,0.519,0.509,0.454,table_3_miplib_large_folding_only
+MIPLIB Large,Folding + presolve,17,0.292,10.407,10.666,0.402,0.384,0.342,tables_3_4_5_miplib_large_gpu_preprocessor
+QAP20,None,20,0.000,33.172,33.172,1.000,1.000,1.000,tables_3_5_qap20_no_preprocessing
+QAP20,Folding only,20,0.147,24.995,25.207,0.744,0.744,0.744,table_3_qap20_folding_only
+QAP20,Folding + presolve,20,0.271,6.407,6.687,0.014,0.372,0.301,tables_3_4_5_qap20_gpu_preprocessor

@@ -1,0 +1,238 @@
+Reading file /data/lp_data/Hans/datt256_lp.mps.gz
+problem information: nRow = 11077, nCol = 262144, nnz A = 1503732
+
+Reading time: 0.76s
+
+Numerical ranges before presolve (finite absolute values):
+  A   [1.00e+00, 2.00e+00]
+  AL  [0.00e+00, 1.00e+00]
+  AU  [0.00e+00, 1.00e+00]
+  l   [0.00e+00, 0.00e+00]
+  u   [1.00e+00, 1.00e+00]
+  c   [1.00e+00, 1.00e+00]
+Set parameter Username
+Set parameter LicenseID to value 2773703
+Academic license - for non-commercial use only - expires 2027-02-02
+Set parameter Presolve to value -1
+Set parameter TimeLimit to value 1e+100
+Gurobi presolve configuration: Presolve=-1, TimeLimit=Infinity, OutputFlag=1
+Gurobi Optimizer version 12.0.2 build v12.0.2rc0 (linux64 - "Ubuntu 22.04.5 LTS")
+
+CPU model: INTEL(R) XEON(R) GOLD 6548Y+, instruction set [SSE2|AVX|AVX2|AVX512]
+Thread count: 64 physical cores, 128 logical processors, using up to 32 threads
+
+Presolve a model with 11077 rows, 262144 columns and 1503732 nonzeros
+Model fingerprint: 0x80123a8b
+Coefficient statistics:
+  Matrix range     [1e+00, 2e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 1e+00]
+Presolve removed 1218 rows and 66001 columns
+problem information: nRow = 9859, nCol = 196143, nnz A = 1124557
+
+Gurobi presolve core time: 0.85 seconds
+Gurobi reduced problem: (11077, 262144, 1503732) -> (9859, 196143, 1124557)
+result_space: GUROBI_REDUCED_MODEL
+kkt_residual_scope: REDUCED_MODEL_ONLY
+postsolve_mapping: NOT_AVAILABLE_FROM_GUROBI_PRESOLVED_MODEL_API
+original_solution_recovery: NOT_PERFORMED
+original_kkt_validation: NOT_PERFORMED
+solution_vectors: NOT_EXPORTED_THROUGH_ORIGINAL_SPACE_API
+
+Numerical ranges after presolve (finite absolute values):
+  A   [1.00e+00, 1.00e+00]
+  AL  [0.00e+00, 3.00e+00]
+  AU  [0.00e+00, 3.00e+00]
+  l   [0.00e+00, 0.00e+00]
+  u   [1.00e+00, 1.00e+00]
+  c   [0.00e+00, 1.00e+00]
+
+==================================================================
+                          HPR-LP Solver                           
+     Halpern Peaceman-Rachford Linear Programming Solver          
+                                                                  
+  Version: 0.1.3                          
+                                                                  
+==================================================================
+
+Solver Parameters:
+  Device:              GPU 0
+  Max Iterations:      2147483647
+  Stopping Tolerance:  1.0e-06
+  Time Limit:          1000.0 seconds
+  Check Interval:      150 iterations
+  cuSPARSE SpMV:       Auto
+  Autotune Verbose:    Disabled
+  Reduced Matrix:      Enabled
+  Auto Memory Policy:  Disabled
+  Progress Monitor:    Enabled
+  Progress Control:    Enabled
+  Sigma Rebalance:     Enabled
+  Long Restart Guard:  Disabled
+  Restart Cooldown:    0 checks
+  Restart Debug:       Disabled
+  Sigma Debug:         Disabled
+  Fixed Sigma:         Adaptive
+  Presolver:           Gurobi
+  Scaling:
+    - Curtis-Reid:     Enabled
+    - Ruiz:            Enabled
+    - Pock-Chambolle:  Enabled
+    - Bounds/Cost:     Enabled
+  Debug Information:  Enabled
+
+
+Numerical ranges after scaling (finite absolute values):
+  A   [1.28e-02, 1.39e-01]
+  AL  [0.00e+00, 1.08e-01]
+  AU  [0.00e+00, 1.08e-01]
+  l   [0.00e+00, 0.00e+00]
+  u   [8.11e-01, 9.93e-01]
+  c   [0.00e+00, 2.68e-03]
+Adaptive row/column reduction: enabled
+Compressible GPU memory: requested=yes active_allocations=23 device_supported=yes (automatic policy or manual HPRLP_ENABLE_COMPRESSIBLE_MEMORY=1)
+Setup (copy and allocation) time = 0.22 seconds
+Scaling time = 0.03 seconds
+Analyze time = 0.04 seconds
+ESTIMATING MAXIMUM EIGENVALUE time = 0.05 seconds
+ iter     errRp        errRd         p_obj            d_obj          gap         sigma       time
+    0    9.58e-01    9.98e-01    +5.000000e+00    +5.000000e+00    0.00e+00    5.98e-01      0.99
+   10    1.88e-01    1.79e-01    +2.183235e+02    +3.455995e+02    2.25e-01    5.98e-01      0.99
+   20    9.47e-02    9.16e-02    +2.359506e+02    +3.063145e+02    1.30e-01    5.98e-01      0.99
+   30    5.90e-02    5.72e-02    +2.430927e+02    +2.871508e+02    8.29e-02    5.98e-01      0.99
+   40    4.26e-02    4.21e-02    +2.467632e+02    +2.793485e+02    6.18e-02    5.98e-01      0.99
+   50    3.66e-02    2.97e-02    +2.475266e+02    +2.713994e+02    4.59e-02    5.98e-01      0.99
+   60    2.93e-02    2.37e-02    +2.487171e+02    +2.673713e+02    3.61e-02    5.98e-01      0.99
+   70    2.73e-02    2.27e-02    +2.496505e+02    +2.672075e+02    3.39e-02    5.98e-01      0.99
+   80    2.52e-02    2.26e-02    +2.501189e+02    +2.678687e+02    3.42e-02    5.98e-01      0.99
+   90    1.79e-02    2.07e-02    +2.515009e+02    +2.670837e+02    3.00e-02    5.98e-01      0.99
+  100    1.52e-02    1.77e-02    +2.520925e+02    +2.655351e+02    2.59e-02    5.98e-01      0.99
+  110    1.31e-02    1.43e-02    +2.528054e+02    +2.635026e+02    2.07e-02    5.98e-01      0.99
+  120    1.25e-02    1.29e-02    +2.527032e+02    +2.619649e+02    1.80e-02    5.98e-01      0.99
+  130    1.47e-02    1.23e-02    +2.522076e+02    +2.620404e+02    1.91e-02    5.98e-01      0.99
+  140    1.48e-02    1.14e-02    +2.522109e+02    +2.621481e+02    1.93e-02    5.98e-01      0.99
+  150    1.47e-02    1.16e-02    +2.520373e+02    +2.619147e+02    1.92e-02    5.98e-01      1.00
+Reduced matrix restart mask reset: enabled
+  160    6.99e-03    5.03e-03    +2.557084e+02    +2.569673e+02    2.45e-03    9.49e-01      1.00
+  170    1.08e-02    3.28e-03    +2.555781e+02    +2.563980e+02    1.60e-03    9.49e-01      1.00
+  180    1.00e-02    1.93e-03    +2.555542e+02    +2.556371e+02    1.62e-04    9.49e-01      1.00
+  190    6.26e-03    1.52e-03    +2.555506e+02    +2.552903e+02    5.09e-04    9.49e-01      1.00
+  200    3.39e-03    9.34e-04    +2.555445e+02    +2.553346e+02    4.10e-04    9.49e-01      1.00
+  210    2.80e-03    3.78e-04    +2.555279e+02    +2.556027e+02    1.46e-04    9.49e-01      1.00
+  220    2.71e-03    7.54e-04    +2.555074e+02    +2.557696e+02    5.12e-04    9.49e-01      1.00
+  230    3.60e-03    7.43e-04    +2.555038e+02    +2.557273e+02    4.36e-04    9.49e-01      1.00
+  240    3.86e-03    5.83e-04    +2.554918e+02    +2.555607e+02    1.35e-04    9.49e-01      1.00
+  250    2.95e-03    5.80e-04    +2.554891e+02    +2.554476e+02    8.11e-05    9.49e-01      1.00
+  260    2.23e-03    3.80e-04    +2.554993e+02    +2.555012e+02    3.77e-06    9.49e-01      1.00
+  270    2.19e-03    2.87e-04    +2.555031e+02    +2.556415e+02    2.70e-04    9.49e-01      1.00
+  280    2.35e-03    5.00e-04    +2.555051e+02    +2.557324e+02    4.44e-04    9.49e-01      1.00
+  290    2.85e-03    4.73e-04    +2.555057e+02    +2.556917e+02    3.63e-04    9.49e-01      1.00
+  300    2.96e-03    3.89e-04    +2.554971e+02    +2.555747e+02    1.52e-04    9.49e-01      1.00
+  310    2.73e-03    2.26e-03    +2.554836e+02    +2.550657e+02    8.17e-04    2.04e-01      1.00
+  320    2.26e-03    2.19e-03    +2.554801e+02    +2.550220e+02    8.96e-04    2.04e-01      1.00
+  330    2.20e-03    2.17e-03    +2.554846e+02    +2.549925e+02    9.62e-04    2.04e-01      1.00
+  340    2.16e-03    1.74e-03    +2.554857e+02    +2.551851e+02    5.87e-04    2.04e-01      1.00
+  350    2.16e-03    1.20e-03    +2.554840e+02    +2.554461e+02    7.39e-05    2.04e-01      1.00
+  360    2.15e-03    8.80e-04    +2.554840e+02    +2.556028e+02    2.32e-04    2.04e-01      1.00
+  370    2.15e-03    7.68e-04    +2.554845e+02    +2.556246e+02    2.74e-04    2.04e-01      1.00
+  380    2.15e-03    8.11e-04    +2.554847e+02    +2.555623e+02    1.52e-04    2.04e-01      1.00
+  390    2.14e-03    8.71e-04    +2.554846e+02    +2.555404e+02    1.09e-04    2.04e-01      1.01
+  400    2.14e-03    7.86e-04    +2.554854e+02    +2.555927e+02    2.10e-04    2.04e-01      1.01
+  410    2.13e-03    6.69e-04    +2.554873e+02    +2.556840e+02    3.84e-04    2.04e-01      1.01
+  420    2.12e-03    6.14e-04    +2.554888e+02    +2.557448e+02    5.00e-04    2.04e-01      1.01
+  430    2.11e-03    6.26e-04    +2.554904e+02    +2.557342e+02    4.76e-04    2.04e-01      1.01
+  440    2.07e-03    7.39e-04    +2.555009e+02    +2.556859e+02    3.61e-04    2.04e-01      1.01
+  450    2.07e-03    6.46e-04    +2.555017e+02    +2.557292e+02    4.44e-04    2.04e-01      1.01
+  460    2.03e-03    2.56e-03    +2.555171e+02    +2.557619e+02    4.78e-04    3.36e-02      1.01
+  470    2.03e-03    1.93e-03    +2.555198e+02    +2.559138e+02    7.69e-04    3.36e-02      1.01
+  480    2.00e-03    3.07e-03    +2.555276e+02    +2.559560e+02    8.36e-04    3.36e-02      1.01
+  490    1.83e-03    6.87e-03    +2.555677e+02    +2.560200e+02    8.82e-04    3.36e-02      1.01
+  500    1.55e-03    1.01e-02    +2.556343e+02    +2.560849e+02    8.79e-04    3.36e-02      1.01
+  510    1.19e-03    1.21e-02    +2.557191e+02    +2.561213e+02    7.84e-04    3.36e-02      1.01
+  520    8.10e-04    1.29e-02    +2.558096e+02    +2.561598e+02    6.83e-04    3.36e-02      1.01
+  530    4.51e-04    1.24e-02    +2.558942e+02    +2.561679e+02    5.34e-04    3.36e-02      1.01
+  540    1.53e-04    1.08e-02    +2.559652e+02    +2.561479e+02    3.56e-04    3.36e-02      1.01
+  550    8.41e-05    8.58e-03    +2.560170e+02    +2.560797e+02    1.22e-04    3.36e-02      1.01
+  560    1.93e-04    6.00e-03    +2.560448e+02    +2.560035e+02    8.05e-05    3.36e-02      1.01
+  570    2.02e-04    3.51e-03    +2.560476e+02    +2.559637e+02    1.64e-04    3.36e-02      1.01
+  580    1.29e-04    1.58e-03    +2.560295e+02    +2.559827e+02    9.14e-05    3.36e-02      1.01
+  590    2.86e-05    6.74e-04    +2.559978e+02    +2.560434e+02    8.87e-05    3.36e-02      1.01
+  600    1.59e-04    7.06e-04    +2.559621e+02    +2.560586e+02    1.88e-04    3.36e-02      1.01
+  610    1.63e-04    2.64e-04    +2.559617e+02    +2.560342e+02    1.41e-04    5.34e-02      1.01
+  620    1.53e-04    3.39e-04    +2.559639e+02    +2.560138e+02    9.72e-05    5.34e-02      1.01
+  630    1.32e-04    5.07e-04    +2.559688e+02    +2.559979e+02    5.66e-05    5.34e-02      1.02
+  640    1.03e-04    6.37e-04    +2.559756e+02    +2.559929e+02    3.36e-05    5.34e-02      1.02
+  650    7.01e-05    6.97e-04    +2.559834e+02    +2.559998e+02    3.21e-05    5.34e-02      1.02
+  660    3.79e-05    6.88e-04    +2.559910e+02    +2.560097e+02    3.63e-05    5.34e-02      1.02
+  670    1.06e-05    6.17e-04    +2.559977e+02    +2.560130e+02    2.98e-05    5.34e-02      1.02
+  680    1.22e-05    5.00e-04    +2.560026e+02    +2.560086e+02    1.17e-05    5.34e-02      1.02
+  690    2.32e-05    3.62e-04    +2.560053e+02    +2.560004e+02    9.58e-06    5.34e-02      1.02
+  700    2.54e-05    2.26e-04    +2.560060e+02    +2.559956e+02    2.03e-05    5.34e-02      1.02
+  710    2.05e-05    1.13e-04    +2.560049e+02    +2.559968e+02    1.57e-05    5.34e-02      1.02
+  720    1.09e-05    3.65e-05    +2.560025e+02    +2.560008e+02    3.32e-06    5.34e-02      1.02
+Residual < 1e-4 at iter = 720
+  730    3.97e-06    1.79e-05    +2.559996e+02    +2.560034e+02    7.29e-06    5.34e-02      1.02
+  740    1.37e-05    2.59e-05    +2.559969e+02    +2.560023e+02    1.05e-05    5.34e-02      1.02
+  750    2.16e-05    5.38e-05    +2.559949e+02    +2.559996e+02    9.00e-06    5.34e-02      1.02
+  760    1.61e-05    5.61e-05    +2.559962e+02    +2.559990e+02    5.56e-06    1.53e-01      1.02
+  770    1.01e-05    6.02e-05    +2.559977e+02    +2.559993e+02    3.21e-06    1.53e-01      1.02
+  780    5.49e-06    5.95e-05    +2.559992e+02    +2.560001e+02    1.62e-06    1.53e-01      1.02
+  790    5.84e-06    5.45e-05    +2.560007e+02    +2.560007e+02    3.35e-09    1.53e-01      1.02
+  800    9.02e-06    4.60e-05    +2.560018e+02    +2.560007e+02    2.22e-06    1.53e-01      1.02
+  810    1.15e-05    3.56e-05    +2.560026e+02    +2.560002e+02    4.73e-06    1.53e-01      1.02
+  820    1.25e-05    2.46e-05    +2.560029e+02    +2.559996e+02    6.53e-06    1.53e-01      1.02
+  830    1.19e-05    1.45e-05    +2.560028e+02    +2.559993e+02    6.83e-06    1.53e-01      1.02
+  840    1.01e-05    6.67e-06    +2.560024e+02    +2.559995e+02    5.58e-06    1.53e-01      1.02
+  850    7.43e-06    3.12e-06    +2.560018e+02    +2.559999e+02    3.55e-06    1.53e-01      1.02
+  860    4.45e-06    3.81e-06    +2.560011e+02    +2.560002e+02    1.69e-06    1.53e-01      1.02
+  870    1.82e-06    3.49e-06    +2.560004e+02    +2.560002e+02    5.20e-07    1.53e-01      1.02
+  880    9.88e-07    2.83e-06    +2.559999e+02    +2.560000e+02    2.21e-08    1.53e-01      1.03
+  890    1.85e-06    5.06e-06    +2.559997e+02    +2.559998e+02    2.72e-07    1.53e-01      1.03
+  900    2.03e-06    8.53e-06    +2.559997e+02    +2.559999e+02    3.90e-07    1.53e-01      1.03
+  910    1.67e-06    8.59e-06    +2.560000e+02    +2.560000e+02    2.64e-08    1.89e-01      1.03
+  920    1.76e-06    8.15e-06    +2.560002e+02    +2.560001e+02    3.28e-07    1.89e-01      1.03
+  930    2.18e-06    7.19e-06    +2.560004e+02    +2.560001e+02    7.32e-07    1.89e-01      1.03
+  940    2.62e-06    5.82e-06    +2.560006e+02    +2.560000e+02    1.15e-06    1.89e-01      1.03
+  950    2.90e-06    4.24e-06    +2.560007e+02    +2.559999e+02    1.46e-06    1.89e-01      1.03
+  960    2.91e-06    2.68e-06    +2.560007e+02    +2.559999e+02    1.55e-06    1.89e-01      1.03
+  970    2.66e-06    1.46e-06    +2.560006e+02    +2.559999e+02    1.38e-06    1.89e-01      1.03
+  980    2.20e-06    1.06e-06    +2.560005e+02    +2.560000e+02    1.04e-06    1.89e-01      1.03
+  990    1.61e-06    1.30e-06    +2.560004e+02    +2.560000e+02    6.79e-07    1.89e-01      1.03
+ 1000    1.01e-06    1.36e-06    +2.560002e+02    +2.560000e+02    3.94e-07    1.89e-01      1.03
+ 1100    2.66e-07    4.18e-07    +2.560001e+02    +2.560000e+02    1.40e-07    8.93e-02      1.03
+Residual < 1e-6 at iter = 1100
+
+=== Solution Summary ===
+Status: OPTIMAL
+Iterations: 1100
+Primal Objective: 256.00005946
+Dual Objective: 255.99998771
+Objective Gap: 1.40e-07
+Primal Residual: 2.66e-07
+Dual Residual: 4.18e-07
+Total Time: 1.03 seconds
+Presolve Time: 0.84734 seconds
+Setup Time: 0.21716 seconds
+Scaling Time: 0.03365 seconds
+Analyze Time: 0.04438 seconds
+Power Time: 0.04549 seconds
+Solve Time: 0.13364 seconds
+Folding Time: 0.00000 seconds
+Interior Percentage: 77.19980%
+Reduced Activation Checks: 102
+Reduced Active Iterations: 0
+Reduced First Iteration: -1
+Reduced Rebuilds: 0
+Reduced Build Time: 0.00000 seconds
+Reduced Last Trigger Iteration: -1
+Reduced Last Free Ratio: 1.00000
+Reduced Last Trigger Residual: inf
+Reduced Last Trigger Sigma: nan
+Reduced Last Free Columns: 196143
+Reduced Active Iteration Ratio: 0.00000
+Reduced Average Column Ratio: 1.00000
+Reduced Average NNZ Ratio: 1.00000
+Reduced Minimum Column Ratio: 1.00000
+Reduced Minimum NNZ Ratio: 1.00000
+

@@ -1,0 +1,40 @@
+\begin{table}[htbp]
+\TABLE
+{Ablation study of folding and presolve on the three
+benchmark groups.\label{tab:ablation-components}}
+{\begin{tabularx}{\linewidth}{@{}l>{\raggedright\arraybackslash}Xrrrrrrr@{}}
+\toprule
+Dataset & Variant & Solved & \multicolumn{3}{c}{Time (s)}
+& \(r_m\) & \(r_n\) & \(r_{\mathrm{nnz}}\) \\
+\cmidrule(lr){4-6}
+& & & Preprocessing & Solve & Total & & & \\
+\midrule
+Mittelmann
+& None
+& 46 & 0.000 & 14.456 & 14.456 & 1.000 & 1.000 & 1.000 \\
+& Folding only
+& 47 & \textbf{0.083} & 13.831 & 13.934 & 0.768 & 0.747 & 0.746 \\
+& Folding + presolve
+& \textbf{49} & 0.184 & \textbf{5.615} & \textbf{5.797} & \textbf{0.583} & \textbf{0.580} & \textbf{0.572} \\
+\midrule
+MIPLIB Large
+& None
+& 17 & 0.000 & 27.322 & 27.322 & 1.000 & 1.000 & 1.000 \\
+& Folding only
+& 17 & \textbf{0.197} & 15.399 & 15.606 & 0.519 & 0.509 & 0.454 \\
+& Folding + presolve
+& 17 & 0.292 & \textbf{10.407} & \textbf{10.666} & \textbf{0.402} & \textbf{0.384} & \textbf{0.342} \\
+\midrule
+QAP20
+& None
+& 20 & 0.000 & 33.172 & 33.172 & 1.000 & 1.000 & 1.000 \\
+& Folding only
+& 20 & \textbf{0.147} & 24.995 & 25.207 & 0.744 & 0.744 & 0.744 \\
+& Folding + presolve
+& 20 & 0.271 & \textbf{6.407} & \textbf{6.687} & \textbf{0.014} & \textbf{0.372} & \textbf{0.301} \\
+\bottomrule
+\end{tabularx}}
+{Times are SGM10 values. Bold marks the best values per group
+(largest Solved; minima otherwise), excluding all-equal columns and zero
+preprocessing times.}
+\end{table}

@@ -1,0 +1,93 @@
+dataset,name,bytes
+Mittelmann,Dual2_5000.mps.gz,664852424
+Mittelmann,FOME13.mps.gz,1924506
+Mittelmann,L1_sixm1000obs.mps.gz,81660861
+Mittelmann,L1_sixm250obs.mps.gz,24222130
+Mittelmann,L2CTA3D.mps.gz,269005246
+Mittelmann,Linf_five20c.mps.gz,3246133
+Mittelmann,Primal2_1000.mps.gz,37416326
+Mittelmann,a2864.mps.gz,78716220
+Mittelmann,bdry2.mps.gz,7557270
+Mittelmann,cont1.mps.gz,2682296
+Mittelmann,cont11.mps.gz,2993752
+Mittelmann,datt256_lp.mps.gz,7901018
+Mittelmann,degme.mps.gz,35996027
+Mittelmann,dlr1.mps.gz,81726577
+Mittelmann,dlr2.mps.gz,359763853
+Mittelmann,ex10.mps.gz,5374254
+Mittelmann,fhnw-bin1.mps.gz,43145085
+Mittelmann,graph40-40_lp.mps.gz,10013889
+Mittelmann,irish-electricity.mps.gz,3126735
+Mittelmann,neos-3025225_lp.mps.gz,29559551
+Mittelmann,neos-5052403-cygnet.mps.gz,14440573
+Mittelmann,neos-5251015_lp.mps.gz,12410826
+Mittelmann,neos.mps.gz,6998069
+Mittelmann,neos3.mps.gz,6878313
+Mittelmann,ns168703.mps.gz,5557194
+Mittelmann,ns168892.mps.gz,5320835
+Mittelmann,nug08-3rd.mps.gz,676277
+Mittelmann,pds-100.mps.gz,6021661
+Mittelmann,physiciansched3-3.mps.gz,5623683
+Mittelmann,qap15.mps.gz,344661
+Mittelmann,rail02.mps.gz,3884078
+Mittelmann,rail4284.mps.gz,30537780
+Mittelmann,rmine15_lp.mps.gz,5175422
+Mittelmann,s100.mps.gz,11353946
+Mittelmann,s250r10.mps.gz,9010621
+Mittelmann,s82.mps.gz,49466433
+Mittelmann,savsched1.mps.gz,10528836
+Mittelmann,scpm1_lp.mps.gz,31390905
+Mittelmann,set-cover.mps.gz,109649052
+Mittelmann,shs1023.mps.gz,6629987
+Mittelmann,square41.mps.gz,41162915
+Mittelmann,stat96v2.mps.gz,16873221
+Mittelmann,stormG2_1000.mps.gz,15722181
+Mittelmann,stp3d.mps.gz,4260385
+Mittelmann,supportcase10.mps.gz,3049556
+Mittelmann,thk_48.mps.gz,167768516
+Mittelmann,thk_63.mps.gz,139208499
+Mittelmann,tpl-tub-ws1617.mps.gz,62612914
+Mittelmann,woodlands09.mps.gz,12097825
+MIPLIB Large,a2864-99blp_relax.mps.gz,71162551
+MIPLIB Large,dlr1_relax.mps.gz,75258118
+MIPLIB Large,ivu06-big_relax.mps.gz,86811925
+MIPLIB Large,ivu59_relax.mps.gz,135436736
+MIPLIB Large,kottenpark09_relax.mps.gz,63708529
+MIPLIB Large,neos-2991472-kalu_relax.mps.gz,35252236
+MIPLIB Large,neos-3208254-reiu_relax.mps.gz,129212860
+MIPLIB Large,neos-3740487-motru_relax.mps.gz,135407635
+MIPLIB Large,neos-4332801-seret_relax.mps.gz,352246021
+MIPLIB Large,neos-4332810-sesia_relax.mps.gz,330974703
+MIPLIB Large,neos-4535459-waipa_relax.mps.gz,1081185184
+MIPLIB Large,neos-4545615-waita_relax.mps.gz,35827111
+MIPLIB Large,nucorsav_relax.mps.gz,108168476
+MIPLIB Large,scpn2_relax.mps.gz,56857083
+MIPLIB Large,square41_relax.mps.gz,36669276
+MIPLIB Large,square47_relax.mps.gz,72987092
+MIPLIB Large,t11nonreg_relax.mps.gz,235334910
+MIPLIB Large,usafa_relax.mps.gz,54339149
+QAP20,esc64a.mps.gz,569262319
+QAP20,lipa40a.mps.gz,82373414
+QAP20,lipa40b.mps.gz,87958488
+QAP20,lipa50a.mps.gz,196217879
+QAP20,lipa50b.mps.gz,213117644
+QAP20,lipa60a.mps.gz,417208602
+QAP20,lipa60b.mps.gz,454344957
+QAP20,lipa70a.mps.gz,779275670
+QAP20,lipa70b.mps.gz,849616814
+QAP20,sko56.mps.gz,360820953
+QAP20,sko64.mps.gz,613681324
+QAP20,tai40a.mps.gz,89737263
+QAP20,tai40b.mps.gz,85008194
+QAP20,tai50a.mps.gz,216644538
+QAP20,tai50b.mps.gz,202882031
+QAP20,tai60a.mps.gz,458717709
+QAP20,tai60b.mps.gz,429285379
+QAP20,tai64c.mps.gz,569802264
+QAP20,tho40.mps.gz,80981916
+QAP20,wil50.mps.gz,203519742
+QAP wil100 scale,qap-wil100-n020.mps.gz,2078415
+QAP wil100 scale,qap-wil100-n040.mps.gz,34489253
+QAP wil100 scale,qap-wil100-n060.mps.gz,178488121
+QAP wil100 scale,qap-wil100-n080.mps.gz,570173849
+QAP wil100 scale,qap-wil100-n100.mps.gz,1401798617

@@ -1,0 +1,10 @@
+dataset,preprocessor,preprocessing_time_s,r_m,r_n,r_nnz,source_batch
+Mittelmann,Gurobi,4.276,0.675,0.742,0.722,tables_4_5_mittelmann_gurobi
+Mittelmann,PSLP,1.112,0.813,0.824,0.798,tables_4_5_mittelmann_pslp
+Mittelmann,GPU-Preprocessor,0.184,0.583,0.580,0.572,tables_3_4_5_mittelmann_gpu_preprocessor
+MIPLIB Large,Gurobi,9.903,0.522,0.557,0.525,tables_4_5_miplib_large_gurobi
+MIPLIB Large,PSLP,3.214,0.600,0.635,0.608,tables_4_5_miplib_large_pslp
+MIPLIB Large,GPU-Preprocessor,0.292,0.402,0.384,0.342,tables_3_4_5_miplib_large_gpu_preprocessor
+QAP20,Gurobi,183.654,0.019,0.500,0.405,tables_4_5_qap20_gurobi
+QAP20,PSLP,11.885,0.019,0.500,0.405,tables_4_5_qap20_pslp
+QAP20,GPU-Preprocessor,0.271,0.014,0.372,0.301,tables_3_4_5_qap20_gpu_preprocessor

@@ -1,0 +1,42 @@
+\begin{table}[htbp]
+\TABLE
+{End-to-end performance of HPR-LP with different
+preprocessing methods.\label{tab:end-to-end-performance}}
+{\begin{tabularx}{\linewidth}{@{}l>{\raggedright\arraybackslash}Xrrrr@{}}
+\toprule
+Dataset & Method & Solved & \multicolumn{3}{c}{Time (s)} \\
+\cmidrule(lr){4-6}
+& & & Preprocessing & Solve & Total \\
+\midrule
+Mittelmann & HPR-LP
+& 46 & 0.000 & 14.456 & 14.456 \\
+& HPR-LP + Gurobi
+& 47 & 4.276 & 8.704 & 13.873 \\
+& HPR-LP + PSLP
+& 48 & 1.112 & 7.964 & 9.084 \\
+& HPR-LP + GPU-Preprocessor
+& \textbf{49} & \textbf{0.184} & \textbf{5.615} & \textbf{5.797} \\
+\midrule
+MIPLIB Large & HPR-LP
+& 17 & 0.000 & 27.322 & 27.322 \\
+& HPR-LP + Gurobi
+& 17 & 9.903 & 10.689 & 20.534 \\
+& HPR-LP + PSLP
+& 17 & 3.214 & 12.038 & 15.721 \\
+& HPR-LP + GPU-Preprocessor
+& 17 & \textbf{0.292} & \textbf{10.407} & \textbf{10.666} \\
+\midrule
+QAP20 & HPR-LP
+& 20 & 0.000 & 33.172 & 33.172 \\
+& HPR-LP + Gurobi
+& 20 & 183.654 & 8.080 & 194.165 \\
+& HPR-LP + PSLP
+& 20 & 11.885 & 7.934 & 20.220 \\
+& HPR-LP + GPU-Preprocessor
+& 20 & \textbf{0.271} & \textbf{6.407} & \textbf{6.687} \\
+\bottomrule
+\end{tabularx}}
+{Times are SGM10 values. Bold marks the best values per group
+(largest Solved; minima otherwise), excluding all-equal columns and zero
+preprocessing times.}
+\end{table}

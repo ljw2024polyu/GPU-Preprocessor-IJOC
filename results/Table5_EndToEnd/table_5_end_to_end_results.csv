@@ -1,0 +1,13 @@
+dataset,method,solved,preprocessing_time_s,solve_time_s,total_time_s,source_batch
+Mittelmann,HPR-LP,46,0.000,14.456,14.456,tables_3_5_mittelmann_no_preprocessing
+Mittelmann,HPR-LP + Gurobi,47,4.276,8.704,13.873,tables_4_5_mittelmann_gurobi
+Mittelmann,HPR-LP + PSLP,48,1.112,7.964,9.084,tables_4_5_mittelmann_pslp
+Mittelmann,HPR-LP + GPU-Preprocessor,49,0.184,5.615,5.797,tables_3_4_5_mittelmann_gpu_preprocessor
+MIPLIB Large,HPR-LP,17,0.000,27.322,27.322,tables_3_5_miplib_large_no_preprocessing
+MIPLIB Large,HPR-LP + Gurobi,17,9.903,10.689,20.534,tables_4_5_miplib_large_gurobi
+MIPLIB Large,HPR-LP + PSLP,17,3.214,12.038,15.721,tables_4_5_miplib_large_pslp
+MIPLIB Large,HPR-LP + GPU-Preprocessor,17,0.292,10.407,10.666,tables_3_4_5_miplib_large_gpu_preprocessor
+QAP20,HPR-LP,20,0.000,33.172,33.172,tables_3_5_qap20_no_preprocessing
+QAP20,HPR-LP + Gurobi,20,183.654,8.080,194.165,tables_4_5_qap20_gurobi
+QAP20,HPR-LP + PSLP,20,11.885,7.934,20.220,tables_4_5_qap20_pslp
+QAP20,HPR-LP + GPU-Preprocessor,20,0.271,6.407,6.687,tables_3_4_5_qap20_gpu_preprocessor

@@ -1,0 +1,284 @@
+Reading file /data/lp_data/Hans/neos-5251015_lp.mps.gz
+problem information: nRow = 486531, nCol = 136971, nnz A = 1955388
+
+Reading time: 1.05s
+
+Numerical ranges before presolve (finite absolute values):
+  A   [6.42e-01, 4.00e+02]
+  AL  [0.00e+00, 4.00e+02]
+  AU  [0.00e+00, 4.00e+02]
+  l   [0.00e+00, 0.00e+00]
+  u   [1.00e+00, 1.00e+00]
+  c   [0.00e+00, 1.00e+00]
+Set parameter Username
+Set parameter LicenseID to value 2773703
+Academic license - for non-commercial use only - expires 2027-02-02
+Set parameter Presolve to value -1
+Set parameter TimeLimit to value 1e+100
+Gurobi presolve configuration: Presolve=-1, TimeLimit=Infinity, OutputFlag=1
+Gurobi Optimizer version 12.0.2 build v12.0.2rc0 (linux64 - "Ubuntu 22.04.5 LTS")
+
+CPU model: INTEL(R) XEON(R) GOLD 6548Y+, instruction set [SSE2|AVX|AVX2|AVX512]
+Thread count: 64 physical cores, 128 logical processors, using up to 32 threads
+
+Presolve a model with 486531 rows, 136971 columns and 1955388 nonzeros
+Model fingerprint: 0x5a52412c
+Coefficient statistics:
+  Matrix range     [6e-01, 4e+02]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e-01, 4e+02]
+Presolve removed 192672 rows and 28064 columns
+problem information: nRow = 293859, nCol = 108907, nnz A = 1430151
+
+Gurobi presolve core time: 0.83 seconds
+Gurobi reduced problem: (486531, 136971, 1955388) -> (293859, 108907, 1430151)
+result_space: GUROBI_REDUCED_MODEL
+kkt_residual_scope: REDUCED_MODEL_ONLY
+postsolve_mapping: NOT_AVAILABLE_FROM_GUROBI_PRESOLVED_MODEL_API
+original_solution_recovery: NOT_PERFORMED
+original_kkt_validation: NOT_PERFORMED
+solution_vectors: NOT_EXPORTED_THROUGH_ORIGINAL_SPACE_API
+
+Numerical ranges after presolve (finite absolute values):
+  A   [6.42e-01, 8.00e+02]
+  AL  [0.00e+00, 7.00e+00]
+  AU  [0.00e+00, 4.00e+02]
+  l   [0.00e+00, 4.00e+02]
+  u   [1.00e+00, 8.01e+02]
+  c   [0.00e+00, 0.00e+00]
+
+==================================================================
+                          HPR-LP Solver                           
+     Halpern Peaceman-Rachford Linear Programming Solver          
+                                                                  
+  Version: 0.1.3                          
+                                                                  
+==================================================================
+
+Solver Parameters:
+  Device:              GPU 0
+  Max Iterations:      2147483647
+  Stopping Tolerance:  1.0e-06
+  Time Limit:          1000.0 seconds
+  Check Interval:      150 iterations
+  cuSPARSE SpMV:       Auto
+  Autotune Verbose:    Disabled
+  Reduced Matrix:      Enabled
+  Auto Memory Policy:  Disabled
+  Progress Monitor:    Enabled
+  Progress Control:    Enabled
+  Sigma Rebalance:     Enabled
+  Long Restart Guard:  Disabled
+  Restart Cooldown:    0 checks
+  Restart Debug:       Disabled
+  Sigma Debug:         Disabled
+  Fixed Sigma:         Adaptive
+  Presolver:           Gurobi
+  Scaling:
+    - Curtis-Reid:     Enabled
+    - Ruiz:            Enabled
+    - Pock-Chambolle:  Enabled
+    - Bounds/Cost:     Enabled
+  Debug Information:  Enabled
+
+
+Numerical ranges after scaling (finite absolute values):
+  A   [5.38e-04, 5.79e-01]
+  AL  [0.00e+00, 2.09e-02]
+  AU  [0.00e+00, 2.09e-02]
+  l   [0.00e+00, 1.20e-02]
+  u   [5.83e-04, 8.87e-01]
+  c   [0.00e+00, 0.00e+00]
+Adaptive row/column reduction: enabled
+Compressible GPU memory: requested=yes active_allocations=23 device_supported=yes (automatic policy or manual HPRLP_ENABLE_COMPRESSIBLE_MEMORY=1)
+Setup (copy and allocation) time = 0.19 seconds
+Scaling time = 0.06 seconds
+Analyze time = 0.03 seconds
+ESTIMATING MAXIMUM EIGENVALUE time = 0.01 seconds
+ iter     errRp        errRd         p_obj            d_obj          gap         sigma       time
+    0    5.38e-04    0.00e+00    +1.058000e-01    +1.058000e-01    0.00e+00    1.00e+00      0.95
+  row compressed autotune: iteration=0, active_rows=17564/293859, nnz=780087/1430151, short_probes=3, finalist_probes=8, probe_total_ms=1.379
+    candidate=cusparse/cusparse short_ms=0.025941 combined_ms=0.024643
+    candidate=fused/cusparse short_ms=0.032427 early_rejected=1
+    candidate=cusparse/fused short_ms=0.027616 combined_ms=0.027299
+    candidate=fused/fused short_ms=0.032875 early_rejected=1
+    selected=cusparse/cusparse incumbent=cusparse/cusparse measured_improvement=0.0000 payback_iterations=inf
+  row backend autotune isolated_total_ms=2.010 (includes candidate descriptors and production descriptor rebuild)
+   10    4.79e-04    5.02e+01    +1.058000e-01    +6.677268e+01    9.82e-01    1.00e+00      1.00
+   20    9.13e-04    9.22e+01    +1.058000e-01    +1.225350e+02    9.90e-01    1.00e+00      1.00
+   30    5.21e-04    1.20e+02    +1.058000e-01    +1.588949e+02    9.92e-01    1.00e+00      1.00
+   40    3.65e-04    1.29e+02    +1.058000e-01    +1.715033e+02    9.93e-01    1.00e+00      1.00
+   50    3.24e-04    1.21e+02    +1.058000e-01    +1.604522e+02    9.93e-01    1.00e+00      1.00
+   60    6.30e-03    9.78e+01    +1.058000e-01    +1.245005e+02    9.90e-01    1.00e+00      1.00
+   70    5.26e-03    7.10e+01    +1.058000e-01    +8.836801e+01    9.86e-01    1.00e+00      1.00
+   80    5.22e-03    4.64e+01    +1.058000e-01    +5.871563e+01    9.80e-01    1.00e+00      1.00
+   90    6.09e-03    2.57e+01    +1.058000e-01    +3.363156e+01    9.65e-01    1.00e+00      1.01
+  100    4.71e-03    1.09e+01    +1.058000e-01    +1.420293e+01    9.21e-01    1.00e+00      1.01
+  110    5.34e-03    4.66e+00    +1.058000e-01    +6.104149e+00    8.32e-01    1.00e+00      1.01
+  120    6.63e-03    6.45e+00    +1.058000e-01    +8.724701e+00    8.77e-01    1.00e+00      1.01
+  130    4.14e-03    1.38e+01    +1.058000e-01    +1.859198e+01    9.38e-01    1.00e+00      1.01
+  140    5.22e-03    2.31e+01    +1.058000e-01    +3.095231e+01    9.62e-01    1.00e+00      1.01
+  150    6.51e-03    3.09e+01    +1.058000e-01    +4.110987e+01    9.71e-01    1.00e+00      1.01
+Reduced matrix restart mask reset: enabled
+  160    1.18e-02    2.89e+01    +1.058000e-01    +3.718257e+01    9.68e-01    4.88e+00      1.01
+  170    1.20e-02    2.44e+01    +1.058000e-01    +2.994757e+01    9.61e-01    4.88e+00      1.01
+  180    7.99e-03    1.87e+01    +1.058000e-01    +2.220140e+01    9.48e-01    4.88e+00      1.01
+  190    7.12e-03    1.25e+01    +1.058000e-01    +1.493907e+01    9.24e-01    4.88e+00      1.01
+  200    6.65e-03    6.40e+00    +1.058000e-01    +7.897138e+00    8.65e-01    4.88e+00      1.01
+  210    5.67e-03    8.98e-01    +1.058000e-01    +9.967357e-01    4.24e-01    4.88e+00      1.01
+  220    4.51e-03    3.43e+00    +1.058000e-01    -4.489507e+00    8.21e-01    4.88e+00      1.01
+  230    3.43e-03    5.46e+00    +1.058000e-01    -7.119044e+00    8.78e-01    4.88e+00      1.01
+  240    3.32e-03    5.32e+00    +1.058000e-01    -6.879376e+00    8.75e-01    4.88e+00      1.01
+  250    3.44e-03    3.52e+00    +1.058000e-01    -4.468954e+00    8.21e-01    4.88e+00      1.02
+  260    2.99e-03    9.15e-01    +1.058000e-01    -9.958668e-01    5.24e-01    4.88e+00      1.02
+  270    3.85e-03    1.69e+00    +1.058000e-01    +2.350928e+00    6.49e-01    4.88e+00      1.02
+  280    3.49e-03    3.42e+00    +1.058000e-01    +4.614236e+00    7.88e-01    4.88e+00      1.02
+  290    2.23e-03    3.96e+00    +1.058000e-01    +5.286667e+00    8.10e-01    4.88e+00      1.02
+  300    2.92e-03    3.29e+00    +1.058000e-01    +4.386488e+00    7.79e-01    4.88e+00      1.02
+  310    1.89e-03    1.36e+00    +1.058000e-01    -1.748438e+00    6.50e-01    1.59e+00      1.02
+  320    1.36e-03    5.56e+00    +1.058000e-01    -7.336259e+00    8.82e-01    1.59e+00      1.02
+  330    8.72e-04    8.71e+00    +1.058000e-01    -1.149006e+01    9.21e-01    1.59e+00      1.02
+  340    6.83e-04    1.04e+01    +1.058000e-01    -1.364519e+01    9.32e-01    1.59e+00      1.02
+  350    6.17e-04    1.04e+01    +1.058000e-01    -1.366989e+01    9.32e-01    1.59e+00      1.02
+  360    5.04e-04    9.07e+00    +1.058000e-01    -1.186997e+01    9.23e-01    1.59e+00      1.02
+  370    4.10e-04    6.83e+00    +1.058000e-01    -8.890153e+00    9.00e-01    1.59e+00      1.02
+  380    3.43e-04    4.29e+00    +1.058000e-01    -5.540963e+00    8.50e-01    1.59e+00      1.02
+  390    2.57e-04    2.06e+00    +1.058000e-01    -2.598060e+00    7.30e-01    1.59e+00      1.02
+  400    1.83e-04    5.49e-01    +1.058000e-01    -6.257272e-01    4.22e-01    1.59e+00      1.02
+  410    2.12e-04    8.43e-02    +1.058000e-01    +1.325568e-01    2.16e-02    1.59e+00      1.03
+  420    2.22e-04    2.38e-01    +1.058000e-01    -2.265039e-01    2.49e-01    1.59e+00      1.03
+  430    1.87e-04    1.07e+00    +1.058000e-01    -1.334623e+00    5.90e-01    1.59e+00      1.03
+  440    1.70e-04    2.10e+00    +1.058000e-01    -2.683349e+00    7.36e-01    1.59e+00      1.03
+  450    1.90e-04    2.94e+00    +1.058000e-01    -3.778174e+00    7.95e-01    1.59e+00      1.03
+  460    2.38e-04    3.00e+00    +1.058000e-01    -3.854994e+00    7.98e-01    3.43e+00      1.03
+  470    3.14e-04    2.74e+00    +1.058000e-01    -3.495813e+00    7.83e-01    3.43e+00      1.03
+  480    3.59e-04    2.20e+00    +1.058000e-01    -2.780698e+00    7.43e-01    3.43e+00      1.03
+  490    3.65e-04    1.50e+00    +1.058000e-01    -1.857185e+00    6.63e-01    3.43e+00      1.03
+  500    3.39e-04    7.79e-01    +1.058000e-01    -9.041417e-01    5.02e-01    3.43e+00      1.03
+  510    3.06e-04    1.62e-01    +1.058000e-01    -9.069036e-02    1.64e-01    3.43e+00      1.03
+  520    2.77e-04    2.66e-01    +1.058000e-01    +4.605920e-01    2.27e-01    3.43e+00      1.03
+  530    2.59e-04    4.49e-01    +1.058000e-01    +6.972522e-01    3.28e-01    3.43e+00      1.03
+  540    2.49e-04    4.10e-01    +1.058000e-01    +6.421478e-01    3.07e-01    3.43e+00      1.03
+  550    2.37e-04    2.12e-01    +1.058000e-01    +3.800252e-01    1.85e-01    3.43e+00      1.03
+  560    2.26e-04    5.56e-02    +1.058000e-01    +3.010064e-02    6.66e-02    3.43e+00      1.03
+  570    2.18e-04    2.99e-01    +1.058000e-01    -2.873625e-01    2.82e-01    3.43e+00      1.03
+  580    2.11e-04    4.49e-01    +1.058000e-01    -4.814129e-01    3.70e-01    3.43e+00      1.04
+  590    1.99e-04    4.73e-01    +1.058000e-01    -5.100530e-01    3.81e-01    3.43e+00      1.04
+  600    1.82e-04    3.79e-01    +1.058000e-01    -3.849076e-01    3.29e-01    3.43e+00      1.04
+  610    1.76e-04    9.03e-02    +1.058000e-01    -1.972429e-03    9.73e-02    1.92e+00      1.04
+  620    1.67e-04    1.98e-01    +1.058000e-01    +3.710492e-01    1.80e-01    1.92e+00      1.04
+  630    1.55e-04    4.28e-01    +1.058000e-01    +6.736294e-01    3.19e-01    1.92e+00      1.04
+  640    1.44e-04    5.73e-01    +1.058000e-01    +8.617463e-01    3.84e-01    1.92e+00      1.04
+  650    1.34e-04    6.17e-01    +1.058000e-01    +9.169790e-01    4.01e-01    1.92e+00      1.04
+  660    1.23e-04    5.67e-01    +1.058000e-01    +8.491200e-01    3.80e-01    1.92e+00      1.04
+  670    1.11e-04    4.48e-01    +1.058000e-01    +6.920130e-01    3.26e-01    1.92e+00      1.04
+  680    9.80e-05    2.97e-01    +1.058000e-01    +4.939370e-01    2.43e-01    1.92e+00      1.04
+  690    8.55e-05    1.53e-01    +1.058000e-01    +3.052054e-01    1.41e-01    1.92e+00      1.04
+  700    7.43e-05    4.57e-02    +1.058000e-01    +1.662430e-01    4.75e-02    1.92e+00      1.04
+  710    6.50e-05    7.39e-03    +1.058000e-01    +9.911654e-02    5.55e-03    1.92e+00      1.04
+  720    5.76e-05    5.90e-03    +1.058000e-01    +1.044247e-01    1.14e-03    1.92e+00      1.04
+  730    5.21e-05    4.29e-02    +1.058000e-01    +1.639320e-01    4.58e-02    1.92e+00      1.05
+  740    4.92e-05    1.07e-01    +1.058000e-01    +2.477861e-01    1.05e-01    1.92e+00      1.05
+  750    4.86e-05    1.66e-01    +1.058000e-01    +3.240203e-01    1.53e-01    1.92e+00      1.05
+  760    5.41e-05    1.85e-01    +1.058000e-01    +3.481272e-01    1.67e-01    2.79e+00      1.05
+  770    6.25e-05    1.83e-01    +1.058000e-01    +3.444435e-01    1.65e-01    2.79e+00      1.05
+  780    7.16e-05    1.60e-01    +1.058000e-01    +3.149326e-01    1.47e-01    2.79e+00      1.05
+  790    8.05e-05    1.24e-01    +1.058000e-01    +2.666127e-01    1.17e-01    2.79e+00      1.05
+  800    8.87e-05    8.03e-02    +1.058000e-01    +2.097537e-01    7.90e-02    2.79e+00      1.05
+  810    9.60e-05    3.86e-02    +1.058000e-01    +1.554367e-01    3.94e-02    2.79e+00      1.05
+  820    1.02e-04    6.14e-03    +1.058000e-01    +1.130416e-01    5.94e-03    2.79e+00      1.05
+  830    1.07e-04    1.33e-02    +1.058000e-01    +8.828481e-02    1.47e-02    2.79e+00      1.05
+  840    1.10e-04    1.81e-02    +1.058000e-01    +8.226909e-02    1.98e-02    2.79e+00      1.05
+  850    1.12e-04    1.09e-02    +1.058000e-01    +9.172142e-02    1.18e-02    2.79e+00      1.05
+  860    1.11e-04    3.34e-03    +1.058000e-01    +1.102827e-01    3.69e-03    2.79e+00      1.05
+  870    1.10e-04    1.89e-02    +1.058000e-01    +1.304447e-01    1.99e-02    2.79e+00      1.05
+  880    1.07e-04    3.06e-02    +1.058000e-01    +1.455869e-01    3.18e-02    2.79e+00      1.06
+  890    1.03e-04    3.53e-02    +1.058000e-01    +1.515727e-01    3.64e-02    2.79e+00      1.06
+  900    9.74e-05    3.23e-02    +1.058000e-01    +1.475239e-01    3.33e-02    2.79e+00      1.06
+  910    9.13e-05    2.31e-02    +1.058000e-01    +1.356370e-01    2.40e-02    2.79e+00      1.06
+  920    8.45e-05    1.11e-02    +1.058000e-01    +1.201789e-01    1.17e-02    2.79e+00      1.06
+  930    7.74e-05    5.69e-04    +1.058000e-01    +1.060125e-01    1.75e-04    2.79e+00      1.06
+  940    7.02e-05    6.76e-03    +1.058000e-01    +9.710717e-02    7.23e-03    2.79e+00      1.06
+  950    6.29e-05    8.04e-03    +1.058000e-01    +9.545599e-02    8.61e-03    2.79e+00      1.06
+  960    5.59e-05    3.99e-03    +1.058000e-01    +1.006744e-01    4.25e-03    2.79e+00      1.06
+  970    4.93e-05    3.51e-03    +1.058000e-01    +1.103364e-01    3.73e-03    2.79e+00      1.06
+  980    4.33e-05    1.17e-02    +1.058000e-01    +1.208887e-01    1.23e-02    2.79e+00      1.06
+  990    3.80e-05    1.78e-02    +1.058000e-01    +1.288244e-01    1.86e-02    2.79e+00      1.06
+ 1000    3.36e-05    2.01e-02    +1.058000e-01    +1.317482e-01    2.10e-02    2.79e+00      1.06
+ 1100    2.27e-05    1.37e-02    +1.058000e-01    +8.788649e-02    1.50e-02    1.87e+00      1.07
+ 1200    1.69e-05    4.32e-03    +1.058000e-01    +1.001323e-01    4.70e-03    1.87e+00      1.07
+ 1300    1.28e-05    2.20e-03    +1.058000e-01    +1.029153e-01    2.39e-03    1.87e+00      1.08
+Reduced row restart mask check: iteration=1350 restart_flag=3 current_active=17565 fresh_active=17565 saved_rows=0 recovery=0.00000 min_recovery=0.25000 min_saved_rows=25000 min_current_rows=95000 reset=no
+ 1400    1.38e-05    3.02e-04    +1.058000e-01    +1.061899e-01    3.22e-04    4.88e+00      1.08
+ 1500    2.59e-05    5.92e-05    +1.058000e-01    +1.058758e-01    6.26e-05    4.88e+00      1.08
+Residual < 1e-4 at iter = 1500
+ 1600    3.47e-05    1.08e-05    +1.058000e-01    +1.058131e-01    1.08e-05    4.88e+00      1.08
+ 1700    3.68e-05    6.73e-06    +1.058000e-01    +1.057913e-01    7.19e-06    4.88e+00      1.09
+ 1800    3.23e-05    1.08e-05    +1.058000e-01    +1.057861e-01    1.15e-05    4.88e+00      1.09
+Reduced row restart mask check: iteration=1800 restart_flag=3 current_active=17565 fresh_active=17565 saved_rows=0 recovery=0.00000 min_recovery=0.25000 min_saved_rows=25000 min_current_rows=95000 reset=no
+ 1900    3.00e-05    1.53e-06    +1.058000e-01    +1.058020e-01    1.64e-06    3.51e+00      1.09
+ 2000    2.34e-05    2.08e-06    +1.058000e-01    +1.058027e-01    2.23e-06    3.51e+00      1.09
+ 2100    1.45e-05    2.47e-06    +1.058000e-01    +1.058032e-01    2.65e-06    3.51e+00      1.10
+ 2200    6.14e-06    2.67e-06    +1.058000e-01    +1.058035e-01    2.87e-06    3.51e+00      1.10
+Reduced row restart mask check: iteration=2250 restart_flag=3 current_active=17565 fresh_active=17565 saved_rows=0 recovery=0.00000 min_recovery=0.25000 min_saved_rows=25000 min_current_rows=95000 reset=no
+ 2300    5.68e-06    8.35e-07    +1.058000e-01    +1.058011e-01    8.92e-07    4.95e+00      1.10
+ 2400    1.35e-05    2.78e-07    +1.058000e-01    +1.058004e-01    2.90e-07    4.95e+00      1.10
+ 2500    1.89e-05    1.49e-07    +1.058000e-01    +1.058002e-01    1.53e-07    4.95e+00      1.11
+ 2600    2.04e-05    8.17e-08    +1.058000e-01    +1.058001e-01    8.54e-08    4.95e+00      1.11
+ 2700    1.81e-05    4.20e-08    +1.058000e-01    +1.058001e-01    4.45e-08    4.95e+00      1.11
+ 2800    1.33e-05    2.33e-08    +1.058000e-01    +1.058000e-01    1.86e-08    4.95e+00      1.11
+Reduced row restart mask check: iteration=2850 restart_flag=3 current_active=17565 fresh_active=17565 saved_rows=0 recovery=0.00000 min_recovery=0.25000 min_saved_rows=25000 min_current_rows=95000 reset=no
+ 2900    9.95e-06    7.03e-08    +1.058000e-01    +1.057999e-01    6.86e-08    1.90e+00      1.11
+ 3000    7.78e-06    5.12e-08    +1.058000e-01    +1.058000e-01    1.75e-08    1.90e+00      1.12
+ 3100    4.71e-06    5.84e-08    +1.058000e-01    +1.058000e-01    6.63e-09    1.90e+00      1.12
+ 3200    1.64e-06    5.68e-08    +1.058000e-01    +1.058000e-01    2.13e-09    1.90e+00      1.12
+ 3300    1.36e-06    4.64e-08    +1.058000e-01    +1.058000e-01    1.36e-10    1.90e+00      1.12
+ 3400    2.63e-06    3.13e-08    +1.058000e-01    +1.058000e-01    4.82e-10    1.90e+00      1.13
+ 3500    2.78e-06    1.63e-08    +1.058000e-01    +1.058000e-01    2.46e-10    1.90e+00      1.13
+ 3600    1.98e-06    5.32e-09    +1.058000e-01    +1.058000e-01    4.88e-10    1.90e+00      1.13
+Reduced row restart mask check: iteration=3600 restart_flag=3 current_active=17565 fresh_active=17565 saved_rows=0 recovery=0.00000 min_recovery=0.25000 min_saved_rows=25000 min_current_rows=95000 reset=no
+ 3700    3.74e-06    4.25e-09    +1.058000e-01    +1.058000e-01    3.74e-11    1.33e+01      1.13
+ 3800    4.85e-06    2.67e-09    +1.058000e-01    +1.058000e-01    3.58e-11    1.33e+01      1.14
+ 3900    5.10e-06    9.79e-10    +1.058000e-01    +1.058000e-01    3.23e-11    1.33e+01      1.14
+ 4000    4.52e-06    6.84e-10    +1.058000e-01    +1.058000e-01    2.69e-11    1.33e+01      1.14
+ 4100    3.37e-06    1.55e-09    +1.058000e-01    +1.058000e-01    1.98e-11    1.33e+01      1.14
+ 4200    2.04e-06    1.80e-09    +1.058000e-01    +1.058000e-01    1.18e-11    1.33e+01      1.14
+ 4300    8.98e-07    1.48e-09    +1.058000e-01    +1.058000e-01    4.32e-12    1.33e+01      1.15
+Residual < 1e-6 at iter = 4300
+Row reduction summary: first_iteration=0 active_iterations=3063 rebuilds=2 build_time=0.02 last_active_ratio=0.06 average_row_ratio=0.06 average_nnz_ratio=0.55 minimum_row_ratio=0.06 minimum_nnz_ratio=0.55
+Reduced row restart mask summary: checks=5 resets=0
+
+=== Solution Summary ===
+Status: OPTIMAL
+Iterations: 4300
+Primal Objective: 0.10580000
+Dual Objective: 0.10580000
+Objective Gap: 4.32e-12
+Primal Residual: 8.98e-07
+Dual Residual: 1.48e-09
+Total Time: 1.15 seconds
+Presolve Time: 0.83456 seconds
+Setup Time: 0.19080 seconds
+Scaling Time: 0.06120 seconds
+Analyze Time: 0.03067 seconds
+Power Time: 0.00975 seconds
+Solve Time: 0.23394 seconds
+Folding Time: 0.00000 seconds
+Interior Percentage: 63.11899%
+Reduced Activation Checks: 144
+Reduced Active Iterations: 0
+Reduced First Iteration: -1
+Reduced Rebuilds: 0
+Reduced Build Time: 0.00000 seconds
+Reduced Last Trigger Iteration: -1
+Reduced Last Free Ratio: 1.00000
+Reduced Last Trigger Residual: inf
+Reduced Last Trigger Sigma: nan
+Reduced Last Free Columns: 108907
+Reduced Active Iteration Ratio: 0.00000
+Reduced Average Column Ratio: 1.00000
+Reduced Average NNZ Ratio: 1.00000
+Reduced Minimum Column Ratio: 1.00000
+Reduced Minimum NNZ Ratio: 1.00000
+

@@ -1,0 +1,55 @@
+\begin{table}[H]
+\TABLE
+{End-to-end performance and reduction strength for
+individual QAP LP relaxations derived from \texttt{wil100}.\label{tab:qap-wil100-reduction}}
+{\begin{tabularx}{\linewidth}{@{}r>{\raggedright\arraybackslash}Xrrrrrr@{}}
+\toprule
+\(N\) & Preprocessor & \multicolumn{3}{c}{Time (s)}
+& \(r_m\) & \(r_n\) & \(r_{\mathrm{nnz}}\) \\
+\cmidrule(lr){3-5}
+& & Preprocessing & Solve & Total & & & \\
+\midrule
+20 & Gurobi
+& 0.085 & 0.733 & 0.818 & 1.000 & 1.000 & 1.000 \\
+& PSLP
+& \textbf{0.051} & 0.779 & 0.829 & 1.000 & 1.000 & 1.000 \\
+& GPU-Preprocessor
+& 0.077 & \textbf{0.647} & \textbf{0.724}
+& \textbf{0.239} & \textbf{0.226} & \textbf{0.227} \\
+\midrule
+40 & Gurobi
+& 21.832 & 22.487 & 44.319 & 0.963 & 1.000 & 0.963 \\
+& PSLP
+& 1.009 & 3.864 & 4.873 & 1.000 & 1.000 & 1.000 \\
+& GPU-Preprocessor
+& \textbf{0.077} & \textbf{1.400} & \textbf{1.477}
+& \textbf{0.239} & \textbf{0.228} & \textbf{0.228} \\
+\midrule
+60 & Gurobi
+& 133.085 & 16.947 & 150.033 & 0.992 & 1.000 & 0.992 \\
+& PSLP
+& 4.735 & 11.962 & 16.698 & 1.000 & 1.000 & 1.000 \\
+& GPU-Preprocessor
+& \textbf{0.083} & \textbf{3.600} & \textbf{3.683}
+& \textbf{0.240} & \textbf{0.230} & \textbf{0.230} \\
+\midrule
+80 & Gurobi
+& 408.014 & 60.508 & 468.521 & 0.995 & 1.000 & 0.995 \\
+& PSLP
+& 15.580 & 46.268 & 61.848 & 1.000 & 1.000 & 1.000 \\
+& GPU-Preprocessor
+& \textbf{0.248} & \textbf{8.166} & \textbf{8.414}
+& \textbf{0.241} & \textbf{0.232} & \textbf{0.232} \\
+\midrule
+100 & Gurobi
+& 792.621 & 181.255 & 973.876 & 0.995 & 1.000 & 0.995 \\
+& PSLP
+& 45.357 & 101.869 & 147.227 & 1.000 & 1.000 & 1.000 \\
+& GPU-Preprocessor
+& \textbf{0.359} & \textbf{8.839} & \textbf{9.199}
+& \textbf{0.122} & \textbf{0.094} & \textbf{0.094} \\
+\bottomrule
+\end{tabularx}}
+{Times are per-instance values. Bold marks minima at each \(N\),
+except columns where all methods tie.}
+\end{table}

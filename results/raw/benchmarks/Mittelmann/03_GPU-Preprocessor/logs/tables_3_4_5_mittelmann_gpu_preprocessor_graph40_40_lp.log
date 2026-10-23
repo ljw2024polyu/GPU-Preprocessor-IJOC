@@ -1,0 +1,174 @@
+Reading file /data/lp_data/Hans/graph40-40_lp.mps.gz
+problem information: nRow = 360900, nCol = 102600, nnz A = 1260900
+
+Reading time: 0.99s
+
+Numerical ranges before presolve (finite absolute values):
+  A   [1.00e+00, 1.00e+00]
+  AL  [0.00e+00, 1.00e+00]
+  AU  [0.00e+00, 2.00e+00]
+  l   [0.00e+00, 0.00e+00]
+  u   [1.00e+00, 1.00e+00]
+  c   [0.00e+00, 1.00e+00]
+Doing presolve (GPU-Presolver-C folding)...
+GPU-Presolver-C configuration: folding=true, presolve=true, new_rules=true
+GPU-Presolver-C folding time: 0.1 seconds
+GPU-Presolver-C folding: (360900, 102600) -> (1377, 591)
+
+GPU-Presolver-C presolve time: 0.006581024 seconds
+GPU-Presolver-C preprocessing time: 0.10860626 seconds
+GPU-Presolver-C presolve workspace setup time: 0.000146537 seconds
+GPU-Presolver-C presolve workspace release time: 0.000109349 seconds
+GPU-Presolver-C presolve: (1377, 591) -> (806, 314)
+
+GPU-resident packed-dictionary metadata: active
+GPU-resident unit/state operator metadata: active
+GPU-Presolver-C reduced model:
+problem information: nRow = 806, nCol = 314, nnz A = 2392
+
+GPU-resident presolve-to-solver handoff: active
+
+Numerical ranges after presolve (finite absolute values):
+  A   [1.00e+00, 1.00e+00]
+  AL  [0.00e+00, 0.00e+00]
+  AU  [0.00e+00, 0.00e+00]
+  l   [0.00e+00, 0.00e+00]
+  u   [3.33e-03, 6.67e-03]
+  c   [0.00e+00, 6.00e+02]
+
+==================================================================
+                          HPR-LP Solver                           
+     Halpern Peaceman-Rachford Linear Programming Solver          
+                                                                  
+  Version: 0.1.3                          
+                                                                  
+==================================================================
+
+Solver Parameters:
+  Device:              GPU 0
+  Max Iterations:      2147483647
+  Stopping Tolerance:  1.0e-06
+  Time Limit:          1000.0 seconds
+  Check Interval:      150 iterations
+  cuSPARSE SpMV:       Auto
+  Autotune Verbose:    Disabled
+  Reduced Matrix:      Enabled
+  Auto Memory Policy:  Disabled
+  Progress Monitor:    Enabled
+  Progress Control:    Enabled
+  Sigma Rebalance:     Enabled
+  Long Restart Guard:  Disabled
+  Restart Cooldown:    0 checks
+  Restart Debug:       Disabled
+  Sigma Debug:         Disabled
+  Fixed Sigma:         Adaptive
+  Presolver:           GPU-Presolver-C
+  GPU Folding:         Enabled
+  GPU Presolve:        Enabled
+  GPU New Rules:       Enabled
+  Scaling:
+    - Curtis-Reid:     Enabled
+    - Ruiz:            Enabled
+    - Pock-Chambolle:  Enabled
+    - Bounds/Cost:     Enabled
+  Debug Information:  Enabled
+
+
+Numerical ranges after scaling (finite absolute values):
+  A   [7.45e-02, 7.07e-01]
+  AL  [0.00e+00, 0.00e+00]
+  AU  [0.00e+00, 0.00e+00]
+  l   [0.00e+00, 0.00e+00]
+  u   [3.33e-03, 5.16e-02]
+  c   [0.00e+00, 1.05e-01]
+Adaptive row/column reduction: enabled
+Compressible GPU memory: requested=yes active_allocations=0 device_supported=yes (automatic policy or manual HPRLP_ENABLE_COMPRESSIBLE_MEMORY=1)
+Setup (copy and allocation) time = 0.00 seconds
+Scaling time = 0.00 seconds
+Analyze time = 0.01 seconds
+ESTIMATING MAXIMUM EIGENVALUE time = 0.02 seconds
+ iter     errRp        errRd         p_obj            d_obj          gap         sigma       time
+    0    0.00e+00    1.00e+00    +0.000000e+00    +0.000000e+00    0.00e+00    1.00e+00      0.15
+   10    2.80e-03    2.53e-02    -3.000000e+02    -2.976844e+02    3.87e-03    1.00e+00      0.15
+   20    7.62e-04    1.13e-02    -3.000000e+02    -2.989713e+02    1.71e-03    1.00e+00      0.15
+   30    1.29e-08    6.08e-03    -3.000000e+02    -2.994337e+02    9.43e-04    1.00e+00      0.15
+  reduced compressed autotune: iteration=30, shape=806x24, nnz=957, short_probes=3, finalist_probes=8, probe_total_ms=0.669
+    candidate=fused/fused short_ms=0.008288 combined_ms=0.007974
+    candidate=cusparse/nonempty-cusparse short_ms=0.017237 early_rejected=1
+    candidate=fused/nonempty-cusparse short_ms=0.012395 combined_ms=0.011875
+    candidate=cusparse/fused short_ms=0.013365 early_rejected=1
+    selected=fused/fused incumbent=fused/fused measured_improvement=0.0000 payback_iterations=inf
+  reduced compressed autotune isolated_total_ms=0.969 (candidate and production descriptors included)
+   40    7.77e-04    3.76e-03    -3.000000e+02    -2.998392e+02    2.68e-04    1.00e+00      0.15
+   50    1.85e-04    1.21e-03    -3.000000e+02    -2.999483e+02    8.60e-05    1.00e+00      0.15
+   60    2.61e-04    2.31e-03    -3.000000e+02    -2.998846e+02    1.92e-04    1.00e+00      0.15
+   70    3.33e-04    1.16e-03    -3.000000e+02    -2.999582e+02    6.95e-05    1.00e+00      0.15
+   80    6.48e-05    1.28e-03    -3.000000e+02    -2.999290e+02    1.18e-04    1.00e+00      0.15
+   90    3.32e-04    1.32e-03    -3.000000e+02    -2.999477e+02    8.71e-05    1.00e+00      0.15
+  100    5.81e-05    7.21e-04    -3.000000e+02    -2.999622e+02    6.28e-05    1.00e+00      0.15
+  110    2.08e-04    1.25e-03    -3.000000e+02    -2.999422e+02    9.62e-05    1.00e+00      0.15
+  120    1.30e-04    5.86e-04    -3.000000e+02    -2.999765e+02    3.92e-05    1.00e+00      0.15
+  130    7.68e-05    9.28e-04    -3.000000e+02    -2.999512e+02    8.13e-05    1.00e+00      0.15
+  140    1.93e-04    7.13e-04    -3.000000e+02    -2.999731e+02    4.47e-05    1.00e+00      0.15
+  150    3.26e-05    5.82e-04    -3.000000e+02    -2.999680e+02    5.33e-05    1.00e+00      0.15
+Reduced matrix restart mask reset: enabled
+Reduced restart mask check: iteration=150 restart_flag=1 current_free=24 fresh_free=24 saved_columns=0 recovery=0.00000 min_recovery=0.25000 min_saved_columns=25000 min_current_columns=95000 reset=no
+  160    1.29e-08    9.38e-06    -3.000000e+02    -2.999985e+02    2.52e-06    1.30e+01      0.16
+Residual < 1e-4 at iter = 160
+  170    1.29e-08    4.69e-06    -3.000000e+02    -2.999992e+02    1.26e-06    1.30e+01      0.16
+  180    1.29e-08    3.13e-06    -3.000000e+02    -2.999995e+02    8.39e-07    1.30e+01      0.16
+  190    1.29e-08    2.34e-06    -3.000000e+02    -2.999996e+02    6.30e-07    1.30e+01      0.16
+  200    1.29e-08    1.88e-06    -3.000000e+02    -2.999997e+02    5.04e-07    1.30e+01      0.16
+  210    1.29e-08    1.56e-06    -3.000000e+02    -2.999997e+02    4.20e-07    1.30e+01      0.16
+  220    1.29e-08    1.34e-06    -3.000000e+02    -2.999998e+02    3.60e-07    1.30e+01      0.16
+  230    1.29e-08    1.17e-06    -3.000000e+02    -2.999998e+02    3.15e-07    1.30e+01      0.16
+  240    1.29e-08    1.04e-06    -3.000000e+02    -2.999998e+02    2.80e-07    1.30e+01      0.16
+  250    1.29e-08    9.38e-07    -3.000000e+02    -2.999998e+02    2.52e-07    1.30e+01      0.16
+Residual < 1e-6 at iter = 250
+Reduced restart mask summary: checks=1 resets=0
+
+=== Solution Summary ===
+Status: OPTIMAL
+Iterations: 250
+Primal Objective: -300.00000000
+Dual Objective: -299.99984875
+Objective Gap: 2.52e-07
+Primal Residual: 1.29e-08
+Dual Residual: 9.38e-07
+Total Time: 0.16 seconds
+Preprocessing Time: 0.10861 seconds
+Presolve Time: 0.00658 seconds
+Setup Time: 0.00346 seconds
+Scaling Time: 0.00370 seconds
+Analyze Time: 0.00947 seconds
+Power Time: 0.02099 seconds
+Solve Time: 0.03926 seconds
+Folding Time: 0.10170 seconds
+Interior Percentage: 7.64331%
+Reduced Activation Checks: 25
+Reduced Active Iterations: 197
+Reduced First Iteration: 30
+Reduced Rebuilds: 1
+Reduced Build Time: 0.00138 seconds
+Reduced Last Trigger Iteration: 240
+Reduced Last Free Ratio: 0.07643
+Reduced Last Trigger Residual: 0.00000
+Reduced Last Trigger Sigma: 13.04655
+Reduced Last Free Columns: 24
+Reduced Active Iteration Ratio: 0.78800
+Reduced Average Column Ratio: 0.07643
+Reduced Average NNZ Ratio: 0.40008
+Reduced Minimum Column Ratio: 0.07643
+Reduced Minimum NNZ Ratio: 0.40008
+
+
+================================================================================
+GPU-PRESOLVER-C POSTSOLVE
+================================================================================
+Warning: postsolve original KKT check failed (but the primal solution and objective are reliable)
+Stop Tolerance: 1.00e-06
+Primal Objective: -300.00000000
+Dual Objective: 0.00000000
+Primal Residual: 3.72e-10
+Dual Residual: 1.64e+01
+Relative Gap: 9.97e-01

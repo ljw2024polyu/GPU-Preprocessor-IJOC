@@ -1,0 +1,184 @@
+Reading file /data/lp_data/Hans/graph40-40_lp.mps.gz
+problem information: nRow = 360900, nCol = 102600, nnz A = 1260900
+
+Reading time: 0.84s
+
+Numerical ranges before presolve (finite absolute values):
+  A   [1.00e+00, 1.00e+00]
+  AL  [0.00e+00, 1.00e+00]
+  AU  [0.00e+00, 2.00e+00]
+  l   [0.00e+00, 0.00e+00]
+  u   [1.00e+00, 1.00e+00]
+  c   [0.00e+00, 1.00e+00]
+Set parameter Username
+Set parameter LicenseID to value 2773703
+Academic license - for non-commercial use only - expires 2027-02-02
+Set parameter Presolve to value -1
+Set parameter TimeLimit to value 1e+100
+Gurobi presolve configuration: Presolve=-1, TimeLimit=Infinity, OutputFlag=1
+Gurobi Optimizer version 12.0.2 build v12.0.2rc0 (linux64 - "Ubuntu 22.04.5 LTS")
+
+CPU model: INTEL(R) XEON(R) GOLD 6548Y+, instruction set [SSE2|AVX|AVX2|AVX512]
+Thread count: 64 physical cores, 128 logical processors, using up to 32 threads
+
+Presolve a model with 360900 rows, 102600 columns and 1260900 nonzeros
+Model fingerprint: 0xdc9fcfc3
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 1e+00]
+  RHS range        [1e+00, 2e+00]
+Presolve removed 18300 rows and 5100 columns
+problem information: nRow = 342600, nCol = 97500, nnz A = 1206300
+
+Gurobi presolve core time: 0.52 seconds
+Gurobi reduced problem: (360900, 102600, 1260900) -> (342600, 97500, 1206300)
+result_space: GUROBI_REDUCED_MODEL
+kkt_residual_scope: REDUCED_MODEL_ONLY
+postsolve_mapping: NOT_AVAILABLE_FROM_GUROBI_PRESOLVED_MODEL_API
+original_solution_recovery: NOT_PERFORMED
+original_kkt_validation: NOT_PERFORMED
+solution_vectors: NOT_EXPORTED_THROUGH_ORIGINAL_SPACE_API
+
+Numerical ranges after presolve (finite absolute values):
+  A   [1.00e+00, 1.00e+00]
+  AL  [-Inf, -Inf]
+  AU  [0.00e+00, 2.00e+00]
+  l   [0.00e+00, 0.00e+00]
+  u   [1.00e+00, 1.00e+00]
+  c   [0.00e+00, 1.00e+00]
+
+==================================================================
+                          HPR-LP Solver                           
+     Halpern Peaceman-Rachford Linear Programming Solver          
+                                                                  
+  Version: 0.1.3                          
+                                                                  
+==================================================================
+
+Solver Parameters:
+  Device:              GPU 0
+  Max Iterations:      2147483647
+  Stopping Tolerance:  1.0e-06
+  Time Limit:          1000.0 seconds
+  Check Interval:      150 iterations
+  cuSPARSE SpMV:       Auto
+  Autotune Verbose:    Disabled
+  Reduced Matrix:      Enabled
+  Auto Memory Policy:  Disabled
+  Progress Monitor:    Enabled
+  Progress Control:    Enabled
+  Sigma Rebalance:     Enabled
+  Long Restart Guard:  Disabled
+  Restart Cooldown:    0 checks
+  Restart Debug:       Disabled
+  Sigma Debug:         Disabled
+  Fixed Sigma:         Adaptive
+  Presolver:           Gurobi
+  Scaling:
+    - Curtis-Reid:     Enabled
+    - Ruiz:            Enabled
+    - Pock-Chambolle:  Enabled
+    - Bounds/Cost:     Enabled
+  Debug Information:  Enabled
+
+
+Numerical ranges after scaling (finite absolute values):
+  A   [6.53e-03, 2.36e-01]
+  AL  [-Inf, -Inf]
+  AU  [0.00e+00, 3.41e-03]
+  l   [0.00e+00, 0.00e+00]
+  u   [2.95e-03, 2.77e-02]
+  c   [0.00e+00, 5.46e-02]
+Adaptive row/column reduction: enabled
+Compressible GPU memory: requested=yes active_allocations=29 device_supported=yes (automatic policy or manual HPRLP_ENABLE_COMPRESSIBLE_MEMORY=1)
+Setup (copy and allocation) time = 0.25 seconds
+Scaling time = 0.02 seconds
+Analyze time = 0.06 seconds
+ESTIMATING MAXIMUM EIGENVALUE time = 0.00 seconds
+ iter     errRp        errRd         p_obj            d_obj          gap         sigma       time
+    0    0.00e+00    9.45e-01    +0.000000e+00    +0.000000e+00    0.00e+00    1.05e+00      0.61
+   10    1.53e-03    2.32e-03    -3.000000e+02    -2.999744e+02    4.26e-05    1.05e+00      0.61
+  row compressed autotune: iteration=10, active_rows=68385/342600, nnz=379200/1206300, short_probes=3, finalist_probes=8, probe_total_ms=1.214
+    candidate=signed-packed/signed-packed-combined short_ms=0.019573 combined_ms=0.019244
+    candidate=cusparse/cusparse short_ms=0.022133 combined_ms=0.021763
+    candidate=fused/cusparse short_ms=0.022133 early_rejected=1
+    candidate=cusparse/fused short_ms=0.023435 early_rejected=1
+    candidate=fused/fused short_ms=0.023147 early_rejected=1
+    selected=signed-packed/signed-packed-combined incumbent=signed-packed/signed-packed-combined measured_improvement=0.0000 payback_iterations=inf
+  row backend autotune isolated_total_ms=1.480 (includes candidate descriptors and production descriptor rebuild)
+   20    9.03e-04    1.24e-03    -3.000000e+02    -2.999864e+02    2.26e-05    1.05e+00      0.68
+   30    5.32e-04    1.01e-03    -3.000000e+02    -2.999901e+02    1.65e-05    1.05e+00      0.68
+   40    8.39e-04    8.00e-04    -3.000000e+02    -2.999921e+02    1.31e-05    1.05e+00      0.68
+   50    4.10e-04    6.46e-04    -3.000000e+02    -2.999940e+02    9.99e-06    1.05e+00      0.68
+   60    3.67e-04    4.11e-04    -3.000000e+02    -2.999953e+02    7.85e-06    1.05e+00      0.68
+   70    2.32e-04    4.80e-04    -3.000000e+02    -2.999954e+02    7.68e-06    1.05e+00      0.68
+   80    1.74e-04    3.22e-04    -3.000000e+02    -2.999968e+02    5.32e-06    1.05e+00      0.68
+   90    1.92e-04    3.41e-04    -3.000000e+02    -2.999966e+02    5.60e-06    1.05e+00      0.68
+  100    1.32e-04    2.47e-04    -3.000000e+02    -2.999975e+02    4.22e-06    1.05e+00      0.68
+  110    1.79e-04    1.99e-04    -3.000000e+02    -2.999979e+02    3.56e-06    1.05e+00      0.68
+  120    1.20e-04    2.84e-04    -3.000000e+02    -2.999975e+02    4.16e-06    1.05e+00      0.68
+  130    1.27e-04    1.87e-04    -3.000000e+02    -2.999981e+02    3.17e-06    1.05e+00      0.68
+  140    1.25e-04    2.41e-04    -3.000000e+02    -2.999977e+02    3.75e-06    1.05e+00      0.69
+  150    8.98e-05    1.91e-04    -3.000000e+02    -2.999982e+02    3.06e-06    1.05e+00      0.69
+Reduced matrix restart mask reset: enabled
+Reduced row restart mask check: iteration=150 restart_flag=1 current_active=68400 fresh_active=31500 saved_rows=36900 recovery=0.53947 min_recovery=0.25000 min_saved_rows=25000 min_current_rows=95000 reset=no
+  160    1.14e-03    2.94e-05    -3.000000e+02    -3.000001e+02    1.59e-07    1.53e+01      0.69
+  170    2.17e-04    1.35e-05    -3.000000e+02    -3.000000e+02    4.32e-08    1.53e+01      0.69
+  180    2.56e-04    1.32e-05    -3.000000e+02    -3.000000e+02    6.49e-08    1.53e+01      0.69
+  190    2.07e-04    6.02e-06    -3.000000e+02    -3.000000e+02    3.70e-08    1.53e+01      0.69
+  200    1.00e-04    7.16e-06    -3.000000e+02    -3.000000e+02    1.47e-08    1.53e+01      0.69
+  210    1.37e-04    5.87e-06    -3.000000e+02    -3.000000e+02    1.30e-08    1.53e+01      0.69
+  220    8.68e-05    5.15e-06    -3.000000e+02    -3.000000e+02    4.52e-09    1.53e+01      0.69
+Residual < 1e-4 at iter = 220
+  230    9.89e-05    2.76e-06    -3.000000e+02    -3.000000e+02    5.00e-10    1.53e+01      0.69
+  240    9.50e-05    2.08e-06    -3.000000e+02    -3.000000e+02    1.72e-09    1.53e+01      0.69
+  250    8.36e-05    1.96e-06    -3.000000e+02    -3.000000e+02    1.31e-09    1.53e+01      0.69
+  260    4.98e-05    2.88e-06    -3.000000e+02    -3.000000e+02    1.37e-08    1.53e+01      0.69
+  270    8.29e-05    2.40e-06    -3.000000e+02    -3.000000e+02    8.99e-10    1.53e+01      0.69
+  280    2.24e-05    1.76e-06    -3.000000e+02    -3.000000e+02    4.59e-09    1.53e+01      0.69
+  290    7.43e-05    2.58e-06    -3.000000e+02    -3.000000e+02    9.51e-09    1.53e+01      0.69
+  300    3.26e-05    2.19e-06    -3.000000e+02    -3.000000e+02    6.10e-09    1.53e+01      0.69
+Reduced row restart mask check: iteration=300 restart_flag=3 current_active=68400 fresh_active=600 saved_rows=67800 recovery=0.99123 min_recovery=0.25000 min_saved_rows=25000 min_current_rows=95000 reset=no
+  310    2.22e-06    7.62e-06    -3.000000e+02    -3.000000e+02    4.12e-08    2.20e+00      0.69
+  320    2.96e-06    5.34e-07    -3.000000e+02    -3.000000e+02    5.82e-09    2.20e+00      0.69
+  330    6.17e-07    2.11e-06    -3.000000e+02    -3.000000e+02    1.01e-08    2.20e+00      0.69
+  340    2.11e-06    8.33e-07    -3.000000e+02    -3.000000e+02    4.11e-09    2.20e+00      0.69
+  350    4.71e-07    9.44e-07    -3.000000e+02    -3.000000e+02    3.35e-09    2.20e+00      0.69
+Residual < 1e-6 at iter = 350
+Row reduction summary: first_iteration=10 active_iterations=304 rebuilds=4 build_time=0.04 last_active_ratio=0.20 average_row_ratio=0.20 average_nnz_ratio=0.32 minimum_row_ratio=0.20 minimum_nnz_ratio=0.31
+Reduced row restart mask summary: checks=2 resets=0
+
+=== Solution Summary ===
+Status: OPTIMAL
+Iterations: 350
+Primal Objective: -300.00000000
+Dual Objective: -300.00000201
+Objective Gap: 3.35e-09
+Primal Residual: 4.71e-07
+Dual Residual: 9.44e-07
+Total Time: 0.69 seconds
+Presolve Time: 0.51833 seconds
+Setup Time: 0.25114 seconds
+Scaling Time: 0.01805 seconds
+Analyze Time: 0.05526 seconds
+Power Time: 0.00463 seconds
+Solve Time: 0.14108 seconds
+Folding Time: 0.00000 seconds
+Interior Percentage: 99.69231%
+Reduced Activation Checks: 35
+Reduced Active Iterations: 0
+Reduced First Iteration: -1
+Reduced Rebuilds: 0
+Reduced Build Time: 0.00000 seconds
+Reduced Last Trigger Iteration: -1
+Reduced Last Free Ratio: 1.00000
+Reduced Last Trigger Residual: inf
+Reduced Last Trigger Sigma: nan
+Reduced Last Free Columns: 97500
+Reduced Active Iteration Ratio: 0.00000
+Reduced Average Column Ratio: 1.00000
+Reduced Average NNZ Ratio: 1.00000
+Reduced Minimum Column Ratio: 1.00000
+Reduced Minimum NNZ Ratio: 1.00000
+

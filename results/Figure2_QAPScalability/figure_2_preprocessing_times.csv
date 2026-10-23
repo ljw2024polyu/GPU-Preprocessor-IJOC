@@ -1,0 +1,16 @@
+N,method,preprocessing_time_s,raw_log
+20,Gurobi,0.085,results/raw/table_6_figure_2/gurobi/table_6_figure_2_qap_wil100_n020_gurobi.log
+20,PSLP,0.051,results/raw/table_6_figure_2/pslp/table_6_figure_2_qap_wil100_n020_pslp.log
+20,GPU-Preprocessor,0.077,results/raw/table_6_figure_2/gpu_preprocessor/table_6_figure_2_qap_wil100_n020_gpu_preprocessor.log
+40,Gurobi,21.832,results/raw/table_6_figure_2/gurobi/table_6_figure_2_qap_wil100_n040_gurobi.log
+40,PSLP,1.009,results/raw/table_6_figure_2/pslp/table_6_figure_2_qap_wil100_n040_pslp.log
+40,GPU-Preprocessor,0.077,results/raw/table_6_figure_2/gpu_preprocessor/table_6_figure_2_qap_wil100_n040_gpu_preprocessor.log
+60,Gurobi,133.085,results/raw/table_6_figure_2/gurobi/table_6_figure_2_qap_wil100_n060_gurobi.log
+60,PSLP,4.735,results/raw/table_6_figure_2/pslp/table_6_figure_2_qap_wil100_n060_pslp.log
+60,GPU-Preprocessor,0.083,results/raw/table_6_figure_2/gpu_preprocessor/table_6_figure_2_qap_wil100_n060_gpu_preprocessor.log
+80,Gurobi,408.014,results/raw/table_6_figure_2/gurobi/table_6_figure_2_qap_wil100_n080_gurobi.log
+80,PSLP,15.580,results/raw/table_6_figure_2/pslp/table_6_figure_2_qap_wil100_n080_pslp.log
+80,GPU-Preprocessor,0.248,results/raw/table_6_figure_2/gpu_preprocessor/table_6_figure_2_qap_wil100_n080_gpu_preprocessor.log
+100,Gurobi,792.621,results/raw/table_6_figure_2/gurobi/table_6_figure_2_qap_wil100_n100_gurobi.log
+100,PSLP,45.357,results/raw/table_6_figure_2/pslp/table_6_figure_2_qap_wil100_n100_pslp.log
+100,GPU-Preprocessor,0.359,results/raw/table_6_figure_2/gpu_preprocessor/table_6_figure_2_qap_wil100_n100_gpu_preprocessor.log

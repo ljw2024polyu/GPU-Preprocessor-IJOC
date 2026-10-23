@@ -1,0 +1,361 @@
+Reading file /data/lp_data/Hans/Primal2_1000.mps.gz
+problem information: nRow = 1299380, nCol = 2559380, nnz A = 5498140
+
+Reading time: 3.48s
+
+Numerical ranges before presolve (finite absolute values):
+  A   [1.00e+00, 3.48e+02]
+  AL  [0.00e+00, 7.99e+02]
+  AU  [0.00e+00, 7.99e+02]
+  l   [0.00e+00, 0.00e+00]
+  u   [1.00e-08, 1.00e+06]
+  c   [0.00e+00, 3.42e+05]
+Doing presolve (GPU-Presolver-C folding)...
+GPU-Presolver-C configuration: folding=true, presolve=true, new_rules=true
+GPU-Presolver-C folding time: 0.03 seconds
+GPU-Presolver-C folding: (1299380, 2559380) -> (1299380, 2559380)
+
+GPU-Presolver-C presolve time: 0.58639661 seconds
+GPU-Presolver-C preprocessing time: 0.62483072 seconds
+GPU-Presolver-C presolve workspace setup time: 0.005670277 seconds
+GPU-Presolver-C presolve workspace release time: 0.002955383 seconds
+GPU-Presolver-C presolve: (1299380, 2559380) -> (680000, 650620)
+
+GPU-resident packed-dictionary metadata: active
+GPU-resident unit/state operator metadata: active
+GPU-Presolver-C reduced model:
+problem information: nRow = 680000, nCol = 650620, nnz A = 2970000
+
+GPU-resident presolve-to-solver handoff: active
+
+Numerical ranges after presolve (finite absolute values):
+  A   [1.00e+00, 3.48e+02]
+  AL  [0.00e+00, 0.00e+00]
+  AU  [0.00e+00, 7.99e+02]
+  l   [0.00e+00, 4.00e-08]
+  u   [1.00e+00, 1.00e+06]
+  c   [6.15e-01, 3.42e+05]
+
+==================================================================
+                          HPR-LP Solver                           
+     Halpern Peaceman-Rachford Linear Programming Solver          
+                                                                  
+  Version: 0.1.3                          
+                                                                  
+==================================================================
+
+Solver Parameters:
+  Device:              GPU 0
+  Max Iterations:      2147483647
+  Stopping Tolerance:  1.0e-06
+  Time Limit:          1000.0 seconds
+  Check Interval:      150 iterations
+  cuSPARSE SpMV:       Auto
+  Autotune Verbose:    Disabled
+  Reduced Matrix:      Enabled
+  Auto Memory Policy:  Disabled
+  Progress Monitor:    Enabled
+  Progress Control:    Enabled
+  Sigma Rebalance:     Enabled
+  Long Restart Guard:  Disabled
+  Restart Cooldown:    0 checks
+  Restart Debug:       Disabled
+  Sigma Debug:         Disabled
+  Fixed Sigma:         Adaptive
+  Presolver:           GPU-Presolver-C
+  GPU Folding:         Enabled
+  GPU Presolve:        Enabled
+  GPU New Rules:       Enabled
+  Scaling:
+    - Curtis-Reid:     Enabled
+    - Ruiz:            Enabled
+    - Pock-Chambolle:  Enabled
+    - Bounds/Cost:     Enabled
+  Debug Information:  Enabled
+
+
+Numerical ranges after scaling (finite absolute values):
+  A   [4.43e-03, 4.08e-01]
+  AL  [0.00e+00, 0.00e+00]
+  AU  [0.00e+00, 5.27e-03]
+  l   [0.00e+00, 9.62e-09]
+  u   [9.53e-03, 6.91e+02]
+  c   [6.78e-05, 7.82e-03]
+Adaptive row/column reduction: enabled
+Compressible GPU memory: requested=yes active_allocations=39 device_supported=yes (automatic policy or manual HPRLP_ENABLE_COMPRESSIBLE_MEMORY=1)
+Setup (copy and allocation) time = 0.00 seconds
+Scaling time = 0.05 seconds
+Analyze time = 0.05 seconds
+ESTIMATING MAXIMUM EIGENVALUE time = 0.01 seconds
+ iter     errRp        errRd         p_obj            d_obj          gap         sigma       time
+    0    9.96e-07    1.00e+00    +4.243381e+08    +4.243381e+08    0.00e+00    1.00e+00      0.75
+   10    1.81e-01    2.96e+00    +3.740630e+08    +4.167589e+08    5.40e-02    1.00e+00      0.75
+   20    7.32e-02    1.17e+00    +3.833344e+08    +4.023289e+08    2.42e-02    1.00e+00      0.75
+   30    5.96e-02    8.23e-01    +3.849860e+08    +3.992079e+08    1.81e-02    1.00e+00      0.76
+   40    3.70e-02    5.99e-01    +3.880504e+08    +3.981645e+08    1.29e-02    1.00e+00      0.76
+   50    3.04e-02    4.82e-01    +3.893205e+08    +3.973909e+08    1.03e-02    1.00e+00      0.76
+   60    2.36e-02    3.83e-01    +3.900369e+08    +3.961502e+08    7.78e-03    1.00e+00      0.76
+   70    2.51e-02    3.63e-01    +3.899311e+08    +3.965600e+08    8.43e-03    1.00e+00      0.76
+   80    1.91e-02    2.82e-01    +3.907496e+08    +3.956656e+08    6.25e-03    1.00e+00      0.76
+   90    1.58e-02    2.84e-01    +3.911668e+08    +3.959683e+08    6.10e-03    1.00e+00      0.76
+  100    1.75e-02    2.26e-01    +3.910193e+08    +3.951799e+08    5.29e-03    1.00e+00      0.76
+  110    1.41e-02    2.39e-01    +3.913129e+08    +3.955443e+08    5.38e-03    1.00e+00      0.76
+  120    1.43e-02    1.88e-01    +3.914991e+08    +3.951527e+08    4.64e-03    1.00e+00      0.77
+  130    1.11e-02    1.96e-01    +3.917429e+08    +3.950281e+08    4.18e-03    1.00e+00      0.77
+  140    1.28e-02    1.65e-01    +3.916357e+08    +3.950171e+08    4.30e-03    1.00e+00      0.77
+  150    9.97e-03    1.66e-01    +3.919129e+08    +3.948105e+08    3.68e-03    1.00e+00      0.77
+Reduced matrix restart mask reset: enabled
+  160    1.46e-03    5.71e-03    +3.933978e+08    +3.933098e+08    1.12e-04    9.19e-01      0.77
+  reduced compressed autotune: iteration=160, shape=680000x161197, nnz=706144, short_probes=3, finalist_probes=8, probe_total_ms=2.360
+    candidate=cusparse/nonempty-cusparse+defer short_ms=0.051296 combined_ms=0.051488
+    candidate=fused/nonempty-cusparse+defer short_ms=0.059243 early_rejected=1
+    candidate=cusparse/fused+defer short_ms=0.052224 combined_ms=0.052186
+    candidate=fused/fused+defer short_ms=0.060384 early_rejected=1
+    selected=cusparse/nonempty-cusparse+defer incumbent=cusparse/nonempty-cusparse+defer measured_improvement=0.0000 payback_iterations=inf
+  reduced compressed autotune isolated_total_ms=3.827 (candidate and production descriptors included)
+  170    2.53e-03    5.79e-03    +3.931435e+08    +3.936266e+08    6.14e-04    9.19e-01      0.78
+  180    1.18e-03    4.61e-03    +3.934476e+08    +3.936418e+08    2.47e-04    9.19e-01      0.78
+  190    1.69e-03    4.14e-03    +3.933113e+08    +3.935687e+08    3.27e-04    9.19e-01      0.78
+  200    1.59e-03    4.39e-03    +3.933210e+08    +3.936679e+08    4.41e-04    9.19e-01      0.78
+  210    1.24e-03    4.41e-03    +3.933964e+08    +3.936083e+08    2.69e-04    9.19e-01      0.78
+  220    1.67e-03    4.47e-03    +3.932814e+08    +3.936166e+08    4.26e-04    9.19e-01      0.79
+  230    1.33e-03    4.24e-03    +3.933554e+08    +3.936498e+08    3.74e-04    9.19e-01      0.79
+  240    1.44e-03    4.31e-03    +3.933183e+08    +3.935909e+08    3.46e-04    9.19e-01      0.79
+  250    1.54e-03    4.25e-03    +3.932871e+08    +3.936428e+08    4.52e-04    9.19e-01      0.79
+  260    1.25e-03    4.49e-03    +3.933474e+08    +3.935969e+08    3.17e-04    9.19e-01      0.79
+  270    1.65e-03    4.28e-03    +3.932443e+08    +3.935966e+08    4.48e-04    9.19e-01      0.79
+  280    1.24e-03    4.46e-03    +3.933351e+08    +3.936043e+08    3.42e-04    9.19e-01      0.80
+  290    1.56e-03    4.51e-03    +3.932497e+08    +3.935607e+08    3.95e-04    9.19e-01      0.80
+  300    1.34e-03    4.53e-03    +3.933017e+08    +3.935772e+08    3.50e-04    9.19e-01      0.80
+Reduced restart mask check: iteration=300 restart_flag=3 current_free=161588 fresh_free=131153 saved_columns=30435 recovery=0.18835 min_recovery=0.25000 min_saved_columns=25000 min_current_columns=95000 reset=no
+  310    1.82e-03    2.22e-03    +3.931721e+08    +3.935094e+08    4.29e-04    2.01e+00      0.80
+  320    1.43e-03    2.09e-03    +3.932615e+08    +3.934907e+08    2.91e-04    2.01e+00      0.80
+  330    1.54e-03    1.99e-03    +3.932229e+08    +3.934812e+08    3.28e-04    2.01e+00      0.80
+  340    1.48e-03    2.00e-03    +3.932278e+08    +3.934750e+08    3.14e-04    2.01e+00      0.80
+  350    1.52e-03    1.97e-03    +3.932167e+08    +3.934550e+08    3.03e-04    2.01e+00      0.80
+  360    1.52e-03    2.21e-03    +3.932121e+08    +3.934414e+08    2.92e-04    2.01e+00      0.80
+  370    1.46e-03    1.89e-03    +3.932282e+08    +3.934271e+08    2.53e-04    2.01e+00      0.80
+  380    1.52e-03    1.97e-03    +3.932077e+08    +3.934348e+08    2.89e-04    2.01e+00      0.81
+  390    1.34e-03    2.02e-03    +3.932358e+08    +3.934154e+08    2.28e-04    2.01e+00      0.81
+  400    1.41e-03    2.14e-03    +3.932113e+08    +3.934315e+08    2.80e-04    2.01e+00      0.81
+  410    1.31e-03    2.14e-03    +3.932291e+08    +3.934096e+08    2.29e-04    2.01e+00      0.81
+  420    1.39e-03    2.00e-03    +3.932101e+08    +3.934205e+08    2.68e-04    2.01e+00      0.81
+  430    1.34e-03    2.03e-03    +3.932195e+08    +3.934059e+08    2.37e-04    2.01e+00      0.81
+  440    1.37e-03    1.99e-03    +3.932104e+08    +3.934105e+08    2.54e-04    2.01e+00      0.81
+  450    1.36e-03    2.08e-03    +3.932085e+08    +3.933997e+08    2.43e-04    2.01e+00      0.81
+Reduced restart mask check: iteration=450 restart_flag=3 current_free=161605 fresh_free=98217 saved_columns=63388 recovery=0.39224 min_recovery=0.25000 min_saved_columns=25000 min_current_columns=95000 reset=yes
+  460    1.66e-03    9.70e-04    +3.931427e+08    +3.933768e+08    2.98e-04    4.73e+00      0.82
+  470    1.50e-03    9.55e-04    +3.931769e+08    +3.933713e+08    2.47e-04    4.73e+00      0.82
+  480    1.60e-03    9.74e-04    +3.931460e+08    +3.933590e+08    2.71e-04    4.73e+00      0.82
+  490    1.28e-03    1.02e-03    +3.932060e+08    +3.933582e+08    1.94e-04    4.73e+00      0.82
+  500    1.37e-03    1.02e-03    +3.931738e+08    +3.933513e+08    2.26e-04    4.73e+00      0.83
+  510    1.52e-03    1.04e-03    +3.931550e+08    +3.933493e+08    2.47e-04    4.73e+00      0.83
+  520    1.69e-03    1.01e-03    +3.931249e+08    +3.933295e+08    2.60e-04    4.73e+00      0.83
+  530    1.49e-03    9.72e-04    +3.931717e+08    +3.933280e+08    1.99e-04    4.73e+00      0.83
+  540    1.56e-03    1.03e-03    +3.931318e+08    +3.933210e+08    2.41e-04    4.73e+00      0.83
+  550    1.33e-03    1.07e-03    +3.931889e+08    +3.933132e+08    1.58e-04    4.73e+00      0.83
+  560    1.54e-03    1.09e-03    +3.931236e+08    +3.933150e+08    2.43e-04    4.73e+00      0.84
+  570    1.57e-03    1.07e-03    +3.931214e+08    +3.932987e+08    2.26e-04    4.73e+00      0.84
+  580    1.35e-03    1.13e-03    +3.931777e+08    +3.932961e+08    1.51e-04    4.73e+00      0.84
+  590    1.53e-03    9.48e-04    +3.931170e+08    +3.932976e+08    2.30e-04    4.73e+00      0.84
+  600    1.37e-03    9.07e-04    +3.931594e+08    +3.932917e+08    1.68e-04    4.73e+00      0.84
+Reduced restart mask check: iteration=600 restart_flag=3 current_free=99203 fresh_free=75709 saved_columns=23494 recovery=0.23683 min_recovery=0.25000 min_saved_columns=25000 min_current_columns=95000 reset=no
+  610    2.22e-03    5.62e-04    +3.930111e+08    +3.932771e+08    3.38e-04    1.32e+01      0.84
+  620    1.96e-03    5.21e-04    +3.930723e+08    +3.932656e+08    2.46e-04    1.32e+01      0.85
+  630    1.46e-03    3.87e-04    +3.931182e+08    +3.932660e+08    1.88e-04    1.32e+01      0.85
+  640    1.45e-03    3.33e-04    +3.931069e+08    +3.932661e+08    2.02e-04    1.32e+01      0.85
+  650    1.71e-03    3.61e-04    +3.930791e+08    +3.932577e+08    2.27e-04    1.32e+01      0.85
+  660    1.63e-03    4.35e-04    +3.930965e+08    +3.932532e+08    1.99e-04    1.32e+01      0.86
+  670    1.53e-03    4.27e-04    +3.931028e+08    +3.932488e+08    1.86e-04    1.32e+01      0.86
+  680    1.44e-03    3.71e-04    +3.931225e+08    +3.932488e+08    1.61e-04    1.32e+01      0.86
+  690    1.45e-03    3.69e-04    +3.931055e+08    +3.932465e+08    1.79e-04    1.32e+01      0.86
+  700    1.56e-03    3.63e-04    +3.930900e+08    +3.932457e+08    1.98e-04    1.32e+01      0.86
+  710    1.62e-03    5.39e-04    +3.930777e+08    +3.932344e+08    1.99e-04    1.32e+01      0.86
+  720    1.74e-03    4.53e-04    +3.930845e+08    +3.932315e+08    1.87e-04    1.32e+01      0.87
+  730    1.62e-03    3.56e-04    +3.930870e+08    +3.932278e+08    1.79e-04    1.32e+01      0.87
+  740    1.64e-03    3.89e-04    +3.930698e+08    +3.932267e+08    2.00e-04    1.32e+01      0.87
+  750    1.53e-03    4.43e-04    +3.930850e+08    +3.932271e+08    1.81e-04    1.32e+01      0.87
+Reduced restart mask check: iteration=750 restart_flag=3 current_free=99578 fresh_free=57080 saved_columns=42498 recovery=0.42678 min_recovery=0.25000 min_saved_columns=25000 min_current_columns=95000 reset=yes
+  760    3.74e-03    1.86e-04    +3.929522e+08    +3.932129e+08    3.32e-04    5.08e+01      0.88
+  770    4.41e-03    2.72e-04    +3.927589e+08    +3.932035e+08    5.66e-04    5.08e+01      0.88
+  780    2.82e-03    1.96e-04    +3.929718e+08    +3.931965e+08    2.86e-04    5.08e+01      0.88
+  790    3.28e-03    1.87e-04    +3.931006e+08    +3.931912e+08    1.15e-04    5.08e+01      0.88
+  800    2.99e-03    2.00e-04    +3.931348e+08    +3.931886e+08    6.84e-05    5.08e+01      0.88
+  810    3.54e-03    1.93e-04    +3.930718e+08    +3.931837e+08    1.42e-04    5.08e+01      0.89
+  820    3.18e-03    1.75e-04    +3.931390e+08    +3.931794e+08    5.14e-05    5.08e+01      0.89
+  830    2.42e-03    1.88e-04    +3.931610e+08    +3.931792e+08    2.31e-05    5.08e+01      0.89
+  840    2.30e-03    2.46e-04    +3.931123e+08    +3.931784e+08    8.40e-05    5.08e+01      0.89
+  850    2.28e-03    1.43e-04    +3.930052e+08    +3.931770e+08    2.19e-04    5.08e+01      0.89
+  860    2.38e-03    1.01e-04    +3.930595e+08    +3.931739e+08    1.46e-04    5.08e+01      0.89
+  870    1.84e-03    1.32e-04    +3.931297e+08    +3.931746e+08    5.71e-05    5.08e+01      0.90
+  880    2.19e-03    1.46e-04    +3.930579e+08    +3.931723e+08    1.46e-04    5.08e+01      0.90
+  890    1.83e-03    1.27e-04    +3.931451e+08    +3.931719e+08    3.41e-05    5.08e+01      0.90
+  900    2.06e-03    1.13e-04    +3.930865e+08    +3.931710e+08    1.07e-04    5.08e+01      0.90
+  910    1.83e-03    1.07e-04    +3.930994e+08    +3.931686e+08    8.81e-05    5.08e+01      0.90
+  920    1.74e-03    1.35e-04    +3.930717e+08    +3.931694e+08    1.24e-04    5.08e+01      0.91
+  930    1.78e-03    1.10e-04    +3.930541e+08    +3.931704e+08    1.48e-04    5.08e+01      0.91
+  940    2.01e-03    1.06e-04    +3.930396e+08    +3.931684e+08    1.64e-04    5.08e+01      0.91
+  950    1.90e-03    1.22e-04    +3.930948e+08    +3.931669e+08    9.17e-05    5.08e+01      0.91
+  960    1.78e-03    1.29e-04    +3.931178e+08    +3.931680e+08    6.38e-05    5.08e+01      0.91
+  970    1.74e-03    1.20e-04    +3.930723e+08    +3.931677e+08    1.21e-04    5.08e+01      0.91
+  980    1.80e-03    9.67e-05    +3.930549e+08    +3.931665e+08    1.42e-04    5.08e+01      0.92
+  990    1.51e-03    1.04e-04    +3.931213e+08    +3.931665e+08    5.75e-05    5.08e+01      0.92
+ 1000    1.73e-03    1.26e-04    +3.930575e+08    +3.931672e+08    1.39e-04    5.08e+01      0.92
+Reduced restart mask check: iteration=1050 restart_flag=3 current_free=58775 fresh_free=35604 saved_columns=23171 recovery=0.39423 min_recovery=0.25000 min_saved_columns=25000 min_current_columns=95000 reset=no
+ 1100    2.95e-03    7.37e-05    +3.931536e+08    +3.931602e+08    8.42e-06    9.78e+01      0.93
+ 1200    1.45e-03    3.99e-05    +3.930889e+08    +3.931592e+08    8.94e-05    9.78e+01      0.93
+ 1300    1.38e-03    4.27e-05    +3.931031e+08    +3.931596e+08    7.19e-05    9.78e+01      0.94
+Reduced restart mask check: iteration=1350 restart_flag=3 current_free=59064 fresh_free=37080 saved_columns=21984 recovery=0.37221 min_recovery=0.25000 min_saved_columns=25000 min_current_columns=95000 reset=no
+ 1400    1.35e-03    1.36e-04    +3.930890e+08    +3.931595e+08    8.97e-05    2.87e+01      0.94
+ 1500    1.35e-03    1.35e-04    +3.930862e+08    +3.931604e+08    9.44e-05    2.87e+01      0.95
+ 1600    1.35e-03    1.35e-04    +3.930869e+08    +3.931611e+08    9.44e-05    2.87e+01      0.96
+ 1700    1.35e-03    1.35e-04    +3.930869e+08    +3.931617e+08    9.52e-05    2.87e+01      0.96
+ 1800    1.34e-03    1.35e-04    +3.930876e+08    +3.931623e+08    9.49e-05    2.87e+01      0.97
+Reduced restart mask check: iteration=1800 restart_flag=3 current_free=59424 fresh_free=38599 saved_columns=20825 recovery=0.35045 min_recovery=0.25000 min_saved_columns=25000 min_current_columns=95000 reset=no
+ 1900    1.45e-03    1.21e-03    +3.930828e+08    +3.931654e+08    1.05e-04    3.12e+00      0.97
+ 2000    1.33e-03    1.24e-03    +3.930886e+08    +3.931701e+08    1.04e-04    3.12e+00      0.98
+ 2100    1.33e-03    1.24e-03    +3.930889e+08    +3.931755e+08    1.10e-04    3.12e+00      0.99
+ 2200    1.33e-03    1.24e-03    +3.930885e+08    +3.931806e+08    1.17e-04    3.12e+00      1.00
+Reduced restart mask check: iteration=2250 restart_flag=3 current_free=62367 fresh_free=42953 saved_columns=19414 recovery=0.31129 min_recovery=0.25000 min_saved_columns=25000 min_current_columns=95000 reset=no
+ 2300    1.33e-03    9.11e-03    +3.930889e+08    +3.931978e+08    1.38e-04    4.24e-01      1.01
+ 2400    1.34e-03    9.08e-03    +3.930878e+08    +3.932294e+08    1.80e-04    4.24e-01      1.02
+ 2500    1.33e-03    9.13e-03    +3.930889e+08    +3.932619e+08    2.20e-04    4.24e-01      1.02
+ 2600    1.32e-03    9.16e-03    +3.930900e+08    +3.933004e+08    2.68e-04    4.24e-01      1.04
+ 2700    1.32e-03    9.13e-03    +3.930909e+08    +3.933380e+08    3.14e-04    4.24e-01      1.04
+ 2800    1.31e-03    2.27e-01    +3.930810e+08    +3.924634e+08    7.86e-04    4.24e-01      1.07
+ 2900    7.68e-04    1.45e-03    +3.932424e+08    +3.933593e+08    1.49e-04    5.55e+00      1.11
+ 3000    4.58e-04    6.70e-04    +3.934104e+08    +3.933592e+08    6.50e-05    5.55e+00      1.12
+ 3100    8.63e-04    2.57e-04    +3.934794e+08    +3.933597e+08    1.52e-04    1.00e+01      1.13
+ 3200    1.99e-04    2.25e-04    +3.933835e+08    +3.933610e+08    2.86e-05    1.00e+01      1.14
+ 3300    4.20e-04    2.94e-04    +3.934151e+08    +3.933594e+08    7.07e-05    1.00e+01      1.15
+ 3400    3.88e-04    2.18e-04    +3.934124e+08    +3.933595e+08    6.73e-05    1.00e+01      1.15
+ 3500    2.79e-04    1.77e-04    +3.934002e+08    +3.933585e+08    5.31e-05    1.00e+01      1.16
+ 3600    2.44e-04    1.26e-04    +3.933927e+08    +3.933593e+08    4.24e-05    1.00e+01      1.17
+ 3700    1.19e-04    9.51e-05    +3.933699e+08    +3.933589e+08    1.39e-05    1.00e+01      1.18
+Reduced restart mask check: iteration=3750 restart_flag=3 current_free=50184 fresh_free=36679 saved_columns=13505 recovery=0.26911 min_recovery=0.25000 min_saved_columns=25000 min_current_columns=95000 reset=no
+ 3800    1.27e-04    3.45e-05    +3.933755e+08    +3.933582e+08    2.19e-05    8.46e+00      1.19
+ 3900    1.14e-04    2.64e-05    +3.933717e+08    +3.933584e+08    1.69e-05    8.46e+00      1.20
+ 4000    6.91e-05    2.24e-05    +3.933657e+08    +3.933584e+08    9.35e-06    8.46e+00      1.20
+Residual < 1e-4 at iter = 4000
+ 4100    4.66e-05    1.45e-05    +3.933608e+08    +3.933583e+08    3.17e-06    8.46e+00      1.21
+ 4200    5.88e-05    8.25e-06    +3.933592e+08    +3.933584e+08    1.09e-06    8.46e+00      1.22
+ 4300    4.88e-05    6.27e-06    +3.933583e+08    +3.933584e+08    2.07e-07    8.46e+00      1.22
+ 4400    3.99e-05    4.22e-06    +3.933586e+08    +3.933584e+08    3.46e-07    8.46e+00      1.23
+ 4500    5.03e-05    4.39e-06    +3.933596e+08    +3.933584e+08    1.54e-06    8.46e+00      1.24
+ 4600    6.21e-05    4.12e-06    +3.933596e+08    +3.933584e+08    1.60e-06    8.46e+00      1.27
+ 4700    3.59e-05    6.93e-06    +3.933595e+08    +3.933584e+08    1.35e-06    8.46e+00      1.28
+ 4800    7.17e-05    4.96e-06    +3.933580e+08    +3.933584e+08    5.48e-07    8.46e+00      1.29
+Reduced restart mask check: iteration=4800 restart_flag=3 current_free=53210 fresh_free=36680 saved_columns=16530 recovery=0.31066 min_recovery=0.25000 min_saved_columns=25000 min_current_columns=95000 reset=no
+ 4900    8.55e-05    3.47e-06    +3.933576e+08    +3.933584e+08    9.06e-07    5.42e+00      1.29
+ 5000    3.05e-05    1.19e-06    +3.933582e+08    +3.933584e+08    2.38e-07    5.42e+00      1.30
+ 5100    3.31e-05    4.98e-06    +3.933579e+08    +3.933584e+08    6.38e-07    5.42e+00      1.31
+ 5200    3.21e-05    2.56e-06    +3.933576e+08    +3.933584e+08    1.05e-06    5.42e+00      1.31
+ 5300    2.90e-05    4.33e-06    +3.933577e+08    +3.933584e+08    8.93e-07    5.42e+00      1.32
+ 5400    3.10e-05    3.31e-06    +3.933580e+08    +3.933584e+08    5.21e-07    5.42e+00      1.36
+ 5500    2.23e-05    4.92e-06    +3.933581e+08    +3.933584e+08    3.29e-07    5.42e+00      1.36
+ 5600    2.36e-05    1.70e-06    +3.933583e+08    +3.933585e+08    2.48e-07    5.42e+00      1.37
+ 5700    2.63e-05    2.52e-06    +3.933581e+08    +3.933585e+08    3.99e-07    5.42e+00      1.38
+Reduced restart mask check: iteration=5700 restart_flag=2 current_free=54172 fresh_free=38816 saved_columns=15356 recovery=0.28347 min_recovery=0.25000 min_saved_columns=25000 min_current_columns=95000 reset=no
+ 5800    2.89e-05    2.96e-06    +3.933580e+08    +3.933584e+08    5.80e-07    3.25e+00      1.38
+ 5900    2.31e-05    1.13e-06    +3.933580e+08    +3.933584e+08    5.42e-07    3.25e+00      1.39
+ 6000    2.30e-05    1.45e-06    +3.933581e+08    +3.933584e+08    4.26e-07    3.25e+00      1.40
+ 6100    2.82e-05    4.68e-06    +3.933581e+08    +3.933585e+08    4.88e-07    3.25e+00      1.40
+ 6200    2.14e-05    2.77e-06    +3.933581e+08    +3.933585e+08    5.05e-07    3.25e+00      1.46
+ 6300    2.16e-05    3.03e-06    +3.933581e+08    +3.933584e+08    4.06e-07    3.25e+00      1.46
+ 6400    2.68e-05    3.12e-06    +3.933581e+08    +3.933585e+08    4.49e-07    3.25e+00      1.47
+ 6500    2.34e-05    2.15e-06    +3.933582e+08    +3.933585e+08    3.97e-07    3.25e+00      1.48
+ 6600    2.19e-05    2.08e-06    +3.933581e+08    +3.933585e+08    4.04e-07    3.25e+00      1.49
+ 6700    2.11e-05    1.32e-06    +3.933582e+08    +3.933585e+08    3.41e-07    3.25e+00      1.49
+ 6800    2.09e-05    1.43e-06    +3.933584e+08    +3.933584e+08    8.70e-08    3.25e+00      1.50
+ 6900    2.06e-05    1.13e-06    +3.933583e+08    +3.933584e+08    2.21e-07    3.25e+00      1.51
+ 7000    1.97e-05    3.10e-06    +3.933578e+08    +3.933584e+08    7.92e-07    3.25e+00      1.52
+ 7100    2.35e-05    6.71e-06    +3.933578e+08    +3.933584e+08    7.22e-07    3.25e+00      1.57
+ 7200    1.97e-05    3.83e-06    +3.933586e+08    +3.933584e+08    2.55e-07    3.25e+00      1.57
+Reduced restart mask check: iteration=7200 restart_flag=3 current_free=55818 fresh_free=39955 saved_columns=15863 recovery=0.28419 min_recovery=0.25000 min_saved_columns=25000 min_current_columns=95000 reset=no
+ 7300    2.40e-05    7.37e-06    +3.933585e+08    +3.933584e+08    1.01e-07    1.36e+00      1.58
+ 7400    1.85e-05    4.12e-06    +3.933583e+08    +3.933584e+08    1.43e-07    1.36e+00      1.59
+ 7500    1.71e-05    2.14e-06    +3.933583e+08    +3.933584e+08    1.20e-07    1.36e+00      1.60
+ 7600    1.66e-05    2.71e-06    +3.933583e+08    +3.933583e+08    5.46e-08    1.36e+00      1.60
+ 7700    1.63e-05    2.16e-06    +3.933583e+08    +3.933584e+08    1.79e-07    1.36e+00      1.61
+ 7800    1.72e-05    2.75e-06    +3.933583e+08    +3.933584e+08    1.10e-07    1.36e+00      1.62
+ 7900    1.79e-05    3.07e-06    +3.933583e+08    +3.933585e+08    1.97e-07    1.36e+00      1.63
+ 8000    1.76e-05    1.10e-06    +3.933583e+08    +3.933584e+08    1.41e-07    1.36e+00      1.64
+ 8100    1.72e-05    5.41e-06    +3.933583e+08    +3.933584e+08    1.59e-07    1.36e+00      1.64
+ 8200    1.96e-05    2.42e-06    +3.933583e+08    +3.933584e+08    2.03e-07    1.36e+00      1.65
+ 8300    1.70e-05    6.69e-06    +3.933584e+08    +3.933584e+08    2.23e-08    1.36e+00      1.66
+ 8400    1.69e-05    3.88e-06    +3.933583e+08    +3.933584e+08    8.98e-08    1.36e+00      1.67
+ 8500    1.66e-05    3.25e-06    +3.933582e+08    +3.933583e+08    1.24e-07    1.36e+00      1.67
+ 8600    1.60e-05    4.73e-06    +3.933582e+08    +3.933585e+08    3.09e-07    1.36e+00      1.68
+ 8700    1.59e-05    4.34e-06    +3.933583e+08    +3.933585e+08    2.32e-07    1.36e+00      1.69
+ 8800    1.62e-05    4.56e-06    +3.933583e+08    +3.933584e+08    1.59e-07    1.36e+00      1.69
+ 8900    1.60e-05    3.46e-06    +3.933583e+08    +3.933585e+08    2.29e-07    1.36e+00      1.70
+ 9000    1.64e-05    2.97e-06    +3.933583e+08    +3.933584e+08    1.20e-07    1.36e+00      1.71
+Reduced restart mask check: iteration=9000 restart_flag=3 current_free=59139 fresh_free=47689 saved_columns=11450 recovery=0.19361 min_recovery=0.25000 min_saved_columns=25000 min_current_columns=95000 reset=no
+ 9100    1.54e-05    9.70e-06    +3.933583e+08    +3.933576e+08    8.45e-07    1.26e-01      1.72
+ 9200    1.47e-05    1.16e-05    +3.933583e+08    +3.933568e+08    1.85e-06    1.26e-01      1.73
+ 9300    1.35e-05    1.61e-05    +3.933583e+08    +3.933560e+08    3.02e-06    1.26e-01      1.74
+ 9400    1.24e-05    1.67e-05    +3.933584e+08    +3.933556e+08    3.58e-06    1.26e-01      1.75
+ 9500    1.17e-05    1.49e-05    +3.933584e+08    +3.933560e+08    3.05e-06    1.26e-01      1.76
+ 9600    1.16e-05    1.07e-05    +3.933584e+08    +3.933560e+08    3.11e-06    1.26e-01      1.77
+ 9700    1.15e-05    4.04e-05    +3.933584e+08    +3.933552e+08    3.98e-06    1.26e-01      1.78
+ 9800    9.94e-06    1.32e-05    +3.933584e+08    +3.933547e+08    4.69e-06    1.26e-01      1.79
+ 9900    9.59e-06    1.93e-05    +3.933585e+08    +3.933550e+08    4.44e-06    1.26e-01      1.80
+10000    8.89e-06    2.19e-05    +3.933585e+08    +3.933567e+08    2.26e-06    1.26e-01      1.81
+11000    6.07e-06    3.80e-05    +3.933585e+08    +3.933580e+08    6.45e-07    1.26e-01      1.88
+Reduced restart mask check: iteration=11250 restart_flag=3 current_free=82944 fresh_free=68504 saved_columns=14440 recovery=0.17409 min_recovery=0.25000 min_saved_columns=25000 min_current_columns=95000 reset=no
+12000    3.34e-06    2.01e-05    +3.933585e+08    +3.933582e+08    4.22e-07    8.11e-02      1.95
+13000    2.35e-06    5.78e-06    +3.933586e+08    +3.933575e+08    1.41e-06    8.11e-02      2.02
+Reduced restart mask check: iteration=13500 restart_flag=2 current_free=101537 fresh_free=90080 saved_columns=11457 recovery=0.11284 min_recovery=0.25000 min_saved_columns=25000 min_current_columns=95000 reset=no
+14000    5.18e-07    1.26e-05    +3.933586e+08    +3.933577e+08    1.17e-06    4.37e-02      2.09
+15000    2.90e-07    7.67e-06    +3.933586e+08    +3.933586e+08    4.06e-08    4.37e-02      2.15
+Reduced restart mask check: iteration=15150 restart_flag=2 current_free=112544 fresh_free=100505 saved_columns=12039 recovery=0.10697 min_recovery=0.25000 min_saved_columns=25000 min_current_columns=95000 reset=no
+15750    2.45e-07    9.89e-07    +3.933586e+08    +3.933587e+08    5.41e-08    8.82e-02      2.22
+Residual < 1e-6 at iter = 15750
+Reduced restart mask summary: checks=16 resets=2
+Reduced deferred empty-row summary: flushes=220 iterations=13238
+
+=== Solution Summary ===
+Status: OPTIMAL
+Iterations: 15750
+Primal Objective: 393358645.50007838
+Dual Objective: 393358688.08437335
+Objective Gap: 5.41e-08
+Primal Residual: 2.45e-07
+Dual Residual: 9.89e-07
+Total Time: 2.22 seconds
+Preprocessing Time: 0.62483 seconds
+Presolve Time: 0.58640 seconds
+Setup Time: 0.00392 seconds
+Scaling Time: 0.04863 seconds
+Analyze Time: 0.04724 seconds
+Power Time: 0.01251 seconds
+Solve Time: 1.53120 seconds
+Folding Time: 0.02964 seconds
+Interior Percentage: 17.53281%
+Reduced Activation Checks: 262
+Reduced Active Iterations: 13238
+Reduced First Iteration: 160
+Reduced Rebuilds: 40
+Reduced Build Time: 0.17111 seconds
+Reduced Last Trigger Iteration: 15600
+Reduced Last Free Ratio: 0.17473
+Reduced Last Trigger Residual: 0.00000
+Reduced Last Trigger Sigma: 0.08817
+Reduced Last Free Columns: 111710
+Reduced Active Iteration Ratio: 0.84051
+Reduced Average Column Ratio: 0.11432
+Reduced Average NNZ Ratio: 0.12265
+Reduced Minimum Column Ratio: 0.07706
+Reduced Minimum NNZ Ratio: 0.07788
+
+
+================================================================================
+GPU-PRESOLVER-C POSTSOLVE
+================================================================================
+Warning: postsolve original KKT check failed (but the primal solution and objective are reliable)
+Stop Tolerance: 1.00e-06
+Primal Objective: 393358645.50007886
+Dual Objective: 424216579.31247979
+Primal Residual: 2.11e-07
+Dual Residual: 2.25e+00
+Relative Gap: 3.77e-02
