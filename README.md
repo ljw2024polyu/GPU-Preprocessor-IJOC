@@ -46,7 +46,7 @@ GPU-Preprocessor applies folding and presolve to continuous linear programs befo
 | `cmake/` | Build and installation configuration |
 | `examples/` | C++ integration example and a small MPS model |
 | `data/` | Benchmark input inventory and data sources |
-| `scripts/` | Reconstruction of result tables and Figure 2 |
+| `scripts/` | Input download/generation and reconstruction of result tables and Figure 2 |
 | `docs/` | Experimental settings, statistical definitions, and log mappings |
 | `results/` | Raw logs, summary CSVs, table data, LaTeX tables, and Figure 2 |
 
@@ -122,4 +122,4 @@ The first command reads the raw logs and summary CSVs and checks the reconstruct
 
 The [benchmark index](docs/tables_3_4_5_batch_index.csv) and [scalability index](docs/table_6_figure_2_log_index.csv) record the experiment commands. Their placeholders `{solver_executable}`, `{input_mps}`, and `{input_dir}` denote the integrated solver executable and input paths. These commands target HPR-LP-C 0.1.3 with the corresponding preprocessing interfaces; they are not command-line options for the standalone MPS tool above.
 
-Full solver reruns additionally require the integrated HPR-LP-C experiment implementation, the PSLP 0.0.11 and Gurobi 12.0.2 interfaces, and the benchmark input preparation scripts. Those components are not included in this initial repository. Gurobi must be installed separately under an appropriate license. Input models are not bundled; their sources and inventory are described in [data/README.md](data/README.md).
+The [input preparation guide](data/README.md) provides the Hans public entry points, exact MIPLIB/QAP download links, and commands to generate the MIPLIB Large, QAP20, and wil100 scalability inputs. Full solver reruns additionally require the integrated HPR-LP-C experiment implementation and the PSLP 0.0.11 and Gurobi 12.0.2 interfaces; those solver components remain to be incorporated. Gurobi must be installed separately under an appropriate license. Benchmark input models are not bundled.
