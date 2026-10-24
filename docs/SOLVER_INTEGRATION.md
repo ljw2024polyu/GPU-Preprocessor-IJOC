@@ -5,11 +5,15 @@ The `hprlp_solve` executable connects GPU-Preprocessor, PSLP, and optionally Gur
 | Component | Source / version | Included |
 | --- | --- | --- |
 | GPU-Preprocessor | Public main-branch snapshot linked in the root README | `cpp/` |
-| HPR-LP | HPR-LP-C 0.1.3-based Section 4 experiment implementation | `third_party/hprlp/` |
+| HPR-LP | Official HPR-LP-C v0.1.3 release | `third_party/hprlp/` |
 | PSLP | 0.0.11, Apache-2.0 | `third_party/pslp/` |
 | Gurobi | 12.0.2 C API | Interface only; install the SDK/runtime and license separately |
 
-The HPR-LP experiment source retains the recorded solver options and output fields. Its GPU adapter links the repository's public GPU library; it does not bundle the historical experiment project's separate GPU library. The [HPR-LP source note](../third_party/hprlp/README.md) describes the adaptations. Agreement of new runs with all archived measurements must be checked experimentally.
+HPR-LP is pinned to the official [v0.1.3 release](https://github.com/PolyU-IOR/HPR-LP-C/releases/tag/v0.1.3), commit `89d3cc06806b4d31d029f7b5c8591db58219ff6d`. The copied source files, headers, release tests, licenses, and native PSLP dependency are byte-identical to that release. Build rules and all IJOC adapters live under `integrations/hprlp/`; the release source is not patched.
+
+The official release's built-in PSLP 0.0.8 dependency is retained for the native library. The external driver disables built-in presolve and selects GPU-Preprocessor, PSLP 0.0.11, Gurobi, or no preprocessing. The comparison PSLP symbols are prefixed at compile time so the two versions cannot be confused. Both public CLI names `pslp` and `pslp0011` select 0.0.11.
+
+The external adapters hand a host copy of the reduced LP to the official solver API and perform postsolve afterward. They do not use the previous experiment implementation's modified solver or its device-only handoff. Timing fields for external preprocessing are recorded by the driver. Archived results remain unchanged; agreement of new official-release runs with those measurements requires a new benchmark comparison.
 
 ## Build
 
@@ -36,7 +40,7 @@ Run the integration tests on a GPU machine:
 ctest --test-dir build-experiments --output-on-failure
 ```
 
-Tests cover preprocessing, objective constants, original-space primal/dual recovery, and the folding/presolve switches. `ctest --test-dir build-experiments -L cpu --output-on-failure` runs only the CPU PSLP handoff and restart-control tests. This subset does not validate GPU solving. On managed servers, submit GPU tests and experiments through the site's scheduler.
+Tests cover preprocessing, objective constants, original-space primal/dual recovery, and the folding/presolve switches. `ctest --test-dir build-experiments -L cpu --output-on-failure` runs only the CPU PSLP handoff and the release's restart-control test. This subset does not validate GPU solving. With testing enabled, `build-experiments/integrations/hprlp/hprlp_release_reference` is built from the unmodified release CLI for direct baseline comparison (use `--presolver none`). On managed servers, submit GPU tests and experiments through the site's scheduler.
 
 ## Backend selection
 

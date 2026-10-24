@@ -170,9 +170,7 @@ LP_info_cpu* create_model_from_mps(const char* mps_file_path,
  * @return HPRLP_results structure containing solution and statistics
  * 
  * @note The model is not modified by this function
- * @note The caller must free result.x, result.y, and result.z after use.
- *       With HPRLP_PRESOLVER_GUROBI, metrics describe the reduced model and
- *       these pointers are NULL because no original-space mapping is exposed.
+ * @note The caller must free result.x, result.y, and result.z after use
  * @note If param is NULL, default parameters are used
  * 
  * @code{.cpp}

@@ -1,5 +1,5 @@
-#include "HPRLP.h"
-#include "presolve/gpu_presolver_integration.h"
+#include "integration.hpp"
+#include "adapters/gpu.hpp"
 #include "gpu/preprocessing/preprocess.h"
 
 #include <cmath>
@@ -24,8 +24,8 @@ static void check_pipeline(bool folding, bool presolve = true, bool new_rules = 
     double c[] = {-3, -3, -5, -5, 7};
     auto *model = create_model_from_arrays(2, 5, 10, row, col, a, al, au, lo, up, c, false);
     require(model != nullptr, "model creation failed");
-    HPRLP_parameters p;
-    p.presolver = HPRLP_PRESOLVER_GPU;
+    IntegrationParameters p;
+    p.backend = IJOC_PRESOLVER_GPU;
     p.enable_gpu_folding = folding;
     p.enable_gpu_presolve = presolve;
     p.enable_gpu_new_rules = new_rules;
@@ -33,12 +33,12 @@ static void check_pipeline(bool folding, bool presolve = true, bool new_rules = 
     p.time_limit = 30;
     p.print_debug_info = true;
 
-    // Check the CPU handoff as well as the device handoff used by solve().
+    // Check the external preprocessor handoff and the official release solve.
     LP_info_cpu reduced{};
     void *handle = nullptr;
     double presolve_time = 0, presolve_core_time = 0, folding_time = 0;
     double preprocessing_time = 0;
-    require(run_embedded_gpu_presolve(model, &p, &reduced, &handle,
+    require(ijoc_run_gpu_presolve(model, &p, &reduced, &handle,
                                      &presolve_time, &folding_time,
                                      &presolve_core_time, &preprocessing_time), "CPU presolve handoff failed");
     require(preprocessing_time > 0 && preprocessing_time >= folding_time + presolve_time,
@@ -56,22 +56,22 @@ static void check_pipeline(bool folding, bool presolve = true, bool new_rules = 
         require(reduced.n == 3, "folding only did not retain the fixed column");
     }
     free_lp_info_cpu(&reduced);
-    free_embedded_gpu_presolver(handle);
+    ijoc_free_gpu(handle);
 
-    auto result = solve(model, &p);
+    auto result = solve_preprocessed(model, &p);
     require(std::strcmp(result.status, "OPTIMAL") == 0, "solver did not return OPTIMAL");
     if (presolve) {
-        require(result.timing.presolve_core_time > 0 &&
-                result.presolve_time == result.timing.presolve_core_time,
+        require(result.presolve_core_time > 0 &&
+                result.presolve_time == result.presolve_core_time,
                 "GPU presolve time is not the native core measurement");
     } else {
         require(result.presolve_time == 0, "device folding only ran presolve");
-        require(result.timing.presolve_core_time == 0, "device folding only measured core time");
+        require(result.presolve_core_time == 0, "device folding only measured core time");
     }
     require(result.timing.presolve_time == result.presolve_time,
             "GPU result outer timer fields disagree");
-    require(result.timing.preprocessing_time > 0 &&
-            result.timing.preprocessing_time >= result.folding_time + result.presolve_time,
+    require(result.preprocessing_time > 0 &&
+            result.preprocessing_time >= result.folding_time + result.presolve_time,
             "GPU preprocessing timer did not cover folding through presolve");
     require(result.x && result.y && result.z, "postsolve did not return original vectors");
     require(std::abs(result.x[0] + result.x[1] - 2.8) < 1e-5, "first variable pair recovery failed");
@@ -147,19 +147,19 @@ static void check_new_rule_switch() {
     require(model != nullptr, "McCormick fixture creation failed");
     int reduced_columns[2]{};
     for (int enabled = 0; enabled <= 1; ++enabled) {
-        HPRLP_parameters p;
-        p.presolver = HPRLP_PRESOLVER_GPU;
+        IntegrationParameters p;
+        p.backend = IJOC_PRESOLVER_GPU;
         p.enable_gpu_folding = false;
         p.enable_gpu_new_rules = enabled != 0;
         LP_info_cpu reduced{};
         void *handle = nullptr;
         double presolve_time = 0, folding_time = 0;
-        require(run_embedded_gpu_presolve(model, &p, &reduced, &handle,
+        require(ijoc_run_gpu_presolve(model, &p, &reduced, &handle,
             &presolve_time, &folding_time), "McCormick presolve handoff failed");
         require(folding_time == 0, "rule ablation unexpectedly ran folding");
         reduced_columns[enabled] = reduced.n;
         free_lp_info_cpu(&reduced);
-        free_embedded_gpu_presolver(handle);
+        ijoc_free_gpu(handle);
     }
     require(reduced_columns[0] == n, "classical rules unexpectedly removed the fixture auxiliaries");
     require(reduced_columns[1] <= 2*blocks, "new-rule switch did not enable McCormick elimination");

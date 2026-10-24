@@ -1,4 +1,4 @@
-#include "presolve/gurobi_presolver_integration.h"
+#include "adapters/gurobi.hpp"
 
 #include "io/mps_reader.h"
 #include "gpu/preprocessing/preprocess.h"
@@ -337,8 +337,8 @@ void copy_presolved_model(GRBmodel *model,
 
 } // namespace
 
-bool run_embedded_gurobi_presolve(const LP_info_cpu *model,
-                                  const HPRLP_parameters *param,
+bool ijoc_run_gurobi_presolve(const LP_info_cpu *model,
+                                  const IntegrationParameters *param,
                                   LP_info_cpu *reduced_model,
                                   void **presolver_handle_out,
                                   HPRLP_FLOAT *presolve_time_out,
@@ -448,6 +448,6 @@ bool run_embedded_gurobi_presolve(const LP_info_cpu *model,
 #endif
 }
 
-void free_embedded_gurobi_presolver(void *presolver_handle) {
+void ijoc_free_gurobi(void *presolver_handle) {
     delete static_cast<GurobiPresolverHandle *>(presolver_handle);
 }

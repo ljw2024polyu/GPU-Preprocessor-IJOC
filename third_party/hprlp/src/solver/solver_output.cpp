@@ -58,14 +58,6 @@ private:
     }
 
     bool allowed(const std::string &line) {
-        // Result-space semantics must remain visible in normal logging mode.
-        if (starts_with(line, "result_space: ") ||
-            starts_with(line, "kkt_residual_scope: ") ||
-            starts_with(line, "postsolve_mapping: ") ||
-            starts_with(line, "original_solution_recovery: ") ||
-            starts_with(line, "original_kkt_validation: ") ||
-            starts_with(line, "solution_vectors: ") ||
-            starts_with(line, "Gurobi presolve configuration: ")) return true;
         if (line == "\n" || line == "\r\n") {
             in_parameter_block_ = false;
             if (!banner_started_) return false;
@@ -208,24 +200,12 @@ void print_solver_parameters(const HPRLP_parameters *param) {
     if (param->use_presolve && param->presolver != HPRLP_PRESOLVER_NONE) {
         presolver_name = param->presolver == HPRLP_PRESOLVER_GPU
             ? "GPU-Presolver-C"
-            : (param->presolver == HPRLP_PRESOLVER_GUROBI ? "Gurobi" :
-               (param->presolver == HPRLP_PRESOLVER_PSLP0011 ? "PSLP0011" : "PSLP"));
+            : "PSLP";
     }
     if (show_parameter(param, HPRLP_PARAM_PRESOLVER)) std::cout << "  Presolver:           " << presolver_name << "\n";
     if (show_parameter(param, HPRLP_PARAM_GPU_FOLDING) && param->use_presolve && param->presolver == HPRLP_PRESOLVER_GPU) {
         std::cout << "  GPU Folding:         "
                   << (param->enable_gpu_folding ? "Enabled" : "Disabled") << "\n";
-    }
-    if (param->use_presolve && param->presolver == HPRLP_PRESOLVER_GPU) {
-        if (show_parameter(param, HPRLP_PARAM_GPU_PRESOLVE)) {
-            std::cout << "  GPU Presolve:        "
-                      << (param->enable_gpu_presolve ? "Enabled" : "Disabled") << "\n";
-        }
-        if (show_parameter(param, HPRLP_PARAM_GPU_NEW_RULES)) {
-            std::cout << "  GPU New Rules:       "
-                      << (!param->enable_gpu_presolve ? "Inactive (presolve disabled)" :
-                          (param->enable_gpu_new_rules ? "Enabled" : "Disabled")) << "\n";
-        }
     }
     const bool show_scaling = param->print_debug_info ||
         (param->specified_parameter_mask & (HPRLP_PARAM_CR_SCALING |
@@ -267,7 +247,6 @@ void print_solution_summary(const HPRLP_results& result,
     // Detailed timing and reduced-state statistics are retained verbatim in
     // debug mode; the quiet stream filter removes these lines otherwise.
     std::cout << std::fixed << std::setprecision(5)
-              << "Preprocessing Time: " << result.timing.preprocessing_time << " seconds\n"
               << "Presolve Time: " << result.timing.presolve_time << " seconds\n"
               << "Setup Time: " << result.timing.setup_time << " seconds\n"
               << "Scaling Time: " << result.timing.scaling_time << " seconds\n"

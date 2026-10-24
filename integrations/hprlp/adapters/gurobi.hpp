@@ -1,17 +1,17 @@
-#ifndef HPRLP_GUROBI_PRESOLVER_INTEGRATION_H
-#define HPRLP_GUROBI_PRESOLVER_INTEGRATION_H
+#ifndef IJOC_GUROBI_ADAPTER_HPP
+#define IJOC_GUROBI_ADAPTER_HPP
 
-#include "HPRLP.h"
+#include "integration.hpp"
 
 // Same Presolve=-1 / unlimited presolve configuration as the paper project.
 // The reduced model has no public original-space postsolve mapping.
-bool run_embedded_gurobi_presolve(const LP_info_cpu *model,
-                                  const HPRLP_parameters *param,
+bool ijoc_run_gurobi_presolve(const LP_info_cpu *model,
+                                  const IntegrationParameters *param,
                                   LP_info_cpu *reduced_model,
                                   void **presolver_handle_out,
                                   HPRLP_FLOAT *presolve_time_out,
                                   bool *timed_out_out);
 
-void free_embedded_gurobi_presolver(void *presolver_handle);
+void ijoc_free_gurobi(void *presolver_handle);
 
 #endif

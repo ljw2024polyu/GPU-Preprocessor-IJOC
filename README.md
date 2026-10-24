@@ -2,7 +2,7 @@
 
 This repository contains the GPU-Preprocessor C++/CUDA library, its HPR-LP experiment driver, and experimental outputs for the paper by Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, and Xinyuan Zhao. See [AUTHORS](AUTHORS) for contact details and [LICENSE](LICENSE) for the MIT license. Bundled HPR-LP and PSLP code retains its own [MIT](third_party/hprlp/LICENSE) and [Apache-2.0](third_party/pslp/LICENSE) licenses, respectively.
 
-The GPU library source is imported from the [main-branch snapshot](https://github.com/PolyU-IOR/GPU-Preprocessor/commit/febe85d0bde835d8e9c2798ff02296fd207cbbb3) of [PolyU-IOR/GPU-Preprocessor](https://github.com/PolyU-IOR/GPU-Preprocessor). The integrated driver combines this library with the HPR-LP-C 0.1.3 experiment implementation and PSLP 0.0.11. See [solver integration](docs/SOLVER_INTEGRATION.md) for the source versions, build instructions, and comparison backends.
+The GPU library source is imported from the [main-branch snapshot](https://github.com/PolyU-IOR/GPU-Preprocessor/commit/febe85d0bde835d8e9c2798ff02296fd207cbbb3) of [PolyU-IOR/GPU-Preprocessor](https://github.com/PolyU-IOR/GPU-Preprocessor). The solver source comes from the official [HPR-LP-C v0.1.3 release](https://github.com/PolyU-IOR/HPR-LP-C/releases/tag/v0.1.3), commit `89d3cc06806b4d31d029f7b5c8591db58219ff6d`, and is unmodified. GPU-Preprocessor, PSLP 0.0.11, and the optional Gurobi adapter are connected outside the release source tree. See [solver integration](docs/SOLVER_INTEGRATION.md) for the build and comparison backends.
 
 ## Cite
 
@@ -45,8 +45,8 @@ GPU-Preprocessor applies folding and presolve to continuous linear programs befo
 | `cpp/` | C++/CUDA library, MPS tools, and regression tests |
 | `cmake/` | Build and installation configuration |
 | `examples/` | C++ integration example and a small MPS model |
-| `integrations/hprlp/` | Build configuration for the HPR-LP experiment driver and optional Gurobi interface |
-| `third_party/` | HPR-LP experiment source and PSLP 0.0.11, with their licenses |
+| `integrations/hprlp/` | External preprocessing adapters, experiment driver, build configuration, and integration tests |
+| `third_party/` | Official HPR-LP-C v0.1.3 source and PSLP 0.0.11, with their licenses |
 | `data/` | Benchmark input inventory and data sources |
 | `scripts/` | Input preparation, experiment execution, and reconstruction of result tables and Figure 2 |
 | `docs/` | Experimental settings, statistical definitions, and log mappings |
@@ -145,4 +145,4 @@ python3 scripts/run_experiments.py --input-root /path/to/benchmark-inputs \
   --suite all --output-dir runs/experiment-01
 ~~~
 
-The default methods are no preprocessing, folding only, GPU-Preprocessor, and PSLP. Add `--methods none folding gpu pslp gurobi` to include the licensed Gurobi comparison. The runner uses the recorded commands, saves logs and summary CSVs in a fresh directory, and leaves `results/` unchanged. See [running Section 4](docs/SOLVER_INTEGRATION.md#running-section-4) for selecting individual experiments and reconstructing tables from a complete new run. Rebuilding the integrated source and rerunning benchmarks is distinct from reconstructing the archived measurements above; exact numerical and timing agreement with the archive has not been established for this assembled source tree.
+The default methods are no preprocessing, folding only, GPU-Preprocessor, and PSLP. Add `--methods none folding gpu pslp gurobi` to include the licensed Gurobi comparison. The runner uses the recorded commands, saves logs and summary CSVs in a fresh directory, and leaves `results/` unchanged. See [running Section 4](docs/SOLVER_INTEGRATION.md#running-section-4) for selecting individual experiments and reconstructing tables from a complete new run. New runs use the official release solver with external preprocessing; exact numerical and timing agreement with the archived experiment implementation has not been established.

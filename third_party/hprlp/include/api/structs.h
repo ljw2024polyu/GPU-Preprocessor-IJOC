@@ -17,9 +17,7 @@
 enum HPRLP_presolve_backend {
     HPRLP_PRESOLVER_PSLP = 0,
     HPRLP_PRESOLVER_GPU = 1,
-    HPRLP_PRESOLVER_NONE = 2,
-    HPRLP_PRESOLVER_PSLP0011 = 3,
-    HPRLP_PRESOLVER_GUROBI = 4
+    HPRLP_PRESOLVER_NONE = 2
 };
 
 enum HPRLP_x_bar_mask : std::uint8_t {
@@ -290,11 +288,6 @@ struct HPRLP_parameters {
     // frontends so quiet logs can still echo options supplied by the user.
     bool print_debug_info = false;
     std::uint64_t specified_parameter_mask = 0;
-
-    // GPU pipeline stage and five structure-specific rule families. Folding
-    // remains independently controlled by enable_gpu_folding.
-    bool enable_gpu_presolve = true;
-    bool enable_gpu_new_rules = true;
 };
 
 enum HPRLP_parameter_print_bit : std::uint64_t {
@@ -322,26 +315,18 @@ enum HPRLP_parameter_print_bit : std::uint64_t {
     HPRLP_PARAM_REDUCED_MATRIX = 1ULL << 21,
     HPRLP_PARAM_AUTO_MEMORY_POLICY = 1ULL << 22,
     HPRLP_PARAM_PRINT_DEBUG_INFO = 1ULL << 23,
-    HPRLP_PARAM_GPU_PRESOLVE = 1ULL << 24,
-    HPRLP_PARAM_GPU_NEW_RULES = 1ULL << 25,
 };
 
 
 // Timing breakdown for a single HPRLP solve.
 struct HPRLP_time {
     HPRLP_FLOAT total_time = 0.0;
-    // Native GPU/PSLP core time; NaN when a backend has no core measurement.
     HPRLP_FLOAT presolve_time = 0.0;
     HPRLP_FLOAT setup_time = 0.0;
     HPRLP_FLOAT scaling_time = 0.0;
     HPRLP_FLOAT analyze_time = 0.0;
     HPRLP_FLOAT power_iteration_time = 0.0;
     HPRLP_FLOAT solve_time = 0.0;
-    // Compatibility alias for presolve_time, retained to preserve C struct layout.
-    // Reports use presolve_time for native core time (NaN when unavailable).
-    HPRLP_FLOAT presolve_core_time = 0.0;
-    // GPU folding-through-presolve wall time; CPU backends use adapter wall time.
-    HPRLP_FLOAT preprocessing_time = 0.0;
 };
 
 
@@ -365,8 +350,7 @@ struct HPRLP_results {
 
     char status[64];  // Status string: "OPTIMAL", "TIME_LIMIT", "ITER_LIMIT", "ERROR", etc.
 
-    // Original-space solution vectors (allocated on host). Gurobi presolve
-    // returns reduced-space metrics only and leaves these pointers null.
+    // Solution vectors (allocated on host)
     HPRLP_FLOAT *x = nullptr;     // Primal solution
     HPRLP_FLOAT *y = nullptr;     // Dual solution
     HPRLP_FLOAT *z = nullptr;     // Bound dual solution

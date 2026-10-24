@@ -6,22 +6,13 @@
 #include "support/utils.h"
 
 #include "gpu_presolver/folding/folding.hpp"
-#include "gpu_presolver/detail/runtime_options.hpp"
 #include "gpu_presolver/presolve/gpu_postsolve.hpp"
 #include "gpu_presolver/presolve/gpu_presolve.hpp"
-#include "gpu_presolver/presolve/cleanup_workspace.hpp"
-#include "gpu_presolver/presolve/duplicate_rule_workspace.hpp"
-#include "gpu_presolver/presolve/rules/rule_bound_strengthening.hpp"
-#include "gpu_presolver/presolve/rules/rule_parallel_rows.hpp"
-#include "gpu_presolver/presolve/rules/rule_parallel_columns.hpp"
 
 #include <cuda_runtime.h>
 
 #include <algorithm>
 #include <cmath>
-#include <cstdint>
-#include <cstdlib>
-#include <limits>
 #include <cstdio>
 #include <cstring>
 #include <exception>
@@ -49,11 +40,6 @@ struct OriginalKktMetrics {
 struct GpuPresolverHandle {
     gp::LPInfoGpu original_lp;
     gf::FoldingPipelineSummary folding_summary;
-    double presolve_seconds = 0.0;
-    double presolve_core_seconds = 0.0;
-    double preprocessing_seconds = 0.0;
-    double presolve_setup_seconds = 0.0;
-    double presolve_workspace_release_seconds = 0.0;
     int reduced_m = 0;
     int reduced_n = 0;
 };
@@ -87,158 +73,6 @@ void initialize_empty_device_model(LP_info_gpu *model) {
 void throw_if_cuda_error(cudaError_t status, const char *context) {
     if (status != cudaSuccess) {
         throw std::runtime_error(std::string(context) + ": " + cudaGetErrorString(status));
-    }
-}
-
-// Reserve the two initial recovery-map sizes before the run_presolve timer.
-// Keep the async pool's freed blocks across the setup synchronization so the
-// first recovery allocations can reuse them; restore the pool policy later.
-class PreparedRecoveryAsyncPool {
-public:
-    PreparedRecoveryAsyncPool(std::int32_t rows, std::int32_t cols) {
-        if (rows <= 0 && cols <= 0) return;
-        int device = 0;
-        throw_if_cuda_error(cudaGetDevice(&device), "recovery pool device");
-        throw_if_cuda_error(cudaDeviceGetDefaultMemPool(&pool_, device), "recovery pool query");
-        throw_if_cuda_error(cudaMemPoolGetAttribute(pool_, cudaMemPoolAttrReleaseThreshold,
-                                                   &old_threshold_), "recovery pool old threshold");
-        std::uint64_t retain = std::numeric_limits<std::uint64_t>::max();
-        throw_if_cuda_error(cudaMemPoolSetAttribute(pool_, cudaMemPoolAttrReleaseThreshold,
-                                                   &retain), "recovery pool retain");
-        try {
-            if (rows > 0) {
-                throw_if_cuda_error(cudaMallocAsync(&row_temp_, sizeof(std::int32_t) *
-                                                     static_cast<std::size_t>(rows), nullptr),
-                                    "prewarm recovery rows");
-            }
-            if (cols > 0) {
-                throw_if_cuda_error(cudaMallocAsync(&col_temp_, sizeof(std::int32_t) *
-                                                     static_cast<std::size_t>(cols), nullptr),
-                                    "prewarm recovery cols");
-            }
-            if (row_temp_) {
-                throw_if_cuda_error(cudaFreeAsync(row_temp_, nullptr), "release prewarm rows");
-                row_temp_ = nullptr;
-            }
-            if (col_temp_) {
-                throw_if_cuda_error(cudaFreeAsync(col_temp_, nullptr), "release prewarm cols");
-                col_temp_ = nullptr;
-            }
-        } catch (...) {
-            if (row_temp_) cudaFreeAsync(row_temp_, nullptr);
-            if (col_temp_) cudaFreeAsync(col_temp_, nullptr);
-            cudaDeviceSynchronize();
-            cudaMemPoolSetAttribute(pool_, cudaMemPoolAttrReleaseThreshold, &old_threshold_);
-            pool_ = nullptr;
-            throw;
-        }
-    }
-    ~PreparedRecoveryAsyncPool() {
-        if (pool_) {
-            cudaMemPoolSetAttribute(pool_, cudaMemPoolAttrReleaseThreshold, &old_threshold_);
-            cudaMemPoolTrimTo(pool_, 0);
-        }
-    }
-    PreparedRecoveryAsyncPool(const PreparedRecoveryAsyncPool &) = delete;
-    PreparedRecoveryAsyncPool &operator=(const PreparedRecoveryAsyncPool &) = delete;
-
-private:
-    cudaMemPool_t pool_ = nullptr;
-    std::uint64_t old_threshold_ = 0;
-    void *row_temp_ = nullptr;
-    void *col_temp_ = nullptr;
-};
-
-void run_timed_gpu_presolve(GpuPresolverHandle *handle,
-                            const gp::PresolveParams &params) {
-    std::cout << "GPU-Presolver-C configuration: folding=" << (params.enable_folding ? "true" : "false")
-              << ", presolve=" << (params.enable_presolve ? "true" : "false")
-              << ", new_rules=" << (params.enable_structure_specific_rules ? "true" : "false")
-              << std::endl;
-    auto &pipeline = handle->folding_summary;
-    pipeline.presolve_enabled = params.enable_presolve;
-    pipeline.original_rows = pipeline.folded_rows = handle->original_lp.A.rows;
-    pipeline.original_cols = pipeline.folded_cols = handle->original_lp.A.cols;
-
-    const bool preprocessing_enabled = params.enable_folding || params.enable_presolve;
-    std::chrono::steady_clock::time_point preprocessing_start{};
-    handle->preprocessing_seconds = 0.0;
-    if (preprocessing_enabled) {
-        // Complete the model upload before timing the preprocessing pipeline.
-        throw_if_cuda_error(cudaDeviceSynchronize(), "before preprocessing timer");
-        preprocessing_start = std::chrono::steady_clock::now();
-    }
-
-    // Retain the folded model for recovery, but keep folding outside the
-    // presolve interval (including when folding finds no aggregation).
-    if (params.enable_folding) {
-        pipeline.folding = gf::run_folding(handle->original_lp,
-                                           params.folding_tolerance, params.verbose);
-        pipeline.folding_applied = pipeline.folding.applied;
-        if (pipeline.folding_applied) {
-            pipeline.folded_rows = pipeline.folding.folded_rows;
-            pipeline.folded_cols = pipeline.folding.folded_cols;
-        }
-    }
-    const gp::LPInfoGpu &input = pipeline.folding_applied
-        ? pipeline.folding.folded_lp : handle->original_lp;
-    handle->presolve_seconds = 0.0;
-    handle->presolve_core_seconds = 0.0;
-    // Prepare scratch before the library's core timer and report workspace
-    // setup/release separately from the exported presolve time.
-    if (params.enable_presolve) {
-        const auto setup_start = std::chrono::steady_clock::now();
-        auto workspace = std::make_unique<gp::PreparedCleanupWorkspace>(
-            static_cast<std::size_t>(input.A.rows),
-            static_cast<std::size_t>(input.A.cols));
-        if (workspace->enabled() && input.A.cols > 0) {
-            const std::size_t reduction_bytes = gp::cleanup_reduction_temp_bytes(
-                input.c, workspace->reduction_result(),
-                input.A.cols);
-            workspace->reserve_reduction_scratch(reduction_bytes);
-            workspace->prepare_selection(input.c, input.A.cols);
-        }
-        auto recovery_pool = std::make_unique<PreparedRecoveryAsyncPool>(
-            input.A.rows, input.A.cols);
-        auto bound_strengthening_workspace =
-            std::make_unique<gp::PreparedBoundStrengtheningWorkspace>(
-                input.A.rows, input.A.cols,
-                params.enable_presolve &&
-                    params.enable_bound_strengthening);
-        const bool parallel_column_preverify = gpu_presolver::runtime::options().parallel_column_preverify;
-        const std::size_t parallel_rows_bytes = params.enable_parallel_rows
-            ? gp::parallel_rows_scratch_bytes(input.A.rows) : 0;
-        const std::size_t parallel_columns_bytes = params.enable_parallel_columns
-            ? gp::parallel_columns_scratch_bytes(
-                  input.A.rows, input.A.cols,
-                  parallel_column_preverify) : 0;
-        auto duplicate_rule_workspace =
-            std::make_unique<gp::PreparedDuplicateRuleWorkspace>(
-                std::max(parallel_rows_bytes, parallel_columns_bytes));
-        throw_if_cuda_error(cudaDeviceSynchronize(), "before presolve timer");
-        handle->presolve_setup_seconds = std::chrono::duration<double>(
-            std::chrono::steady_clock::now() - setup_start).count();
-        pipeline.presolve = gf::run_optional_gpu_presolve(input, params, true);
-        throw_if_cuda_error(cudaDeviceSynchronize(), "after presolve timer");
-        // Presolve is the native core interval; the complete pipeline wall
-        // interval is measured independently as preprocessing time.
-        handle->presolve_seconds = pipeline.presolve.elapsed_seconds;
-        handle->presolve_core_seconds = pipeline.presolve.elapsed_seconds;
-        const auto release_start = std::chrono::steady_clock::now();
-        duplicate_rule_workspace.reset();
-        bound_strengthening_workspace.reset();
-        workspace.reset();
-        recovery_pool.reset();
-        handle->presolve_workspace_release_seconds = std::chrono::duration<double>(
-            std::chrono::steady_clock::now() - release_start).count();
-    } else {
-        pipeline.presolve = gf::run_optional_gpu_presolve(input, params, true);
-    }
-    if (preprocessing_enabled) {
-        // Include folding, presolve workspace setup/release and presolve itself.
-        throw_if_cuda_error(cudaDeviceSynchronize(), "after preprocessing timer");
-        handle->preprocessing_seconds = std::chrono::duration<double>(
-            std::chrono::steady_clock::now() - preprocessing_start).count();
     }
 }
 
@@ -292,7 +126,7 @@ void free_gpu_presolver_handle_resources(GpuPresolverHandle *handle) {
     if (!handle) {
         return;
     }
-    // Recovery records own their device storage through RAII in the new package.
+    gp::free_gpu_presolve_record_resources(handle->folding_summary.presolve.record);
     gp::free_gpu_presolve_reduced_lp(handle->folding_summary.presolve);
     gf::free_folded_lp(handle->folding_summary.folding);
     handle->folding_summary = gf::FoldingPipelineSummary{};
@@ -671,9 +505,7 @@ bool run_embedded_gpu_presolve(const LP_info_cpu *model,
                                LP_info_cpu *reduced_model,
                                void **presolver_handle_out,
                                HPRLP_FLOAT *presolve_time_out,
-                               HPRLP_FLOAT *folding_time_out,
-                               HPRLP_FLOAT *presolve_core_time_out,
-                               HPRLP_FLOAT *preprocessing_time_out) {
+                               HPRLP_FLOAT *folding_time_out) {
     if (!model || !model->A || !reduced_model || !presolver_handle_out) {
         return false;
     }
@@ -682,12 +514,6 @@ bool run_embedded_gpu_presolve(const LP_info_cpu *model,
     *presolver_handle_out = nullptr;
     if (presolve_time_out) {
         *presolve_time_out = 0.0;
-    }
-    if (presolve_core_time_out) {
-        *presolve_core_time_out = 0.0;
-    }
-    if (preprocessing_time_out) {
-        *preprocessing_time_out = 0.0;
     }
     if (folding_time_out) {
         *folding_time_out = 0.0;
@@ -708,8 +534,6 @@ bool run_embedded_gpu_presolve(const LP_info_cpu *model,
         gp::PresolveParams presolve_params;
         presolve_params.verbose = false;
         presolve_params.enable_folding = param ? param->enable_gpu_folding : true;
-        presolve_params.enable_presolve = param ? param->enable_gpu_presolve : true;
-        presolve_params.enable_structure_specific_rules = param ? param->enable_gpu_new_rules : true;
         if (param && std::isfinite(param->time_limit) && param->time_limit > 0.0) {
             presolve_params.max_time = param->time_limit;
         }
@@ -717,16 +541,11 @@ bool run_embedded_gpu_presolve(const LP_info_cpu *model,
         std::cout << "Doing presolve (GPU-Presolver-C"
                   << (presolve_params.enable_folding ? " folding" : "")
                   << ")..." << std::endl;
-        run_timed_gpu_presolve(handle.get(), presolve_params);
+        handle->folding_summary =
+            gf::run_gpu_presolve_with_folding(handle->original_lp, presolve_params, true, true);
         gp::GpuPresolveSummary &summary = handle->folding_summary.presolve;
         if (presolve_time_out) {
-            *presolve_time_out = static_cast<HPRLP_FLOAT>(handle->presolve_seconds);
-        }
-        if (presolve_core_time_out) {
-            *presolve_core_time_out = static_cast<HPRLP_FLOAT>(handle->presolve_core_seconds);
-        }
-        if (preprocessing_time_out) {
-            *preprocessing_time_out = static_cast<HPRLP_FLOAT>(handle->preprocessing_seconds);
+            *presolve_time_out = static_cast<HPRLP_FLOAT>(summary.elapsed_seconds);
         }
         if (folding_time_out) {
             *folding_time_out = static_cast<HPRLP_FLOAT>(
@@ -741,13 +560,7 @@ bool run_embedded_gpu_presolve(const LP_info_cpu *model,
                   << handle->folding_summary.folded_cols << ")" << std::endl;
         std::cout << std::endl;
         std::cout << "GPU-Presolver-C presolve time: "
-                  << std::setprecision(8) << handle->presolve_seconds << " seconds" << std::endl;
-        std::cout << "GPU-Presolver-C preprocessing time: "
-                  << handle->preprocessing_seconds << " seconds" << std::endl;
-        std::cout << "GPU-Presolver-C presolve workspace setup time: "
-                  << std::setprecision(8) << handle->presolve_setup_seconds << " seconds" << std::endl;
-        std::cout << "GPU-Presolver-C presolve workspace release time: "
-                  << handle->presolve_workspace_release_seconds << " seconds" << std::endl;
+                  << summary.elapsed_seconds << " seconds" << std::endl;
         std::cout << "GPU-Presolver-C presolve: ("
                   << handle->folding_summary.folded_rows << ", "
                   << handle->folding_summary.folded_cols << ") -> ("
@@ -807,9 +620,7 @@ bool run_embedded_gpu_presolve_device(const LP_info_cpu *model,
                                       HPRLP_FLOAT *presolve_time_out,
                                       HPRLP_FLOAT *folding_time_out,
                                       std::chrono::steady_clock::time_point
-                                          *first_device_ready_out,
-                                      HPRLP_FLOAT *presolve_core_time_out,
-                                      HPRLP_FLOAT *preprocessing_time_out) {
+                                          *first_device_ready_out) {
     if (!model || !model->A || !reduced_model || !presolver_handle_out) {
         return false;
     }
@@ -819,17 +630,11 @@ bool run_embedded_gpu_presolve_device(const LP_info_cpu *model,
     if (presolve_time_out) {
         *presolve_time_out = 0.0;
     }
-    if (presolve_core_time_out) {
-        *presolve_core_time_out = 0.0;
-    }
     if (folding_time_out) {
         *folding_time_out = 0.0;
     }
     if (first_device_ready_out) {
         *first_device_ready_out = {};
-    }
-    if (preprocessing_time_out) {
-        *preprocessing_time_out = 0.0;
     }
 
     std::unique_ptr<GpuPresolverHandle> handle(new (std::nothrow) GpuPresolverHandle);
@@ -854,8 +659,6 @@ bool run_embedded_gpu_presolve_device(const LP_info_cpu *model,
         gp::PresolveParams presolve_params;
         presolve_params.verbose = false;
         presolve_params.enable_folding = param ? param->enable_gpu_folding : true;
-        presolve_params.enable_presolve = param ? param->enable_gpu_presolve : true;
-        presolve_params.enable_structure_specific_rules = param ? param->enable_gpu_new_rules : true;
         if (param && std::isfinite(param->time_limit) && param->time_limit > 0.0) {
             presolve_params.max_time = param->time_limit;
         }
@@ -863,16 +666,11 @@ bool run_embedded_gpu_presolve_device(const LP_info_cpu *model,
         std::cout << "Doing presolve (GPU-Presolver-C"
                   << (presolve_params.enable_folding ? " folding" : "")
                   << ")..." << std::endl;
-        run_timed_gpu_presolve(handle.get(), presolve_params);
+        handle->folding_summary =
+            gf::run_gpu_presolve_with_folding(handle->original_lp, presolve_params, true, true);
         gp::GpuPresolveSummary &summary = handle->folding_summary.presolve;
         if (presolve_time_out) {
-            *presolve_time_out = static_cast<HPRLP_FLOAT>(handle->presolve_seconds);
-        }
-        if (presolve_core_time_out) {
-            *presolve_core_time_out = static_cast<HPRLP_FLOAT>(handle->presolve_core_seconds);
-        }
-        if (preprocessing_time_out) {
-            *preprocessing_time_out = static_cast<HPRLP_FLOAT>(handle->preprocessing_seconds);
+            *presolve_time_out = static_cast<HPRLP_FLOAT>(summary.elapsed_seconds);
         }
         if (folding_time_out) {
             *folding_time_out = static_cast<HPRLP_FLOAT>(
@@ -887,13 +685,7 @@ bool run_embedded_gpu_presolve_device(const LP_info_cpu *model,
                   << handle->folding_summary.folded_cols << ")" << std::endl;
         std::cout << std::endl;
         std::cout << "GPU-Presolver-C presolve time: "
-                  << std::setprecision(8) << handle->presolve_seconds << " seconds" << std::endl;
-        std::cout << "GPU-Presolver-C preprocessing time: "
-                  << handle->preprocessing_seconds << " seconds" << std::endl;
-        std::cout << "GPU-Presolver-C presolve workspace setup time: "
-                  << std::setprecision(8) << handle->presolve_setup_seconds << " seconds" << std::endl;
-        std::cout << "GPU-Presolver-C presolve workspace release time: "
-                  << handle->presolve_workspace_release_seconds << " seconds" << std::endl;
+                  << summary.elapsed_seconds << " seconds" << std::endl;
         std::cout << "GPU-Presolver-C presolve: ("
                   << handle->folding_summary.folded_rows << ", "
                   << handle->folding_summary.folded_cols << ") -> ("
@@ -987,8 +779,7 @@ bool apply_embedded_gpu_postsolve(HPRLP_results *result,
         z_red = copy_vector_to_device(result->z, static_cast<size_t>(handle->reduced_n),
                                       "cudaMalloc/copy reduced z");
         gf::UnfoldedSolutionHost unfolded =
-            gf::postsolve_and_unfold_to_host(
-                x_red, y_red, z_red, handle->folding_summary, &handle->original_lp);
+            gf::postsolve_and_unfold_to_host(x_red, y_red, z_red, handle->folding_summary);
         cudaFree(x_red);
         cudaFree(y_red);
         cudaFree(z_red);

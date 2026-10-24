@@ -7,8 +7,6 @@
 #include "solver/reduced_matrix.cuh"
 #include "gpu/memory/compressible_memory.h"
 #include "presolve/pslp_integration.h"
-#include "presolve/pslp0011_integration.h"
-#include "presolve/gurobi_presolver_integration.h"
 #ifdef HPRLP_HAS_GPU_PRESOLVER
 #include "presolve/gpu_presolver_integration.h"
 #endif
@@ -373,9 +371,7 @@ static HPRLP_results HPRLP_main_solve_impl(
         const HPRLP_parameters *param,
         std::chrono::steady_clock::time_point first_device_ready,
         HPRLP_FLOAT presolve_time,
-        HPRLP_FLOAT folding_time,
-        HPRLP_FLOAT presolve_core_time = 0.0,
-        HPRLP_FLOAT preprocessing_time = 0.0) {
+        HPRLP_FLOAT folding_time) {
 
     // Exactly one model representation must be supplied.  The ordinary path
     // uploads an LP_info_cpu here; the GPU-presolver path transfers ownership
@@ -397,8 +393,6 @@ static HPRLP_results HPRLP_main_solve_impl(
 
     HPRLP_time phase_times;
     phase_times.presolve_time = presolve_time;
-    phase_times.presolve_core_time = presolve_core_time;
-    phase_times.preprocessing_time = preprocessing_time;
 
     // Setup is bounded to model transfer and workspace allocation.
     const auto t_start_setup = time_now();
@@ -415,11 +409,8 @@ static HPRLP_results HPRLP_main_solve_impl(
         first_device_ready = time_now();
     }
     const HPRLP_FLOAT total_time_offset =
-        param->use_presolve &&
-        (param->presolver == HPRLP_PRESOLVER_PSLP ||
-         param->presolver == HPRLP_PRESOLVER_PSLP0011 ||
-         param->presolver == HPRLP_PRESOLVER_GUROBI)
-        ? preprocessing_time : 0.0;
+        param->use_presolve && param->presolver == HPRLP_PRESOLVER_PSLP
+        ? presolve_time : 0.0;
     auto reported_total_time = [&]() {
         return total_time_offset + time_since(first_device_ready);
     };
@@ -865,15 +856,9 @@ HPRLP_results HPRLP_main_solve(const LP_info_cpu *lp_info_cpu,
  * ============================================================================
  */
 
-static void print_gurobi_result_space_notice() {
-    std::cout << "result_space: GUROBI_REDUCED_MODEL\n"
-              << "kkt_residual_scope: REDUCED_MODEL_ONLY\n"
-              << "postsolve_mapping: NOT_AVAILABLE_FROM_GUROBI_PRESOLVED_MODEL_API\n"
-              << "original_solution_recovery: NOT_PERFORMED\n"
-              << "original_kkt_validation: NOT_PERFORMED\n"
-              << "solution_vectors: NOT_EXPORTED_THROUGH_ORIGINAL_SPACE_API\n";
-}
-
+/**
+ * Create an LP model from raw arrays
+ */
 HPRLP_results solve(const LP_info_cpu *model, const HPRLP_parameters *param) {
     // Validate input
     if (!model) {
@@ -908,13 +893,7 @@ HPRLP_results solve(const LP_info_cpu *model, const HPRLP_parameters *param) {
     void *presolver_handle = nullptr;
     const bool use_gpu_presolver =
         actual_param->presolver == HPRLP_PRESOLVER_GPU;
-    const bool use_pslp0011 =
-        actual_param->presolver == HPRLP_PRESOLVER_PSLP0011;
-    const bool use_gurobi_presolver =
-        actual_param->presolver == HPRLP_PRESOLVER_GUROBI;
     HPRLP_FLOAT presolve_time = 0.0;
-    HPRLP_FLOAT presolve_core_time = std::numeric_limits<HPRLP_FLOAT>::quiet_NaN();
-    HPRLP_FLOAT preprocessing_time = 0.0;
     HPRLP_FLOAT folding_time = 0.0;
     std::chrono::steady_clock::time_point first_device_ready{};
     bool presolve_ok = false;
@@ -923,87 +902,26 @@ HPRLP_results solve(const LP_info_cpu *model, const HPRLP_parameters *param) {
 #ifdef HPRLP_HAS_GPU_PRESOLVER
         presolve_ok = run_embedded_gpu_presolve_device(
             model, actual_param, &reduced_device_model, &presolver_handle,
-            &presolve_time, &folding_time, &first_device_ready,
-            &presolve_core_time, &preprocessing_time);
+            &presolve_time, &folding_time, &first_device_ready);
         device_handoff_active = presolve_ok;
 #else
         std::cerr << "[error] GPU-Presolver-C support was not compiled into this build"
                   << std::endl;
         return make_error_result("UNSUPPORTED_PRESOLVER");
 #endif
-    } else if (use_gurobi_presolver) {
-#if HPRLP_HAS_GUROBI
-        presolve_ok = run_embedded_gurobi_presolve(
-            model, actual_param, &reduced_model, &presolver_handle,
-            &presolve_time, nullptr);
-#else
-        std::cerr << "[error] Gurobi support was not compiled into this build" << std::endl;
-        return make_error_result("UNSUPPORTED_PRESOLVER");
-#endif
     } else {
         const auto presolve_start = std::chrono::steady_clock::now();
-        presolve_ok = use_pslp0011
-            ? run_embedded_pslp0011_presolve(
-                model, actual_param, &reduced_model, &presolver_handle,
-                &presolve_core_time)
-            : run_embedded_pslp_presolve(
-                model, actual_param, &reduced_model, &presolver_handle,
-                &presolve_core_time);
+        presolve_ok = run_embedded_pslp_presolve(
+            model, actual_param, &reduced_model, &presolver_handle);
         presolve_time = static_cast<HPRLP_FLOAT>(
             std::chrono::duration<double>(
                 std::chrono::steady_clock::now() - presolve_start).count());
-    }
-    if (!use_gpu_presolver) {
-        preprocessing_time = presolve_time;
-    }
-    presolve_time = presolve_core_time;
-    if (use_gurobi_presolver && !presolve_ok) {
-        free_embedded_gurobi_presolver(presolver_handle);
-        free_lp_info_cpu(&reduced_model);
-        HPRLP_results failure = make_error_result("PRESOLVE_FAILED");
-        failure.presolve_time = failure.timing.presolve_time = presolve_time;
-        failure.timing.presolve_core_time = presolve_core_time;
-        failure.timing.preprocessing_time = preprocessing_time;
-        failure.time = failure.timing.total_time = preprocessing_time;
-        return failure;
-    }
-    if (use_gurobi_presolver) {
-        print_gurobi_result_space_notice();
-        if (reduced_model.m == 0 && reduced_model.n == 0) {
-            HPRLP_results result = make_error_result("OPTIMAL");
-            result.primal_obj = reduced_model.obj_constant;
-            result.presolve_time = result.timing.presolve_time = presolve_time;
-            result.timing.presolve_core_time = presolve_core_time;
-            result.timing.preprocessing_time = preprocessing_time;
-            result.time = result.timing.total_time = preprocessing_time;
-            print_solver_banner();
-            print_solver_parameters(actual_param);
-            print_solution_summary(result, result.primal_obj, result.primal_obj,
-                                   0.0, 0.0, 0.0);
-            free_embedded_gurobi_presolver(presolver_handle);
-            free_lp_info_cpu(&reduced_model);
-            return result;
-        }
-        if (!reduced_model.A || reduced_model.m <= 0 || reduced_model.n <= 0 ||
-            reduced_model.A->numElements <= 0) {
-            std::cerr << "[error] Gurobi reduced model has zero rows, columns, or nonzeros"
-                      << std::endl;
-            HPRLP_results failure = make_error_result("REDUCED_MODEL_UNSUPPORTED");
-            failure.presolve_time = failure.timing.presolve_time = presolve_time;
-            failure.timing.presolve_core_time = presolve_core_time;
-            failure.timing.preprocessing_time = preprocessing_time;
-            failure.time = failure.timing.total_time = preprocessing_time;
-            free_embedded_gurobi_presolver(presolver_handle);
-            free_lp_info_cpu(&reduced_model);
-            return failure;
-        }
     }
     const LP_info_cpu *solve_model =
         presolve_ok && !device_handoff_active ? &reduced_model : model;
     if (!actual_param->print_debug_info && presolve_ok) {
         const char *presolver_label = use_gpu_presolver
-            ? "GPU-presolver" : (use_gurobi_presolver ? "Gurobi" :
-                (use_pslp0011 ? "PSLP0011" : "PSLP"));
+            ? "GPU-presolver" : "PSLP";
         const int reduced_m = device_handoff_active
             ? reduced_device_model.m : solve_model->m;
         const int reduced_n = device_handoff_active
@@ -1018,8 +936,7 @@ HPRLP_results solve(const LP_info_cpu *model, const HPRLP_parameters *param) {
                   << ", nnz = " << reduced_nnz << std::endl;
     } else if (!actual_param->print_debug_info) {
         const char *presolver_label = use_gpu_presolver
-            ? "GPU-presolver" : (use_gurobi_presolver ? "Gurobi" :
-                (use_pslp0011 ? "PSLP0011" : "PSLP"));
+            ? "GPU-presolver" : "PSLP";
         std::cout << "Presolved (" << presolver_label
                   << ") Model: original-model fallback, nRow = "
                   << model->m << ", nCol = " << model->n
@@ -1059,25 +976,15 @@ HPRLP_results solve(const LP_info_cpu *model, const HPRLP_parameters *param) {
         device_handoff_active ? nullptr : solve_model,
         device_handoff_active ? &reduced_device_model : nullptr,
         &effective, first_device_ready, presolve_time,
-        use_gpu_presolver ? folding_time : 0.0, presolve_core_time,
-        preprocessing_time);
+        use_gpu_presolver ? folding_time : 0.0);
     // Record attempted presolve time even when presolve falls back to the
     // original model. This keeps the timing breakdown faithful to work done.
     result.timing.presolve_time = presolve_time;
-    result.timing.presolve_core_time = presolve_core_time;
-    result.timing.preprocessing_time = preprocessing_time;
     result.presolve_time = presolve_time;
     result.folding_time = use_gpu_presolver ? folding_time : 0.0;
 
     if (presolve_ok) {
-        if (use_gurobi_presolver) {
-            // No public uncrush mapping: never expose reduced vectors through
-            // an API whose consumers copy the original m/n dimensions.
-            std::free(result.x);
-            std::free(result.y);
-            std::free(result.z);
-            result.x = result.y = result.z = nullptr;
-        } else if (result.x && result.y && result.z) {
+        if (result.x && result.y && result.z) {
             if (use_gpu_presolver) {
 #ifdef HPRLP_HAS_GPU_PRESOLVER
                 if (!gpu_postsolve_and_validate_original_kkt(
@@ -1093,19 +1000,6 @@ HPRLP_results solve(const LP_info_cpu *model, const HPRLP_parameters *param) {
                     result.status[sizeof(result.status) - 1] = '\0';
                 }
 #endif
-            } else if (use_pslp0011) {
-                if (!pslp0011_postsolve_and_validate_original_kkt(
-                        &result, model, presolver_handle, &effective)) {
-                    std::free(result.x);
-                    std::free(result.y);
-                    std::free(result.z);
-                    result.x = nullptr;
-                    result.y = nullptr;
-                    result.z = nullptr;
-                    std::strncpy(result.status, "POSTSOLVE_FAILED",
-                                 sizeof(result.status) - 1);
-                    result.status[sizeof(result.status) - 1] = '\0';
-                }
             } else {
                 postsolve_and_validate_original_kkt(
                     &result, model, presolver_handle, &effective);
@@ -1115,10 +1009,6 @@ HPRLP_results solve(const LP_info_cpu *model, const HPRLP_parameters *param) {
 #ifdef HPRLP_HAS_GPU_PRESOLVER
             free_embedded_gpu_presolver(presolver_handle);
 #endif
-        } else if (use_gurobi_presolver) {
-            free_embedded_gurobi_presolver(presolver_handle);
-        } else if (use_pslp0011) {
-            free_embedded_pslp0011_presolver(presolver_handle);
         } else {
             free_embedded_pslp_presolver(presolver_handle);
         }

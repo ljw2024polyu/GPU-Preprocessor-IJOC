@@ -19,8 +19,9 @@
 #include "backends/dictionary/dictionary_kernels.cuh"
 #include "backends/structured/structured_kernels.cuh"
 
-// A macro named numThreads collides with CUDA 12.9 cooperative-groups headers.
-inline constexpr int numThreads = 256;
+#ifndef numThreads
+#define numThreads 256
+#endif
 #ifndef numBlocks
 #define numBlocks(n) (((n) + numThreads - 1) / numThreads)
 #endif

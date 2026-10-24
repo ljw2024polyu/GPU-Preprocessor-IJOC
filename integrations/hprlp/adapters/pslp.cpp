@@ -1,3 +1,5 @@
+#include "adapters/pslp.hpp"
+#define HPRLP_PSLP_LABEL "PSLP 0.0.11"
 // Isolated-worker transport and KKT validation for PSLP 0.0.11.
 // Included only by pslp_integration.cpp.
 
@@ -20,6 +22,7 @@
 #include <unistd.h>
 #include <vector>
 
+#include "pslp0011_symbols.h"
 #include "PSLP_API.h"
 #include "PSLP_sol.h"
 #include "PSLP_stats.h"
@@ -221,7 +224,7 @@ void cleanup_worker_resources(pid_t child_pid, int *to_child_fd, int *from_child
 }
 
 [[noreturn]] void pslp_worker_main(const LP_info_cpu *model,
-                                   const HPRLP_parameters *param,
+                                   const IntegrationParameters *param,
                                    int request_fd,
                                    int response_fd) {
     Settings *settings = default_settings();
@@ -604,7 +607,7 @@ std::vector<std::string> check_org_recovery_failures(HPRLP_FLOAT primal_feas,
 }
 
 void print_postsolve_kkt_validation(const OriginalKktMetrics &metrics,
-                                    const HPRLP_parameters *param) {
+                                    const IntegrationParameters *param) {
     const HPRLP_FLOAT stop_tol = param ? param->stop_tol : 1e-4;
     const HPRLP_FLOAT original_kkt_error = std::max(metrics.primal_feas,
                                                     std::max(metrics.dual_feas, metrics.gap));
@@ -642,8 +645,8 @@ void print_postsolve_kkt_validation(const OriginalKktMetrics &metrics,
 
 } // namespace
 
-bool run_embedded_pslp_presolve(const LP_info_cpu *model,
-                                const HPRLP_parameters *param,
+bool ijoc_run_pslp_presolve(const LP_info_cpu *model,
+                                const IntegrationParameters *param,
                                 LP_info_cpu *reduced_model,
                                 void **presolver_handle_out,
                                 HPRLP_FLOAT *presolve_core_time_out) {
@@ -664,7 +667,7 @@ bool run_embedded_pslp_presolve(const LP_info_cpu *model,
         close_fd_if_open(&parent_to_child[1]);
         close_fd_if_open(&child_to_parent[0]);
         close_fd_if_open(&child_to_parent[1]);
-        std::cerr << "[warn] Failed to start isolated " HPRLP_PSLP_LABEL " worker; solving original model" << std::endl;
+        std::cerr << "[warn] Failed to start isolated " HPRLP_PSLP_LABEL " worker; preprocessing failed" << std::endl;
         return false;
     }
 
@@ -674,7 +677,7 @@ bool run_embedded_pslp_presolve(const LP_info_cpu *model,
         close_fd_if_open(&parent_to_child[1]);
         close_fd_if_open(&child_to_parent[0]);
         close_fd_if_open(&child_to_parent[1]);
-        std::cerr << "[warn] Failed to fork isolated " HPRLP_PSLP_LABEL " worker; solving original model" << std::endl;
+        std::cerr << "[warn] Failed to fork isolated " HPRLP_PSLP_LABEL " worker; preprocessing failed" << std::endl;
         return false;
     }
 
@@ -697,7 +700,7 @@ bool run_embedded_pslp_presolve(const LP_info_cpu *model,
 
     if (!received_message || message_kind != WorkerMessageKind::PresolveSuccess) {
         cleanup_worker_resources(child_pid, &parent_to_child[1], &child_to_parent[0]);
-        std::cerr << "[warn] " HPRLP_PSLP_LABEL " worker terminated before returning a reduced problem; solving original model"
+        std::cerr << "[warn] " HPRLP_PSLP_LABEL " worker terminated before returning a reduced problem; preprocessing failed"
                   << std::endl;
         return false;
     }
@@ -709,7 +712,7 @@ bool run_embedded_pslp_presolve(const LP_info_cpu *model,
     }
     if (!received_payload || !receive_reduced_model(child_to_parent[0], payload, reduced_model)) {
         cleanup_worker_resources(child_pid, &parent_to_child[1], &child_to_parent[0]);
-        std::cerr << "[warn] Failed to build reduced HPRLP model from " HPRLP_PSLP_LABEL " output; solving original model" << std::endl;
+        std::cerr << "[warn] Failed to build reduced HPRLP model from " HPRLP_PSLP_LABEL " output; preprocessing failed" << std::endl;
         free_lp_info_cpu(reduced_model);
         initialize_empty_model(reduced_model);
         return false;
@@ -720,7 +723,7 @@ bool run_embedded_pslp_presolve(const LP_info_cpu *model,
         cleanup_worker_resources(child_pid, &parent_to_child[1], &child_to_parent[0]);
         free_lp_info_cpu(reduced_model);
         initialize_empty_model(reduced_model);
-        std::cerr << "[warn] Failed to allocate isolated " HPRLP_PSLP_LABEL " worker handle; solving original model"
+        std::cerr << "[warn] Failed to allocate isolated " HPRLP_PSLP_LABEL " worker handle; preprocessing failed"
                   << std::endl;
         return false;
     }
@@ -737,7 +740,7 @@ bool run_embedded_pslp_presolve(const LP_info_cpu *model,
     return true;
 }
 
-bool apply_embedded_pslp_postsolve(HPRLP_results *result,
+bool ijoc_apply_pslp_postsolve(HPRLP_results *result,
                                    void *presolver_handle,
                                    int original_m,
                                    int original_n) {
@@ -783,10 +786,10 @@ bool apply_embedded_pslp_postsolve(HPRLP_results *result,
     return true;
 }
 
-bool postsolve_and_validate_original_kkt(HPRLP_results *result,
+bool ijoc_pslp_postsolve_and_validate(HPRLP_results *result,
                                          const LP_info_cpu *original_model,
                                          void *presolver_handle,
-                                         const HPRLP_parameters *param) {
+                                         const IntegrationParameters *param) {
     if (!result || !original_model) {
         return false;
     }
@@ -795,7 +798,7 @@ bool postsolve_and_validate_original_kkt(HPRLP_results *result,
     std::cout << "" HPRLP_PSLP_LABEL " POSTSOLVE" << std::endl;
     std::cout << "================================================================================" << std::endl;
 
-    if (!apply_embedded_pslp_postsolve(result, presolver_handle, original_model->m, original_model->n)) {
+    if (!ijoc_apply_pslp_postsolve(result, presolver_handle, original_model->m, original_model->n)) {
         return false;
     }
 
@@ -811,7 +814,7 @@ bool postsolve_and_validate_original_kkt(HPRLP_results *result,
     return true;
 }
 
-void free_embedded_pslp_presolver(void *presolver_handle) {
+void ijoc_free_pslp(void *presolver_handle) {
     if (!presolver_handle) {
         return;
     }

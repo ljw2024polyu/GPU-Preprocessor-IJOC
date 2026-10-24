@@ -10,9 +10,7 @@ bool run_embedded_gpu_presolve(const LP_info_cpu *model,
                                LP_info_cpu *reduced_model,
                                void **presolver_handle_out,
                                HPRLP_FLOAT *presolve_time_out,
-                               HPRLP_FLOAT *folding_time_out,
-                               HPRLP_FLOAT *presolve_core_time_out = nullptr,
-                               HPRLP_FLOAT *preprocessing_time_out = nullptr);
+                               HPRLP_FLOAT *folding_time_out);
 
 bool run_embedded_gpu_presolve_device(const LP_info_cpu *model,
                                       const HPRLP_parameters *param,
@@ -21,9 +19,7 @@ bool run_embedded_gpu_presolve_device(const LP_info_cpu *model,
                                       HPRLP_FLOAT *presolve_time_out,
                                       HPRLP_FLOAT *folding_time_out,
                                       std::chrono::steady_clock::time_point
-                                          *first_device_ready_out,
-                                      HPRLP_FLOAT *presolve_core_time_out = nullptr,
-                                      HPRLP_FLOAT *preprocessing_time_out = nullptr);
+                                          *first_device_ready_out);
 
 bool apply_embedded_gpu_postsolve(HPRLP_results *result,
                                   void *presolver_handle,

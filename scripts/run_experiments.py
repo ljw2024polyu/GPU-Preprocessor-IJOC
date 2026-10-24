@@ -121,7 +121,7 @@ def run_jobs(jobs, output):
         if completed.returncode:
             raise RuntimeError(f'Solver exited with code {completed.returncode}; see {log}')
         result = parse_result(log.read_text(errors='replace'), job['instance'])
-        if result['status'] in {'PRESOLVE_FAILED', 'UNSUPPORTED_PRESOLVER', 'REDUCED_MODEL_UNSUPPORTED'}:
+        if result['status'] in {'ERROR', 'PRESOLVE_FAILED', 'POSTSOLVE_FAILED', 'UNSUPPORTED_PRESOLVER', 'REDUCED_MODEL_UNSUPPORTED'}:
             raise RuntimeError(f"Solver returned {result['status']}; see {log}")
         if job['summary']:
             rows = summaries.setdefault(job['summary'], [])

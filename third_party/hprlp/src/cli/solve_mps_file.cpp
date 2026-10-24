@@ -72,10 +72,8 @@ static void print_usage(const char* prog) {
               << "      --ruiz <true/false>    Enable/disable Ruiz scaling (default: true)\n"
               << "      --pock <true/false>    Enable/disable Pock-Chambolle scaling (default: true)\n"
               << "      --bc <true/false>      Enable/disable bounds/cost scaling (default: true)\n"
-              << "      --presolver <pslp|pslp0011|gpu|gurobi|none>  Select backend; pslp/pslp0011 use 0.0.11 (default: gpu)\n"
+              << "      --presolver <pslp|gpu|none>  Select presolver backend (default: gpu)\n"
               << "      --gpu-folding <true/false>  Enable/disable GPU presolver folding (default: true)\n"
-              << "      --gpu-presolve <true/false>  Enable GPU presolve after optional folding (default: true)\n"
-              << "      --gpu-new-rules <true/false>  Enable the five structure-specific GPU rule families (default: true)\n"
               << "      --reduced-matrix <true/false>  Enable adaptive row/column reduction in manual mode (default: true)\n"
               << "      --auto-memory-policy <true/false>  Couple reduced/compression from presolved dimensions (default: false)\n"
               << "  -h, --help                 Show this help and exit\n"
@@ -413,12 +411,6 @@ int main(int argc, char** argv) {
             if (val == "pslp") {
                 param.use_presolve = true;
                 param.presolver = HPRLP_PRESOLVER_PSLP;
-            } else if (val == "pslp0011") {
-                param.use_presolve = true;
-                param.presolver = HPRLP_PRESOLVER_PSLP0011;
-            } else if (val == "gurobi" || val == "grb") {
-                param.use_presolve = true;
-                param.presolver = HPRLP_PRESOLVER_GUROBI;
             } else if (val == "gpu") {
                 param.use_presolve = true;
                 param.presolver = HPRLP_PRESOLVER_GPU;
@@ -431,22 +423,6 @@ int main(int argc, char** argv) {
                 return 1;
             }
             mark_specified(HPRLP_PARAM_PRESOLVER);
-        } else if (std::strcmp(a, "--gpu-presolve") == 0 ||
-                   std::strcmp(a, "--gpu-new-rules") == 0) {
-            need_value(a);
-            const std::string val = argv[++i];
-            if (val != "true" && val != "false" && val != "1" && val != "0") {
-                std::cerr << "Invalid boolean for " << a << ": " << val << "\n";
-                return 1;
-            }
-            const bool enabled = val == "true" || val == "1";
-            if (std::strcmp(a, "--gpu-presolve") == 0) {
-                param.enable_gpu_presolve = enabled;
-                mark_specified(HPRLP_PARAM_GPU_PRESOLVE);
-            } else {
-                param.enable_gpu_new_rules = enabled;
-                mark_specified(HPRLP_PARAM_GPU_NEW_RULES);
-            }
         } else if (std::strcmp(a, "--gpu-folding") == 0) {
             need_value(a);
             std::string val = argv[++i];
@@ -468,12 +444,6 @@ int main(int argc, char** argv) {
             print_usage(argv[0]);
             return 1;
         }
-    }
-
-    if ((!param.enable_gpu_presolve || !param.enable_gpu_new_rules) &&
-        (!param.use_presolve || param.presolver != HPRLP_PRESOLVER_GPU)) {
-        std::cerr << "--gpu-presolve false and --gpu-new-rules false require --presolver gpu\n";
-        return 1;
     }
 
     // Check if input file is provided
@@ -502,7 +472,8 @@ int main(int argc, char** argv) {
 #else
         std::cerr
             << "This solve_mps_file build has no native HDF5 support. "
-               "Install HDF5 development headers and rebuild, or use MPS input.\n";
+               "Rebuild after instantiating bindings/julia/package, or use "
+               "scripts/run_dataset.jl.\n";
         return 1;
 #endif
     } else if (is_mps_path(input_path)) {
@@ -530,7 +501,5 @@ int main(int argc, char** argv) {
     if (output.z) free(output.z);
     free_model(model);
 
-    return std::strcmp(output.status, "PRESOLVE_FAILED") == 0 ||
-           std::strcmp(output.status, "UNSUPPORTED_PRESOLVER") == 0 ||
-           std::strcmp(output.status, "REDUCED_MODEL_UNSUPPORTED") == 0 ? 1 : 0;
+    return 0;
 }

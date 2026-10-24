@@ -1,5 +1,5 @@
-#include "HPRLP.h"
-#include "presolve/gurobi_presolver_integration.h"
+#include "integration.hpp"
+#include "adapters/gurobi.hpp"
 #include "gpu/preprocessing/preprocess.h"
 
 #include <cmath>
@@ -21,8 +21,8 @@ static void check_reduced_pipeline() {
     auto *model = create_model_from_arrays_with_obj_constant(
         2, 5, 10, row, col, a, al, au, lo, up, c, 3.5, false);
     require(model != nullptr, "model creation failed");
-    HPRLP_parameters p;
-    p.presolver = HPRLP_PRESOLVER_GUROBI;
+    IntegrationParameters p;
+    p.backend = IJOC_PRESOLVER_GUROBI;
     p.stop_tol = 1e-8;
     p.print_debug_info = true;
 
@@ -32,7 +32,7 @@ static void check_reduced_pipeline() {
     void *handle = nullptr;
     double presolve_time = 0;
     bool timed_out = true;
-    require(run_embedded_gurobi_presolve(model, &p, &reduced, &handle,
+    require(ijoc_run_gurobi_presolve(model, &p, &reduced, &handle,
                                        &presolve_time, &timed_out),
             "Gurobi presolve handoff failed");
     require(!timed_out && presolve_time > p.time_limit,
@@ -43,17 +43,18 @@ static void check_reduced_pipeline() {
     require(std::abs(reduced.obj_constant - 17.5) < 1e-10,
             "fixed-variable or input objective constant was lost");
     free_lp_info_cpu(&reduced);
-    free_embedded_gurobi_presolver(handle);
+    ijoc_free_gurobi(handle);
 
     p.time_limit = 30;
-    auto result = solve(model, &p);
+    auto result = solve_preprocessed(model, &p);
     require(std::strcmp(result.status, "OPTIMAL") == 0, "reduced solve failed");
     require(std::abs(result.primal_obj + 8.9) < 1e-5, "reduced objective is incorrect");
     require(!result.x && !result.y && !result.z,
             "reduced vectors escaped through the original-space API");
-    require(result.timing.preprocessing_time > 0 &&
-            result.time >= result.timing.preprocessing_time &&
-            std::isnan(result.presolve_time) && std::isnan(result.timing.presolve_time),
+    require(result.preprocessing_time > 0 &&
+            result.time >= result.preprocessing_time &&
+            result.presolve_time == result.preprocessing_time &&
+            std::isnan(result.presolve_core_time),
             "Gurobi wall time was lost or mislabeled as native core");
     free_model(model);
 }
@@ -65,9 +66,9 @@ static void check_fixed_model(bool infeasible) {
     auto *model = create_model_from_arrays_with_obj_constant(
         1, 1, 1, row, col, a, al, au, lo, up, c, 3.5, false);
     require(model != nullptr, "fixed model creation failed");
-    HPRLP_parameters p;
-    p.presolver = HPRLP_PRESOLVER_GUROBI;
-    auto result = solve(model, &p);
+    IntegrationParameters p;
+    p.backend = IJOC_PRESOLVER_GUROBI;
+    auto result = solve_preprocessed(model, &p);
     require(!result.x && !result.y && !result.z, "unexpected original vectors");
     if (infeasible) {
         require(std::strcmp(result.status, "PRESOLVE_FAILED") == 0,
@@ -77,8 +78,8 @@ static void check_fixed_model(bool infeasible) {
                 "fully eliminated LP was not recognized as solved");
         require(std::abs(result.primal_obj - 17.5) < 1e-10,
                 "fully eliminated objective constant was lost");
-        require(result.timing.preprocessing_time > 0 &&
-                result.time == result.timing.preprocessing_time && std::isnan(result.presolve_time),
+        require(result.preprocessing_time > 0 &&
+                result.time >= result.preprocessing_time && std::isnan(result.presolve_core_time),
                 "fully eliminated LP timing is incorrect");
     }
     free_model(model);

@@ -1,6 +1,6 @@
-#include "HPRLP.h"
-#include "presolve/pslp_integration.h"
-#include "presolve/pslp0011_integration.h"
+#include "integration.hpp"
+#include "adapters/pslp.hpp"
+
 #include "gpu/preprocessing/preprocess.h"
 
 #include <cmath>
@@ -15,7 +15,7 @@ static void require(bool condition, const char *message) {
 
 // Duplicate columns and a fixed variable exercise primal/dual recovery.
 // A nonzero input objective constant checks both constant contributions.
-static void check_pipeline(HPRLP_presolve_backend backend, bool presolve_only) {
+static void check_pipeline(IjocPresolver backend, bool presolve_only) {
     int row[] = {0, 5, 10};
     int col[] = {0, 1, 2, 3, 4, 0, 1, 2, 3, 4};
     double a[] = {1, 1, 2, 2, 1, 3, 3, 1, 1, 1};
@@ -25,8 +25,8 @@ static void check_pipeline(HPRLP_presolve_backend backend, bool presolve_only) {
     auto *model = create_model_from_arrays_with_obj_constant(
         2, 5, 10, row, col, a, al, au, lo, up, c, 3.5, false);
     require(model != nullptr, "model creation failed");
-    HPRLP_parameters p;
-    p.presolver = backend;
+    IntegrationParameters p;
+    p.backend = backend;
     p.stop_tol = 1e-8;
     p.time_limit = 30;
     p.print_debug_info = true;
@@ -34,26 +34,26 @@ static void check_pipeline(HPRLP_presolve_backend backend, bool presolve_only) {
     // Require actual presolve success: an original-model fallback cannot pass.
     LP_info_cpu reduced{};
     void *handle = nullptr;
-    const bool latest = backend == HPRLP_PRESOLVER_PSLP0011;
+    const bool latest = backend == IJOC_PRESOLVER_PSLP0011;
     double core_time = NAN;
     require(latest
-        ? run_embedded_pslp0011_presolve(model, &p, &reduced, &handle, &core_time)
-        : run_embedded_pslp_presolve(model, &p, &reduced, &handle, &core_time),
+        ? ijoc_run_pslp_presolve(model, &p, &reduced, &handle, &core_time)
+        : ijoc_run_pslp_presolve(model, &p, &reduced, &handle, &core_time),
         "CPU presolve handoff failed");
     require(std::isfinite(core_time) && core_time > 0,
             "native PSLP core timer did not cross the worker transport");
     require(reduced.n < model->n, "test did not reduce the model");
     require(std::abs(reduced.obj_constant - 17.5) < 1e-10, "objective constant was lost");
     free_lp_info_cpu(&reduced);
-    if (latest) free_embedded_pslp0011_presolver(handle);
-    else free_embedded_pslp_presolver(handle);
+    if (latest) ijoc_free_pslp(handle);
+    else ijoc_free_pslp(handle);
     if (presolve_only) {
         free_model(model);
         std::cout << "CPU presolve handoff passed (backend=" << backend << ")\n";
         return;
     }
 
-    auto result = solve(model, &p);
+    auto result = solve_preprocessed(model, &p);
     require(std::strcmp(result.status, "OPTIMAL") == 0, "solver did not return OPTIMAL");
     require(result.x && result.y && result.z, "postsolve did not return original vectors");
     require(std::abs(result.x[0] + result.x[1] - 2.8) < 1e-5, "first variable pair recovery failed");
@@ -76,13 +76,13 @@ static void check_pipeline(HPRLP_presolve_backend backend, bool presolve_only) {
             "reported objective differs from original-space objective");
     require(result.presolve_time > 0 && result.time >= result.presolve_time,
             "CPU presolve timing was lost");
-    require(std::isfinite(result.timing.presolve_core_time) &&
-            result.timing.presolve_core_time > 0 &&
-            result.timing.presolve_core_time == result.presolve_time &&
+    require(std::isfinite(result.presolve_core_time) &&
+            result.presolve_core_time > 0 &&
+            result.presolve_core_time == result.presolve_time &&
             result.timing.presolve_time == result.presolve_time,
             "PSLP core and outer timing boundaries are inconsistent");
-    require(result.timing.preprocessing_time > result.presolve_time &&
-            result.timing.total_time >= result.timing.preprocessing_time,
+    require(result.preprocessing_time > result.presolve_time &&
+            result.timing.total_time >= result.preprocessing_time,
             "PSLP wall time was lost when presolve time became core time");
     for (int i = 0; i < 2; ++i) {
         double activity = 0;
@@ -101,9 +101,9 @@ int main(int argc, char **argv) {
     if (argc > 1 && !presolve_only) return 2;
     try {
         // Both public selectors must use PSLP 0.0.11 and recover original solutions.
-        check_pipeline(HPRLP_PRESOLVER_PSLP, presolve_only);
-        check_pipeline(HPRLP_PRESOLVER_PSLP0011, presolve_only);
-        check_pipeline(HPRLP_PRESOLVER_PSLP, presolve_only);
+        check_pipeline(IJOC_PRESOLVER_PSLP, presolve_only);
+        check_pipeline(IJOC_PRESOLVER_PSLP0011, presolve_only);
+        check_pipeline(IJOC_PRESOLVER_PSLP, presolve_only);
     } catch (const std::exception &e) {
         std::cerr << e.what() << '\n';
         return 1;

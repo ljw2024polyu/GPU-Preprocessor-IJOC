@@ -18,7 +18,7 @@ gpu_preprocessor_option(BUILD_TOOLS "Build standalone MPS tools" ${PROJECT_IS_TO
 gpu_preprocessor_option(BUILD_TESTS "Build numerical regression tests" OFF)
 gpu_preprocessor_option(BUILD_EXAMPLES "Build the integration example" ${PROJECT_IS_TOP_LEVEL})
 gpu_preprocessor_option(USE_INT64_NNZ "Use int64 nnz and offsets; dimensions stay int32" OFF)
-option(GPUPREPROCESSOR_BUILD_HPRLP "Build the HPR-LP-C 0.1.3 experiment solver with PSLP 0.0.11" OFF)
+option(GPUPREPROCESSOR_BUILD_HPRLP "Build official HPR-LP-C v0.1.3 with external preprocessing adapters" OFF)
 if(GPUPREPROCESSOR_BUILD_HPRLP)
   enable_language(C)
   include(CTest)

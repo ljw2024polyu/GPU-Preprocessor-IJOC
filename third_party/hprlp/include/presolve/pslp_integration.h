@@ -6,8 +6,7 @@
 bool run_embedded_pslp_presolve(const LP_info_cpu *model,
                                 const HPRLP_parameters *param,
                                 LP_info_cpu *reduced_model,
-                                void **presolver_handle_out,
-                                HPRLP_FLOAT *presolve_core_time_out = nullptr);
+                                void **presolver_handle_out);
 
 bool apply_embedded_pslp_postsolve(HPRLP_results *result,
                                    void *presolver_handle,
