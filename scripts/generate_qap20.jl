@@ -110,6 +110,8 @@ function main()
     input, output = ARGS
     ispath(output) && error("Refusing to overwrite $output")
     n, flow, distance = read_dat(input)
+    println("Generating $(basename(output)): N=$n, rows=$(2n^4 + 2n^3 + n^2 + 2n), columns=$(n^4 + n^2)")
+    flush(stdout)
     mkpath(dirname(abspath(output)))
     temporary = output * ".part-$(getpid())"
     try

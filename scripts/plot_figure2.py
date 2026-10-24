@@ -28,9 +28,15 @@ def main():
     stem = args.output_dir / 'figure_2_preprocessing_time'
     with args.data.open(newline='') as handle:
         data = list(csv.DictReader(handle))
-    assert len(data) == 15
+    if not data:
+        raise ValueError('No scalability results to plot')
     for row in data:
         row['N'] = int(row['N'])
+    sizes = sorted({row['N'] for row in data})
+    if len({(row['N'], row['method']) for row in data}) != len(data):
+        raise ValueError('Duplicate method/size measurements')
+    if {row['method'] for row in data} - {m[0] for m in METHODS}:
+        raise ValueError('Unknown preprocessing method')
     available = {entry.name for entry in font_manager.fontManager.ttflist}
     serif = next(name for name in ('Times New Roman', 'Times', 'STIXGeneral', 'DejaVu Serif') if name in available)
     plt.rcParams.update({'font.family': serif, 'font.size': 11, 'mathtext.fontset': 'stix',
@@ -40,16 +46,21 @@ def main():
     fig.subplots_adjust(left=0.12, right=0.98, bottom=0.15, top=0.98)
     for method, color, marker in METHODS:
         records = sorted((row for row in data if row['method'] == method), key=lambda row: row['N'])
-        assert [row['N'] for row in records] == SIZES
+        if not records:
+            continue
+        if [row['N'] for row in records] != sizes:
+            raise ValueError(f'{method} is missing a selected QAP size')
         values = [float(row['preprocessing_time_s']) for row in records]
-        line, = ax.plot(SIZES, values, label=method, color=color, linewidth=1.4,
+        if any(not value > 0 for value in values):
+            raise ValueError(f'{method} has an invalid preprocessing time')
+        line, = ax.plot(sizes, values, label=method, color=color, linewidth=1.4,
                         marker=marker, markersize=4.7, markerfacecolor='white',
                         markeredgecolor=color, markeredgewidth=0.9)
         assert list(line.get_ydata()) == values
     ax.set_yscale('log', base=10)
     ax.set_ylim(5e-3, 1e3)
     ax.set_xlim(12, 102)
-    ax.set_xticks(SIZES)
+    ax.set_xticks(sizes)
     ax.set_xlabel(r'QAP dimension $N$', labelpad=11)
     ax.set_ylabel('Preprocessing time (s)', labelpad=13)
     ax.yaxis.set_major_locator(ticker.LogLocator(base=10))

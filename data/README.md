@@ -11,7 +11,9 @@
 
 ## Mittelmann (Hans)
 
-Keep the official [download directory](https://plato.asu.edu/ftp/lptestset/) and [LPfeas benchmark page](https://plato.asu.edu/ftp/lpfeas.html) as the public entry points. The benchmark page lists additional source collections. Select the 49 instances in the inventory, including files in the `fome/`, `pds/`, and `rail/` subdirectories. Some compressed files use EMPS and need conversion to standard MPS, as explained on the benchmark page. Local paper filenames may differ from the source names, for example `fhnw-bin1` versus `fhnw-binschedule1` and `set-cover` versus `set-cover-model`.
+The official [download directory](https://plato.asu.edu/ftp/lptestset/) and [LPfeas benchmark page](https://plato.asu.edu/ftp/lpfeas.html) are the public entry points. [mittelmann_sources.csv](mittelmann_sources.csv) maps every paper filename to its exact source URL and format, including the `fome/`, `pds/`, `rail/`, and `misc/` subdirectories. The Meszaros collection is now served at [old.sztaki.hu](https://old.sztaki.hu/~meszaros/public_ftp/lptestset/). Three MIPLIB source models are exported as LP relaxations with the same API as the MIPLIB Large group.
+
+`prepare_inputs.py hans` downloads and decompresses all 49 models. For EMPS files, it downloads the original [Netlib EMPS C utility](https://netlib.org/lp/data/emps.c), compiles it locally, and expands the compressed representation to MPS before gzip compression. The utility is not bundled in this repository. The script preserves the public source files and applies the documented filename mapping; for example, `fhnw-binschedule1` becomes `fhnw-bin1` and `set-cover-model` becomes `set-cover`. It does not presolve a model.
 
 ## Download and generation commands
 
@@ -20,18 +22,21 @@ Run the following commands from the repository root on the experiment machine. S
 Requirements:
 
 - All groups: Python 3.10 or newer and `curl`.
-- MIPLIB Large: `gurobipy==12.0.2` and a valid Gurobi license.
+- Hans: a C compiler for EMPS and `gurobipy==12.0.2` for three MIPLIB-source relaxations.
+- MIPLIB Large: `gurobipy==12.0.2`. Read/relax/export was checked with its bundled size-limited license; this stage does not optimize a model.
 - QAP20: Julia 1.10 or newer and `gzip`; the generator uses only Julia's standard library.
-- QAP scalability: Linux x86-64, a Fortran compiler (`gfortran`), a C++17 compiler (`g++`), and `gzip`. CUDA and a solver license are not needed for QAP generation.
+- QAP scalability: Linux x86-64, a Fortran compiler (`gfortran`), GCC/G++ 11 or newer, and `gzip`. CUDA and a solver license are not needed for QAP generation.
 
 ```sh
 export INPUT_ROOT=/path/to/benchmark-inputs
 
+python3 scripts/prepare_inputs.py hans --list
 python3 scripts/prepare_inputs.py miplib-large --list
 python3 scripts/prepare_inputs.py qap20 --list
 python3 scripts/prepare_inputs.py qap-scale --list
 
 python3 -m pip install gurobipy==12.0.2
+python3 scripts/prepare_inputs.py hans --output-dir "$INPUT_ROOT"
 python3 scripts/prepare_inputs.py miplib-large --output-dir "$INPUT_ROOT"
 python3 scripts/prepare_inputs.py qap20 --output-dir "$INPUT_ROOT"
 python3 scripts/prepare_inputs.py qap-scale --output-dir "$INPUT_ROOT"
@@ -45,7 +50,9 @@ python3 scripts/prepare_inputs.py qap20 --instances tho40 --output-dir "$INPUT_R
 python3 scripts/prepare_inputs.py qap-scale --instances qap-wil100-n020 --output-dir "$INPUT_ROOT"
 ```
 
-Use a fresh output directory for a subsequent full run. To use previously downloaded original MPS/DAT files, add `--source-dir /path/to/source-files`. Use `--julia /path/to/julia`, `--fc /path/to/gfortran`, and `--cxx /path/to/g++` when the tools are not on `PATH`. Fortran flags can be set with `--fflags '...'`; the default is `-O3 -std=legacy -mcmodel=large`.
+Add `--resume` to keep completed models and prepare only missing outputs after an interruption. Without it, an existing output model is an error. To use previously downloaded original source files, add `--source-dir /path/to/source-files`. Use `--julia /path/to/julia`, `--fc /path/to/gfortran`, `--cxx /path/to/g++`, and `--cc /path/to/cc` when tools are not on `PATH`. Fortran flags can be set with `--fflags='...'`; the default is `-O3 -std=legacy -mcmodel=large`.
+
+After building `hprlp_solve`, run `python3 scripts/check_inputs.py --input-root "$INPUT_ROOT"` to read all 92 prepared inputs on CPU and compare their dimensions with the paper inputs. The [complete reproduction guide](../docs/REPRODUCING.md) provides one entry script for setup, data preparation, testing, running, and result processing.
 
 ## MIPLIB Large: 18 LP relaxations
 

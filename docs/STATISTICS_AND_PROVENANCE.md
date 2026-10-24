@@ -16,6 +16,12 @@ Total time is added at full precision, then rounded to three decimals. Figure 2 
 
 `OPTIMAL` denotes the stopping criterion on the preprocessed LP. Original-space KKT warnings and Gurobi's original-solution recovery limitation are retained in the logs and full-precision CSV.
 
+New experiment runs also retain `postsolve_original_kkt_warning` in the
+benchmark summary and per-instance CSVs. The reconstruction report counts
+these warnings separately. A completed run and a reduced-LP `OPTIMAL` status
+do not certify that the recovered original-space primal and dual solution
+both meet the requested tolerance.
+
 ## Execution records
 
 Command templates preserve recorded arguments, with executable and input paths replaced by the placeholders defined in the README. The scale index also records captured environment variables. An empty environment object means no separate environment record was captured.

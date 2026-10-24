@@ -56,7 +56,7 @@ def jobs_for(args):
                                  input=str(input_mps), log=log, command=command, environment={},
                                  summary=run['local_summary']))
     if args.suite in {'scalability', 'all'}:
-        if args.instances:
+        if args.instances and args.suite == 'scalability':
             raise ValueError('--instances is for the benchmarks suite; use --sizes for scalability')
         input_dir = args.input_root / 'QAP_wil100_scale'
         for entry in read_csv(ROOT / 'docs/table_6_figure_2_log_index.csv'):
@@ -94,6 +94,7 @@ def parse_result(text, name):
         if not float(value) >= 0 or not float(value) < float('inf'):
             raise ValueError(f'Invalid {label} for {name}: {value}')
         result[key] = value
+    result['postsolve_original_kkt_warning'] = 'Warning: postsolve original KKT check failed' in text
     return result
 
 

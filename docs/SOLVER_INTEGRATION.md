@@ -62,7 +62,7 @@ build-experiments/bin/hprlp_solve -i examples/model.mps --presolver pslp
 
 `pslp0011` is an alias for `pslp`, retained for the archived command templates. Both use PSLP 0.0.11. All four pipelines above require a GPU for the HPR-LP solve, but no Gurobi installation or license.
 
-Add `--print-debug-info true` when timing individual runs: it prints the separate preprocessing, presolve, and solve fields. The Section 4 runner already enables this option.
+The external driver always prints final preprocessing, presolve, and solve fields. Add `--print-debug-info true` for detailed diagnostics and original/reduced model dimensions; the Section 4 runner already enables it. `--inspect-input` reads an MPS model and reports its dimensions on CPU without calling CUDA or solving.
 
 ## Gurobi (optional)
 
@@ -127,7 +127,7 @@ The runner reads the [benchmark](tables_3_4_5_batch_index.csv) and [scalability]
 
 Each output directory must be new. It receives `commands.json`, raw logs, and benchmark summary CSVs. Output names follow the paper's table/log mapping. The runner stops on missing inputs, process failures, or unsupported/failed preprocessing, keeping completed logs for inspection. New runs never overwrite the archived `results/` directory.
 
-After a complete run of all groups and all five methods, reconstruct the CSV tables and Figure 2:
+After the selected run finishes, reconstruct its CSV tables and Figure 2:
 
 ```sh
 python3 scripts/rebuild_results.py --run-dir runs/section4
@@ -135,4 +135,4 @@ python3 scripts/plot_figure2.py \
   --data runs/section4/results/Figure2_QAPScalability/figure_2_preprocessing_times.csv
 ```
 
-This writes new CSVs and the figure under the run directory; the manuscript's LaTeX tables are unchanged. Partial runs can be inspected through their logs and summary CSVs. The full reconstruction command requires all 435 benchmark runs and 15 scalability runs. Without `--run-dir`, reconstruction reads the archived outputs and checks them against the paper tables.
+This writes new CSVs and the figure under the run directory; the manuscript's LaTeX tables are unchanged. Reconstruction uses `commands.json` to require exactly the selected instances, methods, and sizes. It supports the default run without Gurobi, a smaller finished check, or the full five-method run; an unfinished selected run is an error. A benchmark-only run has no scale figure. Without `--run-dir`, reconstruction reads all archived outputs and checks them against the paper tables. The [reproduction guide](REPRODUCING.md) provides a single entry script for the complete workflow.

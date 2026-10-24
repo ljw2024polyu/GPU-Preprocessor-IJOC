@@ -47,25 +47,26 @@ def rounded(value):
 def sgm10(values):
     return math.expm1(math.fsum(math.log((x + 10) / 10) for x in values) / len(values)) * 10
 
-def scale_log(path):
+def scale_log(path, final_fields=False):
     text = path.read_text(errors='replace')
     def value(pattern):
-        match = re.search(pattern, text, re.M)
-        if not match:
+        matches = re.findall(pattern, text, re.M)
+        if not matches:
             raise ValueError(f'Missing {pattern} in {path}')
-        return match.group(1)
+        return matches[-1] if final_fields else matches[0]
     patterns = [r'^GPU-Presolver-C preprocessing time: ([\d.eE+-]+) seconds',
                 r'^Preprocessing Time:\s*([\d.eE+-]+) seconds',
                 r'^Presolve Time:\s*([\d.eE+-]+) seconds']
-    prep = next((m.group(1) for p in patterns if (m := re.search(p, text, re.M))), None)
+    if final_fields:
+        patterns[0], patterns[1] = patterns[1], patterns[0]
+    prep = next((matches[-1] for p in patterns if (matches := re.findall(p, text, re.M))), None)
     assert prep is not None, path
     solve = value(r'^Solve Time:\s*([\d.eE+-]+) seconds')
     dimensions = [tuple(map(int, m)) for m in DIMENSIONS.findall(text)]
     assert len(dimensions) >= 2, path
-    assert value(r'^Status:\s*(\S+)') == 'OPTIMAL', path
     original, reduced = dimensions[0], dimensions[-1]
     return {
-        'status': 'OPTIMAL',
+        'status': value(r'^Status:\s*(\S+)'),
         'iterations': value(r'^Iterations:\s*(\d+)'),
         'primal_objective': value(r'^Primal Objective:\s*([\d.eE+-]+)'),
         'original_dimensions': json.dumps(original),
@@ -104,13 +105,26 @@ def main():
         ROOT = args.run_dir.expanduser().resolve()
         if ROOT == archive or archive / 'results' == ROOT or archive / 'results' in ROOT.parents:
             parser.error('--run-dir must be a separate experiment output directory')
+    plan = None
+    if args.run_dir:
+        plan = json.loads((ROOT / 'commands.json').read_text())
+        # Summarize exactly the selected run: unlicensed methods and unselected
+        # instances/sizes are absent, rather than copied from the paper archive.
+        if not plan:
+            parser.error('The run command plan is empty')
     runs = read_csv(archive / 'docs/tables_3_4_5_batch_index.csv')
     aggregates = {}
     instance_rows = []
     for run in runs:
         batch = run['paper_batch_id']
+        selected = [j for j in plan if j['summary'] == run['local_summary']] if plan is not None else None
+        if selected == []:
+            continue
         rows = [r for r in read_csv(ROOT / run['local_summary']) if r['name'] not in {'SGM10', 'solved'}]
-        assert len(rows) == int(run['instances']), batch
+        count = len(selected) if selected is not None else int(run['instances'])
+        assert len(rows) == count, f'Incomplete {batch}: expected {count}, found {len(rows)}'
+        if selected is not None:
+            assert sorted(r['name'] for r in rows) == sorted(j['instance'] for j in selected), batch
         ratios = []
         prep_times, solve_times, total_times = [], [], []
         for row in rows:
@@ -139,6 +153,8 @@ def main():
                 **dict(zip(['reduced_rows', 'reduced_columns', 'reduced_nnz'], reduced)),
                 **dict(zip(['r_m', 'r_n', 'r_nnz'], ratio)),
                 'raw_log': str(log.relative_to(ROOT)), 'source_batch': batch,
+                **({'postsolve_original_kkt_warning': 'Warning: postsolve original KKT check failed' in text}
+                   if args.run_dir else {}),
             })
         result = {
             'dataset': run['dataset'], 'variant': run['variant'],
@@ -151,31 +167,35 @@ def main():
         result.update({k: rounded(math.fsum(r[i] for r in ratios) / len(ratios))
                        for i, k in enumerate(['r_m', 'r_n', 'r_nnz'])})
         aggregates[run['dataset'], run['variant']] = result
-    write_csv(ROOT / 'results/tables_3_4_5_instance_results.csv', instance_rows, list(instance_rows[0]))
+    if instance_rows:
+        write_csv(ROOT / 'results/tables_3_4_5_instance_results.csv', instance_rows, list(instance_rows[0]))
     scale_index = read_csv(archive / 'docs/table_6_figure_2_log_index.csv')
     scale_rows = []
     scale_detailed = []
     for entry in scale_index:
+        if plan is not None and entry['local_log'] not in {j['log'] for j in plan}:
+            continue
         log = ROOT / entry['local_log']
-        parsed = scale_log(log)
-        record = {'N': entry['N'], 'method': entry['method'],
+        parsed = scale_log(log, final_fields=bool(args.run_dir))
+        record = {'N': entry['N'], 'method': entry['method'], 'status': parsed['status'],
                   **{k: rounded(parsed[k]) for k in METRICS[6]},
                   'raw_log': str(log.relative_to(ROOT))}
         scale_rows.append(record)
         scale_detailed.append({'N': entry['N'], 'method': entry['method'],
                                **parsed, 'raw_log': str(log.relative_to(ROOT))})
-    write_csv(ROOT / 'results/Table6_QAPScalability/table_6_full_precision_results.csv',
-              scale_detailed, list(scale_detailed[0]))
+    if scale_detailed:
+        write_csv(ROOT / 'results/Table6_QAPScalability/table_6_full_precision_results.csv',
+                  scale_detailed, list(scale_detailed[0]))
     checks = []
     for number, (name, label, variants) in TABLES.items():
         folder = ROOT / 'results' / name
-        folder.mkdir(exist_ok=True)
         if number == 6:
             records = scale_rows
-            keys = ['N', 'method']
+            keys = ['N', 'method'] + (['status'] if args.run_dir else [])
             source = ['raw_log']
         else:
-            records = [aggregates[group, variant] for group in GROUPS for variant in variants]
+            records = [aggregates[group, variant] for group in GROUPS for variant in variants
+                       if (group, variant) in aggregates]
             if number == 3:
                 records = [dict(r, variant='Folding + presolve') if r['variant'] == 'GPU-Preprocessor' else r for r in records]
             keys = ['dataset', 'variant']
@@ -187,6 +207,9 @@ def main():
                 keys = ['dataset', 'method']
             source = ['source_batch']
         fields = keys + METRICS[number] + source
+        if not records:
+            continue
+        folder.mkdir(exist_ok=True)
         write_csv(folder / TABLE_FILES[number], records, fields)
         if not args.run_dir:
             expected = manuscript_table(number, label)
@@ -197,10 +220,14 @@ def main():
     figure_data = [{'N': r['N'], 'method': r['method'],
                     'preprocessing_time_s': r['preprocessing_time_s'], 'raw_log': r['raw_log']}
                    for r in scale_rows]
-    write_csv(ROOT / 'results/Figure2_QAPScalability/figure_2_preprocessing_times.csv', figure_data, list(figure_data[0]))
+    if figure_data:
+        write_csv(ROOT / 'results/Figure2_QAPScalability/figure_2_preprocessing_times.csv', figure_data, list(figure_data[0]))
     report = {'benchmark_instance_rows': len(instance_rows), 'scale_results': len(scale_rows),
               'table_rows_matching_manuscript': None if args.run_dir else sum(c['rows'] for c in checks),
               'tables': checks}
+    if args.run_dir:
+        report['postsolve_original_kkt_warnings'] = sum(
+            r['postsolve_original_kkt_warning'] for r in instance_rows + scale_detailed)
     print(json.dumps(report, indent=2))
 
 if __name__ == '__main__':

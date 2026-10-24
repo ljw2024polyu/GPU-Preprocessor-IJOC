@@ -620,7 +620,7 @@ void print_postsolve_kkt_validation(const OriginalKktMetrics &metrics,
         metrics.primal_feas, metrics.dual_feas, metrics.gap, stop_tol);
 
     std::cout << "Warning: postsolve original KKT check failed"
-              << " (but the primal solution and objective are reliable): ";
+              << " (reduced-LP solver status is retained): ";
     for (size_t i = 0; i < failures.size(); ++i) {
         if (i > 0) {
             std::cout << "; ";

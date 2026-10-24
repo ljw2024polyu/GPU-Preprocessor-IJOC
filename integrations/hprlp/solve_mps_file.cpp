@@ -53,6 +53,7 @@ static void print_usage(const char* prog) {
               << "\nOptions:\n"
               << "  -i, --input <path>         Path to input .mps, .mps.gz, .h5, or .hdf5 file (required)\n"
               << "      --device <id>          CUDA device id (default: 0)\n"
+              << "      --inspect-input        Read and report LP dimensions on CPU, then exit\n"
               << "      --max-iter <N>         Max iterations (default: INT32_MAX)\n"
               << "      --tol <eps>            Stopping tolerance (default: 1e-6)\n"
               << "      --time-limit <sec>     Time limit in seconds (default: 1000)\n"
@@ -290,6 +291,7 @@ int main(int argc, char** argv) {
     apply_default_runtime_environment();
     std::string input_path;
     bool input_provided = false;
+    bool inspect_input = false;
     IntegrationParameters param; // defaults from structs.h
     auto mark_specified = [&](std::uint64_t bit) {
         param.specified_parameter_mask |= bit;
@@ -309,6 +311,8 @@ int main(int argc, char** argv) {
         if (std::strcmp(a, "-h") == 0 || std::strcmp(a, "--help") == 0) {
             print_usage(argv[0]);
             return 0;
+        } else if (std::strcmp(a, "--inspect-input") == 0) {
+            inspect_input = true;
         } else if (std::strcmp(a, "-i") == 0 || std::strcmp(a, "--input") == 0) {
             need_value(a);
             input_path = std::string(argv[++i]);
@@ -517,6 +521,14 @@ int main(int argc, char** argv) {
         std::cerr << "Failed to load model from input file: "
                   << input_path << "\n";
         return 1;
+    }
+
+    if (inspect_input) {
+        std::cout << "INPUT_INFO {\"rows\":" << model->m
+                  << ",\"columns\":" << model->n
+                  << ",\"nonzeros\":" << model->A->numElements << "}\n";
+        free_model(model);
+        return 0;
     }
 
     ExperimentResult output = solve_preprocessed(model, &param);

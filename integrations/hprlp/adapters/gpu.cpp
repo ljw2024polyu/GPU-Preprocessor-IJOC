@@ -648,7 +648,7 @@ void print_postsolve_kkt_validation(const OriginalKktMetrics &metrics,
     }
 
     std::cout << "Warning: postsolve original KKT check failed"
-              << " (but the primal solution and objective are reliable)" << std::endl;
+              << " (reduced-LP solver status is retained; inspect the residuals below)" << std::endl;
     const std::streamsize saved_precision = std::cout.precision();
     const std::ios::fmtflags saved_flags = std::cout.flags();
     std::cout << std::scientific << std::setprecision(2)

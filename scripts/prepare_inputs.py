@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Download and generate the MIPLIB Large, QAP20, and wil100 paper inputs."""
+"""Download and prepare the four Section 4 input groups."""
 import argparse
+import bz2
 import csv
 import gzip
 import os
@@ -16,16 +17,23 @@ MIPLIB = 'https://miplib.zib.de/WebData/instances/'
 QAPLIB = 'https://coral.ise.lehigh.edu/wp-content/uploads/2014/07/data.d/'
 HINDER_COMMIT = 'b44862990e19ddaeab5568a826bd4ced13f23819'
 HINDER = f'https://raw.githubusercontent.com/ohinder/large-scale-LP-test-problems/{HINDER_COMMIT}/'
-GROUPS = {'miplib-large': 'MIPLIB Large', 'qap20': 'QAP20', 'qap-scale': 'QAP wil100 scale'}
-FOLDERS = {'miplib-large': 'MIPLIB_Large', 'qap20': 'QAP20', 'qap-scale': 'QAP_wil100_scale'}
+GROUPS = {'hans': 'Mittelmann', 'miplib-large': 'MIPLIB Large',
+          'qap20': 'QAP20', 'qap-scale': 'QAP wil100 scale'}
+FOLDERS = {'hans': 'Mittelmann', 'miplib-large': 'MIPLIB_Large',
+           'qap20': 'QAP20', 'qap-scale': 'QAP_wil100_scale'}
 
 
 def inventory(group, selected):
+    with (ROOT / 'data/mittelmann_sources.csv').open(newline='') as stream:
+        hans = {r['name']: r for r in csv.DictReader(stream)}
     with (ROOT / 'data/section_4_input_inventory.csv').open(newline='') as stream:
         rows = [r for r in csv.DictReader(stream) if r['dataset'] == GROUPS[group]]
     for row in rows:
         row['instance'] = row['name'].removesuffix('.mps.gz')
-        if group == 'miplib-large':
+        if group == 'hans':
+            row.update(hans[row['name']])
+            row['source_name'] = row['url'].rsplit('/', 1)[1]
+        elif group == 'miplib-large':
             row['source_name'] = row['instance'].removesuffix('_relax') + '.mps.gz'
             row['url'] = MIPLIB + row['source_name']
         elif group == 'qap20':
@@ -93,6 +101,32 @@ def export_mip(source, output):
                       f'nonzeros={relaxed.DNumNZs:.0f}', flush=True)
 
 
+def prepare_hans(source, output, row, args, cache, work):
+    if row['format'] == 'mip-gz':
+        export_mip(source, output)
+        return
+    unpack = bz2.open if row['format'].endswith('bz2') else gzip.open
+    if row['format'].startswith('emps-'):
+        require_executable(args.cc)
+        emps_source = cache / 'emps.c'
+        download('https://netlib.org/lp/data/emps.c', emps_source)
+        emps = cache / 'emps'
+        if not emps.is_file():
+            subprocess.run([args.cc, '-O2', str(emps_source), '-o', str(emps)], check=True)
+        packed = work / 'packed.lp'
+        with unpack(source, 'rb') as inp, packed.open('wb') as out:
+            shutil.copyfileobj(inp, out, 1 << 20)
+        # EMPS keeps extension lines by default and expands names/numbers only.
+        with (work / 'expanded.mps').open('wb') as out:
+            subprocess.run([str(emps), str(packed)], stdout=out, check=True)
+        inp_context = (work / 'expanded.mps').open('rb')
+    else:
+        inp_context = unpack(source, 'rb')
+    with inp_context as inp, output.open('wb') as raw_out:
+        with gzip.GzipFile(filename='', fileobj=raw_out, mode='wb', mtime=0) as out:
+            shutil.copyfileobj(inp, out, 1 << 20)
+
+
 def build_scale_tools(args, cache):
     require_executable(args.fc)
     require_executable(args.cxx)
@@ -145,11 +179,13 @@ def main():
     parser.add_argument('--instances', nargs='+', help='Paper instance names without .mps.gz; use --list to see them.')
     parser.add_argument('--list', action='store_true', help='Print exact URLs and output names; do not download or write files.')
     parser.add_argument('--download-only', action='store_true', help='Download source MPS/DAT files without generating LPs.')
+    parser.add_argument('--resume', action='store_true', help='Keep already completed output models and prepare the missing ones.')
     parser.add_argument('--source-dir', type=Path, help='Use source files from this directory, without downloading them.')
     parser.add_argument('--julia', default='julia', help='Julia executable for QAP20.')
     parser.add_argument('--fc', default=os.environ.get('FC', 'gfortran'), help='Fortran compiler executable for scale.')
     parser.add_argument('--fflags', default='-O3 -std=legacy -mcmodel=large', help='Fortran compiler flags (Linux x86-64 defaults).')
     parser.add_argument('--cxx', default=os.environ.get('CXX', 'g++'), help='C++17 compiler for scale.')
+    parser.add_argument('--cc', default=os.environ.get('CC', 'cc'), help='C compiler for the Hans EMPS utility.')
     args = parser.parse_args()
     rows = inventory(args.group, args.instances)
     if args.list:
@@ -173,6 +209,12 @@ def main():
     for row in rows:
         output = destination / row['name']
         if output.exists() and not args.download_only:
+            if args.resume:
+                with gzip.open(output, 'rb') as stream:
+                    if not stream.read(1):
+                        raise ValueError(f'Empty output: {output}')
+                print(f'Keep {output}', flush=True)
+                continue
             raise FileExistsError(f'Refusing to overwrite {output}; choose a new --output-dir.')
         source = raw_dir / row['source_name']
         if args.source_dir:
@@ -180,7 +222,12 @@ def main():
                 raise FileNotFoundError(source)
         else:
             download(row['url'], source)
-        if args.group == 'miplib-large':
+        if args.group == 'hans':
+            unpack = bz2.open if row['format'].endswith('bz2') else gzip.open
+            with unpack(source, 'rb') as stream:
+                if not stream.read(1):
+                    raise ValueError(f'Empty source: {source}')
+        elif args.group == 'miplib-large':
             with gzip.open(source, 'rb') as stream:
                 stream.read(1)
         else:
@@ -193,7 +240,10 @@ def main():
         with tempfile.TemporaryDirectory(prefix='.generate-', dir=destination) as tmp:
             work = Path(tmp)
             temporary = work / output.name
-            if args.group == 'miplib-large':
+            if args.group == 'hans':
+                prepare_hans(source, temporary, row, args,
+                             args.output_dir.resolve() / '.tools', work)
+            elif args.group == 'miplib-large':
                 export_mip(source, temporary)
             elif args.group == 'qap20':
                 subprocess.run([args.julia, str(ROOT / 'scripts/generate_qap20.jl'),
