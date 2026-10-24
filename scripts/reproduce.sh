@@ -3,6 +3,7 @@
 # Run from any directory. See docs/REPRODUCING.md for prerequisites and outputs.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+entry_script="$PWD/scripts/reproduce.sh"
 
 stage=${1:-help}
 WORK_ROOT=${WORK_ROOT:-"$PWD/runs/reproduction"}
@@ -69,7 +70,7 @@ case "$stage" in
     summarize
     ;;
   all)
-    for step in setup data test run results; do bash "$0" "$step"; done
+    for step in setup data test run results; do bash "$entry_script" "$step"; done
     ;;
   help|-h|--help)
     printf '%s\n' 'Usage: bash scripts/reproduce.sh STAGE' \

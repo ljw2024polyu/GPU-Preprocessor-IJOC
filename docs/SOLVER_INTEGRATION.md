@@ -11,6 +11,10 @@ The `hprlp_solve` executable connects GPU-Preprocessor, PSLP, and optionally Gur
 
 HPR-LP is pinned to the official [v0.1.3 release](https://github.com/PolyU-IOR/HPR-LP-C/releases/tag/v0.1.3), commit `89d3cc06806b4d31d029f7b5c8591db58219ff6d`. The copied source files, headers, release tests, licenses, and native PSLP dependency are byte-identical to that release. Build rules and all IJOC adapters live under `integrations/hprlp/`; the release source is not patched.
 
+The bundled directory contains the files needed by this integrated build. Use
+the repository-root build instructions below. For a standalone upstream build,
+download the full official release archive and follow its own README.
+
 The official release's built-in PSLP 0.0.8 dependency is retained for the native library. The external driver disables built-in presolve and selects GPU-Preprocessor, PSLP 0.0.11, Gurobi, or no preprocessing. The comparison PSLP symbols are prefixed at compile time so the two versions cannot be confused. Both public CLI names `pslp` and `pslp0011` select 0.0.11.
 
 The external adapters hand a host copy of the reduced LP to the official solver API and perform postsolve afterward. They do not use the previous experiment implementation's modified solver or its device-only handoff. Timing fields for external preprocessing are recorded by the driver. Archived results remain unchanged; agreement of new official-release runs with those measurements requires a new benchmark comparison.
