@@ -19,11 +19,14 @@ METHODS = [('Gurobi', '#4DAF00', 'D'), ('PSLP', '#FF3B00', 's'),
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output-dir', type=Path, default=DATA.parent)
+    parser.add_argument('--data', type=Path, default=DATA)
+    parser.add_argument('--output-dir', type=Path)
     args = parser.parse_args()
+    if args.output_dir is None:
+        args.output_dir = args.data.parent
     args.output_dir.mkdir(parents=True, exist_ok=True)
     stem = args.output_dir / 'figure_2_preprocessing_time'
-    with DATA.open(newline='') as handle:
+    with args.data.open(newline='') as handle:
         data = list(csv.DictReader(handle))
     assert len(data) == 15
     for row in data:

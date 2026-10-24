@@ -1,8 +1,8 @@
 # GPU-Accelerated Preprocessing for Large-Scale Linear Programming
 
-This repository contains the GPU-Preprocessor C++/CUDA library and experimental outputs for the paper by Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, and Xinyuan Zhao. See [AUTHORS](AUTHORS) for contact details and [LICENSE](LICENSE) for the MIT license.
+This repository contains the GPU-Preprocessor C++/CUDA library, its HPR-LP experiment driver, and experimental outputs for the paper by Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, and Xinyuan Zhao. See [AUTHORS](AUTHORS) for contact details and [LICENSE](LICENSE) for the MIT license. Bundled HPR-LP and PSLP code retains its own [MIT](third_party/hprlp/LICENSE) and [Apache-2.0](third_party/pslp/LICENSE) licenses, respectively.
 
-The library is imported from the [main-branch snapshot](https://github.com/PolyU-IOR/GPU-Preprocessor/commit/febe85d0bde835d8e9c2798ff02296fd207cbbb3) of [PolyU-IOR/GPU-Preprocessor](https://github.com/PolyU-IOR/GPU-Preprocessor). Its source and build files are unchanged. This snapshot provides the standalone preprocessor; it has not been established as the exact integrated executable used to produce the archived HPR-LP experiment results.
+The GPU library source is imported from the [main-branch snapshot](https://github.com/PolyU-IOR/GPU-Preprocessor/commit/febe85d0bde835d8e9c2798ff02296fd207cbbb3) of [PolyU-IOR/GPU-Preprocessor](https://github.com/PolyU-IOR/GPU-Preprocessor). The integrated driver combines this library with the HPR-LP-C 0.1.3 experiment implementation and PSLP 0.0.11. See [solver integration](docs/SOLVER_INTEGRATION.md) for the source versions, build instructions, and comparison backends.
 
 ## Cite
 
@@ -45,8 +45,10 @@ GPU-Preprocessor applies folding and presolve to continuous linear programs befo
 | `cpp/` | C++/CUDA library, MPS tools, and regression tests |
 | `cmake/` | Build and installation configuration |
 | `examples/` | C++ integration example and a small MPS model |
+| `integrations/hprlp/` | Build configuration for the HPR-LP experiment driver and optional Gurobi interface |
+| `third_party/` | HPR-LP experiment source and PSLP 0.0.11, with their licenses |
 | `data/` | Benchmark input inventory and data sources |
-| `scripts/` | Input download/generation and reconstruction of result tables and Figure 2 |
+| `scripts/` | Input preparation, experiment execution, and reconstruction of result tables and Figure 2 |
 | `docs/` | Experimental settings, statistical definitions, and log mappings |
 | `results/` | Raw logs, summary CSVs, table data, LaTeX tables, and Figure 2 |
 
@@ -66,6 +68,18 @@ ctest --test-dir build-tests --output-on-failure
 ~~~
 
 The [MPS reader tests](cpp/mps_reader/README.md) can also be built independently without CUDA.
+
+To build the integrated HPR-LP solver with GPU-Preprocessor and PSLP, install the zlib development headers and run:
+
+~~~sh
+cmake -S . -B build-experiments \
+  -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES=90 \
+  -DGPUPREPROCESSOR_BUILD_HPRLP=ON
+cmake --build build-experiments -j 4
+ctest --test-dir build-experiments --output-on-failure
+~~~
+
+Architecture `90` targets the paper's H100; change it for another GPU. Tests exercise the preprocessing interfaces and original-space solution recovery. Gurobi is disabled by default. To enable it, install Gurobi 12.0.2 separately and provide a valid license; see the [Gurobi setup](docs/SOLVER_INTEGRATION.md#gurobi-optional).
 
 The result-processing scripts require Python 3.10 or newer. Figure generation requires the version listed in `requirements.txt`:
 
@@ -122,4 +136,13 @@ The first command reads the raw logs and summary CSVs and checks the reconstruct
 
 The [benchmark index](docs/tables_3_4_5_batch_index.csv) and [scalability index](docs/table_6_figure_2_log_index.csv) record the experiment commands. Their placeholders `{solver_executable}`, `{input_mps}`, and `{input_dir}` denote the integrated solver executable and input paths. These commands target HPR-LP-C 0.1.3 with the corresponding preprocessing interfaces; they are not command-line options for the standalone MPS tool above.
 
-The [input preparation guide](data/README.md) provides the Hans public entry points, exact MIPLIB/QAP download links, and commands to generate the MIPLIB Large, QAP20, and wil100 scalability inputs. Full solver reruns additionally require the integrated HPR-LP-C experiment implementation and the PSLP 0.0.11 and Gurobi 12.0.2 interfaces; those solver components remain to be incorporated. Gurobi must be installed separately under an appropriate license. Benchmark input models are not bundled.
+The [input preparation guide](data/README.md) provides the Hans public entry points, exact MIPLIB/QAP download links, and commands to generate the MIPLIB Large, QAP20, and wil100 scalability inputs. Benchmark input models are not bundled.
+
+After building the integrated solver and preparing inputs, run the benchmarks without Gurobi:
+
+~~~sh
+python3 scripts/run_experiments.py --input-root /path/to/benchmark-inputs \
+  --suite all --output-dir runs/experiment-01
+~~~
+
+The default methods are no preprocessing, folding only, GPU-Preprocessor, and PSLP. Add `--methods none folding gpu pslp gurobi` to include the licensed Gurobi comparison. The runner uses the recorded commands, saves logs and summary CSVs in a fresh directory, and leaves `results/` unchanged. See [running Section 4](docs/SOLVER_INTEGRATION.md#running-section-4) for selecting individual experiments and reconstructing tables from a complete new run. Rebuilding the integrated source and rerunning benchmarks is distinct from reconstructing the archived measurements above; exact numerical and timing agreement with the archive has not been established for this assembled source tree.

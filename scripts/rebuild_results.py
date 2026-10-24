@@ -2,6 +2,7 @@
 """Regenerate Section 4 CSV tables from raw outputs; no solver is run."""
 from pathlib import Path
 from decimal import Decimal, ROUND_HALF_UP
+import argparse
 import csv
 import json
 import math
@@ -93,7 +94,17 @@ def manuscript_table(number, label):
     return expected
 
 def main():
-    runs = read_csv(ROOT / 'docs/tables_3_4_5_batch_index.csv')
+    global ROOT
+    archive = ROOT
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--run-dir', type=Path,
+                        help='Reconstruct a complete new run instead of checking archived paper results')
+    args = parser.parse_args()
+    if args.run_dir:
+        ROOT = args.run_dir.expanduser().resolve()
+        if ROOT == archive or archive / 'results' == ROOT or archive / 'results' in ROOT.parents:
+            parser.error('--run-dir must be a separate experiment output directory')
+    runs = read_csv(archive / 'docs/tables_3_4_5_batch_index.csv')
     aggregates = {}
     instance_rows = []
     for run in runs:
@@ -141,7 +152,7 @@ def main():
                        for i, k in enumerate(['r_m', 'r_n', 'r_nnz'])})
         aggregates[run['dataset'], run['variant']] = result
     write_csv(ROOT / 'results/tables_3_4_5_instance_results.csv', instance_rows, list(instance_rows[0]))
-    scale_index = read_csv(ROOT / 'docs/table_6_figure_2_log_index.csv')
+    scale_index = read_csv(archive / 'docs/table_6_figure_2_log_index.csv')
     scale_rows = []
     scale_detailed = []
     for entry in scale_index:
@@ -177,16 +188,19 @@ def main():
             source = ['source_batch']
         fields = keys + METRICS[number] + source
         write_csv(folder / TABLE_FILES[number], records, fields)
-        expected = manuscript_table(number, label)
-        actual = [[str(row[k]) for k in METRICS[number]] for row in records]
-        assert actual == expected, f'Table {number} differs from manuscript table: {actual!r} vs {expected!r}'
-        checks.append({'table': number, 'rows': len(records), 'matches_manuscript': True})
+        if not args.run_dir:
+            expected = manuscript_table(number, label)
+            actual = [[str(row[k]) for k in METRICS[number]] for row in records]
+            assert actual == expected, f'Table {number} differs from manuscript table: {actual!r} vs {expected!r}'
+        checks.append({'table': number, 'rows': len(records),
+                       'matches_manuscript': None if args.run_dir else True})
     figure_data = [{'N': r['N'], 'method': r['method'],
                     'preprocessing_time_s': r['preprocessing_time_s'], 'raw_log': r['raw_log']}
                    for r in scale_rows]
     write_csv(ROOT / 'results/Figure2_QAPScalability/figure_2_preprocessing_times.csv', figure_data, list(figure_data[0]))
     report = {'benchmark_instance_rows': len(instance_rows), 'scale_results': len(scale_rows),
-              'table_rows_matching_manuscript': sum(c['rows'] for c in checks), 'tables': checks}
+              'table_rows_matching_manuscript': None if args.run_dir else sum(c['rows'] for c in checks),
+              'tables': checks}
     print(json.dumps(report, indent=2))
 
 if __name__ == '__main__':
