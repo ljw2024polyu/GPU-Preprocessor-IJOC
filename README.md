@@ -69,23 +69,10 @@ ctest --test-dir build-tests --output-on-failure
 
 The [MPS reader tests](cpp/mps_reader/README.md) can also be built independently without CUDA.
 
-To build the integrated HPR-LP solver with GPU-Preprocessor and PSLP, install the zlib development headers and run:
-
-~~~sh
-cmake -S . -B build-experiments \
-  -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES=90 \
-  -DGPUPREPROCESSOR_BUILD_HPRLP=ON
-cmake --build build-experiments -j 4
-ctest --test-dir build-experiments --output-on-failure
-~~~
-
-Architecture `90` targets the paper's H100; change it for another GPU. Tests exercise the preprocessing interfaces and original-space solution recovery. Gurobi is disabled by default. To enable it, install Gurobi 12.0.2 separately and provide a valid license; see the [Gurobi setup](docs/SOLVER_INTEGRATION.md#gurobi-optional).
-
-The Python scripts require Python 3.10 or newer. Pinned plotting and MIP-input export packages are listed in `requirements.txt`:
-
-~~~sh
-python3 -m pip install -r requirements.txt
-~~~
+The integrated HPR-LP/PSLP experiment driver is built by the reproduction
+workflow below. See [REPRODUCING.md](docs/REPRODUCING.md) for dependencies and
+[SOLVER_INTEGRATION.md](docs/SOLVER_INTEGRATION.md) for manual CMake options,
+HDF5 support, and the optional Gurobi adapter.
 
 ## Usage
 
@@ -125,54 +112,53 @@ See [statistical definitions](docs/STATISTICS_AND_PROVENANCE.md) for timing, agg
 
 ## Replicating
 
-For a fresh clone, follow [the complete reproduction guide](docs/REPRODUCING.md).
-The main entry point is:
+Follow [REPRODUCING.md](docs/REPRODUCING.md) for prerequisites, input preparation,
+and output locations. From a fresh clone on a CUDA machine:
 
 ~~~sh
 export CC=gcc-11 CXX=g++-11 FC=gfortran-11
 export CUDACXX=/usr/local/cuda-12.9/bin/nvcc CUDAHOSTCXX=g++-11
 export CUDA_ARCH=80                     # A100; use 90 for H100
-export CUDA_VISIBLE_DEVICES=3           # choose one available physical GPU
+export CUDA_VISIBLE_DEVICES=3           # choose an available physical GPU
+
 bash scripts/reproduce.sh setup
 bash scripts/reproduce.sh test
 RUN_DIR="$PWD/runs/smoke" bash scripts/reproduce.sh smoke
-~~~
 
-The smoke run downloads and prepares one actual paper input per group, executes
-14 solver calls without Gurobi comparisons, and writes selected table rows and
-a figure in `runs/smoke/results/`. For the complete input set and default
-358-call experiment plan:
-
-~~~sh
 bash scripts/reproduce.sh data
 bash scripts/reproduce.sh run
 bash scripts/reproduce.sh results
 ~~~
 
-The stages use `runs/reproduction/` by default. Set `WORK_ROOT` to put data and
-new results elsewhere. `bash scripts/reproduce.sh all` runs setup, data, tests,
-experiments, and reconstruction in sequence. Large data preparation and the full
-experiment take time; the guide describes dependencies, output paths, and the
-optional licensed comparison.
+Adjust the compiler and CUDA paths for your machine. `setup` installs the pinned
+Python packages from `requirements.txt` and builds the solver, tools, and tests.
+`smoke` prepares one input from each group and executes 14 solver calls.
+The full default experiment prepares 92 models and executes 358 calls using
+no preprocessing, folding only, GPU-Preprocessor, and PSLP. Gurobi comparisons
+require its SDK and a full license; see [Gurobi setup](docs/SOLVER_INTEGRATION.md#gurobi-optional).
 
-Reconstruct the result CSVs from the saved outputs, then redraw Figure 2:
+Input files are stored under `runs/reproduction/inputs/`; new logs, CSVs, and
+Figure 2 are written under `runs/reproduction/experiment/`. Set `WORK_ROOT` to
+change the root, or `RUN_DIR` to select a new experiment directory. Existing
+experiment outputs are not overwritten. `bash scripts/reproduce.sh all` runs
+the full sequence without the smoke stage.
+
+The repository's `results/` directory contains the archived paper measurements.
+To reconstruct and check those saved tables and redraw their figure, without
+running a solver:
 
 ~~~sh
 python3 scripts/rebuild_results.py
 python3 scripts/plot_figure2.py
 ~~~
 
-The first command reads the raw logs and summary CSVs and checks the reconstructed values against the LaTeX tables. The second writes the Figure 2 PDF; use `--output-dir PATH` to write the figure elsewhere.
+For individual datasets, instances, methods, or sizes, see
+[running Section 4](docs/SOLVER_INTEGRATION.md#running-section-4).
+The [benchmark index](docs/tables_3_4_5_batch_index.csv) and
+[scalability index](docs/table_6_figure_2_log_index.csv) record the commands;
+`{solver_executable}`, `{input_mps}`, and `{input_dir}` are path placeholders.
+Exact download URLs and generator details are in the [input guide](data/README.md).
 
-The [benchmark index](docs/tables_3_4_5_batch_index.csv) and [scalability index](docs/table_6_figure_2_log_index.csv) record the experiment commands. Their placeholders `{solver_executable}`, `{input_mps}`, and `{input_dir}` denote the integrated solver executable and input paths. These commands target HPR-LP-C 0.1.3 with the corresponding preprocessing interfaces; they are not command-line options for the standalone MPS tool above.
-
-The [input preparation guide](data/README.md) provides exact download links and automatic preparation for Hans, MIPLIB Large, QAP20, and wil100 scalability inputs. Benchmark input models are not bundled.
-
-After building the integrated solver and preparing inputs, run the benchmarks without Gurobi:
-
-~~~sh
-python3 scripts/run_experiments.py --input-root /path/to/benchmark-inputs \
-  --suite all --output-dir runs/experiment-01
-~~~
-
-The default methods are no preprocessing, folding only, GPU-Preprocessor, and PSLP. Add `--methods none folding gpu pslp gurobi` to include the licensed Gurobi comparison. The runner uses the recorded commands, saves logs and summary CSVs in a fresh directory, and leaves `results/` unchanged. See [running Section 4](docs/SOLVER_INTEGRATION.md#running-section-4) for selecting individual experiments and reconstructing tables from a complete new run. New runs use the official release solver with external preprocessing; exact numerical and timing agreement with the archived experiment implementation has not been established.
+New runs use the official release solver with external preprocessing. Their
+numerical results and timings should be checked against the archived
+measurements before replacing manuscript values.

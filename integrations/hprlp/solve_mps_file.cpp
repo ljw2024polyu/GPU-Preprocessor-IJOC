@@ -10,7 +10,7 @@
 #include <string>
 #include <cstring>
 #include <vector>
-#include <sys/stat.h>  // For file existence check (C++11 compatible)
+#include <sys/stat.h>
 #include "io/mps_reader.h"
 #include "integration.hpp"
 #include "solver/internal/solver_output.h"
@@ -19,7 +19,6 @@
 #include <hdf5.h>
 #endif
 
-// C++11 compatible file existence check
 inline bool file_exists(const std::string& path) {
     struct stat buffer;
     return (stat(path.c_str(), &buffer) == 0);
@@ -297,7 +296,6 @@ int main(int argc, char** argv) {
         param.specified_parameter_mask |= bit;
     };
 
-    // Parse CLI args
     for (int i = 1; i < argc; ++i) {
         const char* a = argv[i];
         auto need_value = [&](const char* opt) {
@@ -478,7 +476,6 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    // Check if input file is provided
     if (!input_provided) {
         std::cerr << "Error: Input file is required. Use -i or --input option.\n";
         print_usage(argv[0]);

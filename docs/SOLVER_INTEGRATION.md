@@ -17,7 +17,7 @@ download the full official release archive and follow its own README.
 
 The official release's built-in PSLP 0.0.8 dependency is retained for the native library. The external driver disables built-in presolve and selects GPU-Preprocessor, PSLP 0.0.11, Gurobi, or no preprocessing. The comparison PSLP symbols are prefixed at compile time so the two versions cannot be confused. Both public CLI names `pslp` and `pslp0011` select 0.0.11.
 
-The external adapters hand a host copy of the reduced LP to the official solver API and perform postsolve afterward. They do not use the previous experiment implementation's modified solver or its device-only handoff. Timing fields for external preprocessing are recorded by the driver. Archived results remain unchanged; agreement of new official-release runs with those measurements requires a new benchmark comparison.
+The adapters pass a host copy of the reduced LP to the official solver API, then perform postsolve. The driver records external preprocessing times. The archived paper measurements used a different solver implementation; compare new measurements with them before replacing manuscript values.
 
 ## Build
 

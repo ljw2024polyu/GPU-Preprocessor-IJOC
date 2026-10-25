@@ -1,7 +1,6 @@
 #include "adapters/pslp.hpp"
 #define HPRLP_PSLP_LABEL "PSLP 0.0.11"
-// Isolated-worker transport and KKT validation for PSLP 0.0.11.
-// Included only by pslp_integration.cpp.
+// Worker transport, postsolve, and KKT validation for PSLP 0.0.11.
 
 #include "io/mps_reader.h"
 #include "gpu/preprocessing/preprocess.h"

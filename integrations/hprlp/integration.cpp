@@ -41,8 +41,7 @@ void status(ExperimentResult& result, const char* value) {
 ExperimentResult solve_preprocessed(const LP_info_cpu* model,
                                     const IntegrationParameters* options) {
     const IntegrationParameters p = options ? *options : IntegrationParameters{};
-    // Copy only the official parameter structure. The solver receives no
-    // experimental fields and never performs a second presolve on the reduced LP.
+    // Pass the release parameter structure with built-in presolve disabled.
     HPRLP_parameters solver_parameters = p;
     solver_parameters.presolver = HPRLP_PRESOLVER_NONE;
     solver_parameters.use_presolve = false;

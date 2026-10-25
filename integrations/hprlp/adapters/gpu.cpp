@@ -77,10 +77,7 @@ void initialize_empty_device_model(LP_info_gpu *model) {
     if (!model) {
         return;
     }
-    // LP_info_gpu owns optional backend metadata in addition to the core
-    // matrix/vector fields.  Reset the complete aggregate so a device model
-    // returned by the presolver has the same null/default metadata state as a
-    // freshly constructed model and can be released by free_lp_info().
+    // Reset optional solver metadata along with the matrix/vector fields.
     *model = LP_info_gpu{};
 }
 
@@ -292,7 +289,7 @@ void free_gpu_presolver_handle_resources(GpuPresolverHandle *handle) {
     if (!handle) {
         return;
     }
-    // Recovery records own their device storage through RAII in the new package.
+    // Recovery records own their device storage through RAII.
     gp::free_gpu_presolve_reduced_lp(handle->folding_summary.presolve);
     gf::free_folded_lp(handle->folding_summary.folding);
     handle->folding_summary = gf::FoldingPipelineSummary{};
@@ -784,11 +781,8 @@ bool ijoc_run_gpu_presolve(const LP_info_cpu *model,
         free_lp_info_cpu(reduced_model);
         initialize_empty_model(reduced_model);
         free_gpu_presolver_handle_resources(handle.get());
-        // cudaMalloc failures are reported through the exception above, but the
-        // runtime's sticky error would otherwise be observed by the first
-        // kernel check in the original-model fallback and abort a healthy
-        // solve.  All partially owned presolver allocations have been released
-        // at this point, so drain and clear that error before returning failure.
+        // Clear a pending allocation error after releasing presolver storage
+        // so subsequent CUDA operations do not inherit it.
         const cudaError_t recovery_status = cudaDeviceSynchronize();
         if (recovery_status != cudaSuccess &&
             recovery_status != cudaErrorMemoryAllocation) {
@@ -944,12 +938,8 @@ bool ijoc_run_gpu_presolve_device(const LP_info_cpu *model,
         free_lp_info(reduced_model);
         initialize_empty_device_model(reduced_model);
         free_gpu_presolver_handle_resources(handle.get());
-        // The GPU-resident handoff must recover from allocation failures in
-        // exactly the same way as the host-copy path above.  In particular,
-        // cuSPARSE may leave cudaErrorMemoryAllocation pending after an OOM.
-        // If it is not drained here, the original-model solver observes that
-        // stale error at its first post-launch cudaGetLastError() and aborts
-        // even though all presolver-owned allocations have been released.
+        // Clear a pending allocation error after releasing presolver storage
+        // so subsequent CUDA operations do not inherit it.
         const cudaError_t recovery_status = cudaDeviceSynchronize();
         if (recovery_status != cudaSuccess &&
             recovery_status != cudaErrorMemoryAllocation) {
