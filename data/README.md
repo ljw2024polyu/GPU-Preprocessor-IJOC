@@ -96,7 +96,6 @@ Output directory: `$INPUT_ROOT/QAP_wil100_scale/`, with filenames `qap-wil100-n0
 
 External benchmark collections retain their own distribution terms. The small [examples/model.mps](../examples/model.mps) is an MIT-licensed usage example, not a Section 4 input.
 
-
 - H. D. Mittelmann (1999). Benchmarking interior point LP/QP solvers. *Optimization Methods and Software*, 11(1–4), 655–670. [DOI](https://doi.org/10.1080/10556789908805767).
 - A. Gleixner et al. (2021). MIPLIB 2017: Data-Driven Compilation of the 6th Mixed-Integer Programming Library. *Mathematical Programming Computation*, 13, 443–490. [DOI](https://doi.org/10.1007/s12532-020-00194-3).
 - R. E. Burkard, S. E. Karisch, and F. Rendl (1997). QAPLIB—A Quadratic Assignment Problem Library. *Journal of Global Optimization*, 10, 391–403. [DOI](https://doi.org/10.1023/A:1008293323270).

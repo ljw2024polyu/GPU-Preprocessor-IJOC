@@ -1,12 +1,20 @@
 # GPU-Accelerated Preprocessing for Large-Scale Linear Programming
 
-This repository contains the GPU-Preprocessor C++/CUDA library, its HPR-LP experiment driver, and experimental outputs for the paper by Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, and Xinyuan Zhao. See [AUTHORS](AUTHORS) for contact details and [LICENSE](LICENSE) for the MIT license. Bundled HPR-LP and PSLP code retains its own [MIT](third_party/hprlp/LICENSE) and [Apache-2.0](third_party/pslp/LICENSE) licenses, respectively.
+This repository contains the GPU-Preprocessor C++/CUDA library, its HPR-LP experiment driver, and experimental outputs for the paper by Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, and Xinyuan Zhao. See [AUTHORS](AUTHORS) for contact details.
+
+The repository-level [MIT license](LICENSE) covers first-party source code,
+scripts, documentation, examples, and experimental outputs unless a file states
+otherwise. Bundled HPR-LP retains its [MIT license](third_party/hprlp/LICENSE).
+Both the comparison [PSLP 0.0.11](third_party/pslp/LICENSE) and HPR-LP's native
+[PSLP 0.0.8](third_party/hprlp/third_party/PSLP/LICENSE) retain their Apache-2.0
+licenses. Downloaded benchmark inputs retain the source collections' terms;
+see [data sources and references](data/README.md#data-use-and-references).
 
 The GPU library source is imported from the [main-branch snapshot](https://github.com/PolyU-IOR/GPU-Preprocessor/commit/febe85d0bde835d8e9c2798ff02296fd207cbbb3) of [PolyU-IOR/GPU-Preprocessor](https://github.com/PolyU-IOR/GPU-Preprocessor). The solver source comes from the official [HPR-LP-C v0.1.3 release](https://github.com/PolyU-IOR/HPR-LP-C/releases/tag/v0.1.3), commit `89d3cc06806b4d31d029f7b5c8591db58219ff6d`, and is unmodified. GPU-Preprocessor, PSLP 0.0.11, and the optional Gurobi adapter are connected outside the release source tree. See [solver integration](docs/SOLVER_INTEGRATION.md) for the build and comparison backends.
 
 ## Cite
 
-Please cite the [paper](https://arxiv.org/abs/2610.19840) and this [repository](https://github.com/ljw2024polyu/GPU-Preprocessor-IJOC). The official IJOC archive identifier and paper/repository DOIs will be added when assigned.
+Please cite the [paper](https://arxiv.org/abs/2610.19840) and this [repository](https://github.com/ljw2024polyu/GPU-Preprocessor-IJOC). The citations below identify the preprint and working repository. Once IJOC assigns the archive identifier and DOIs, update this section with both DOI links and the archive BibTeX in the [journal's format](https://informsjoc.github.io/InstructionsForAuthors.html#citing-the-repo-in-your-paper), including `publisher`, `doi`, and the official archive URL in `url` and `note`.
 
 BibTeX for the paper:
 
@@ -148,8 +156,8 @@ To reconstruct and check those saved tables and redraw their figure, without
 running a solver:
 
 ~~~sh
-python3 scripts/rebuild_results.py
-python3 scripts/plot_figure2.py
+.venv/bin/python scripts/rebuild_results.py
+.venv/bin/python scripts/plot_figure2.py --output-dir runs/archive-figure
 ~~~
 
 For individual datasets, instances, methods, or sizes, see
