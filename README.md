@@ -57,11 +57,10 @@ make
 
 ## Usage
 
-From the repository root, run the minimal API example or preprocess and export
-the bundled uncompressed MPS model:
+From the repository root, preprocess or export the bundled uncompressed MPS
+model:
 
 ~~~sh
-./build/bin/gpu_preprocessor_example
 ./build/bin/gpu_preprocessor_mps examples/model.mps
 ./build/bin/gpu_preprocessor_export_reduced examples/model.mps reduced/
 ~~~
