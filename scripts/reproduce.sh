@@ -81,7 +81,7 @@ case "$stage" in
       '  run      Run the complete Section 4 plan in a new RUN_DIR (one GPU).' \
       '  results  Rebuild tables and Figure 2 from that run (CPU).' \
       '  all      Execute setup, data, test, run, and results in order.' \
-      'Set CUDA_VISIBLE_DEVICES before GPU stages. The solver uses logical device 0.' \
+      'The solver uses logical device 0 by default.' \
       'Set WORK_ROOT/RUN_DIR for outputs; see docs/REPRODUCING.md.'
     ;;
   *) printf 'Unknown stage: %s\n' "$stage" >&2; exit 2 ;;

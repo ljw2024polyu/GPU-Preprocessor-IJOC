@@ -41,15 +41,12 @@ own account. No server-specific credentials are bundled.
 
 ```sh
 bash scripts/reproduce.sh setup
-
-# Select one available physical GPU. This example selects GPU 3.
-export CUDA_VISIBLE_DEVICES=3
 bash scripts/reproduce.sh test
 RUN_DIR="$WORK_ROOT/smoke" bash scripts/reproduce.sh smoke
 ```
 
-Use your site's allocation procedure before the GPU stages. Inside the selected
-device set the solver uses logical device 0. `setup` installs the pinned Python
+Use your site's allocation procedure before the GPU stages. The solver uses
+logical device 0 by default. `setup` installs the pinned Python
 packages in `.venv/` and builds the integrated solver, library tools, examples,
 and numerical tests in `build-experiments/`.
 
@@ -96,7 +93,6 @@ stage to continue with the missing models.
 ## 4. Run the complete selected experiment set
 
 ```sh
-export CUDA_VISIBLE_DEVICES=3
 bash scripts/reproduce.sh run
 bash scripts/reproduce.sh results
 ```

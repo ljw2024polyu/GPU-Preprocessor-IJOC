@@ -153,7 +153,6 @@ and output locations. From a fresh clone on a CUDA machine:
 export CC=gcc-11 CXX=g++-11 FC=gfortran-11
 export CUDACXX=/usr/local/cuda-12.9/bin/nvcc CUDAHOSTCXX=g++-11
 export CUDA_ARCH=80                     # A100; use 90 for H100
-export CUDA_VISIBLE_DEVICES=3           # choose an available physical GPU
 
 bash scripts/reproduce.sh setup
 bash scripts/reproduce.sh test
