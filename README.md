@@ -49,7 +49,7 @@ BibTeX for this repository:
 
 ## Building
 
-The library requires Linux, Make, CMake 3.24 or newer, a C++17 compiler, CUDA Toolkit 12 or newer with nvcc and cuSPARSE, and an NVIDIA GPU. From the repository root:
+The library requires Linux, Make, CMake 3.24 or newer, a C++17 compiler, CUDA Toolkit 12 or newer with nvcc and cuSPARSE, and an NVIDIA GPU. The paper experiments used CUDA Toolkit 13.3.33. From the repository root:
 
 ~~~sh
 make

@@ -15,6 +15,9 @@ Install the following dependencies yourself before building or running:
 | Python | Python 3.10 or newer |
 | Python packages | `matplotlib==3.10.7` and `gurobipy==12.0.2`, as listed in [requirements.txt](../requirements.txt) |
 
+The paper experiments used CUDA Toolkit 13.3.33. The complete hardware and
+software settings are recorded in [experiment_environment.json](experiment_environment.json).
+
 Activate your Python environment before following the steps below. The scripts
 use `python3` from that environment; they do not install dependencies or create
 a virtual environment. Julia needs only its standard library. The sources for
