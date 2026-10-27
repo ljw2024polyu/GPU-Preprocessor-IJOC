@@ -11,6 +11,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 CMAKE = shutil.which('cmake')
+CTEST = shutil.which('ctest')
 TOOLCHAIN = ('CC', 'CXX', 'FC', 'CUDACXX', 'CUDAHOSTCXX', 'CUDAToolkit_ROOT',
              'CUDAARCHS', 'CMAKE_BUILD_PARALLEL_LEVEL')
 CONFIGURATION = TOOLCHAIN + ('CUDA_ARCH', 'BUILD_JOBS', 'BUILD_DIR', 'CMAKE_ARGS',
@@ -20,11 +21,12 @@ CONFIGURATION = TOOLCHAIN + ('CUDA_ARCH', 'BUILD_JOBS', 'BUILD_DIR', 'CMAKE_ARGS
 
 
 class ReproduceTests(unittest.TestCase):
-    def run_stage(self, stage='setup', overrides=None, make=False):
+    def run_stage(self, stage='setup', overrides=None, make=False, extra_args=()):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
             project = directory / 'project with spaces'
             (project / 'scripts').mkdir(parents=True)
+            (project / 'build-experiments').mkdir()
             shutil.copyfile(ROOT / 'scripts/reproduce.sh', project / 'scripts/reproduce.sh')
             shutil.copyfile(ROOT / 'Makefile', project / 'Makefile')
             tools = directory / 'tools with spaces'
@@ -48,7 +50,7 @@ class ReproduceTests(unittest.TestCase):
                                CMAKE=str(tools / 'cmake'),
                                TEST_CALL_LOG=str(log))
             environment.update(overrides or {})
-            command = ['make'] if make else ['bash', 'scripts/reproduce.sh', stage]
+            command = ['make'] if make else ['bash', 'scripts/reproduce.sh', stage, *extra_args]
             subprocess.run(command, cwd=project, env=environment,
                            text=True, capture_output=True, check=True)
             return [json.loads(line) for line in log.read_text().splitlines()]
@@ -80,6 +82,19 @@ class ReproduceTests(unittest.TestCase):
                 self.assertEqual(build['args'][build['args'].index('--parallel') + 1], '2')
                 for call in calls:
                     self.assertEqual(call['environment'], {k: settings[k] for k in TOOLCHAIN if k in settings})
+
+    def test_fresh_setup_preserves_the_selected_toolchain(self):
+        settings = dict(CUDACXX='/selected toolkit/bin/nvcc', CUDAHOSTCXX='selected-cxx')
+        configure, build = self.run_stage(overrides=settings, extra_args=['--fresh'])
+        self.assertIn('--fresh', configure['args'])
+        self.assertNotIn('--fresh', build['args'])
+        self.assertEqual(configure['environment'], settings)
+
+    @unittest.skipUnless(CTEST, 'CTest is needed to check missing test registration')
+    def test_no_cpp_tests_is_an_error(self):
+        with self.assertRaises(subprocess.CalledProcessError) as failure:
+            self.run_stage(stage='test', overrides={'CTEST': CTEST})
+        self.assertIn('No tests were found', failure.exception.stdout + failure.exception.stderr)
 
     def test_standard_cmake_environment_is_not_overridden(self):
         settings = dict(CUDAARCHS='75;86', CMAKE_BUILD_PARALLEL_LEVEL='2')

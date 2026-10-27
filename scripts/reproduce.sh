@@ -32,9 +32,16 @@ summarize() {
 
 case "$stage" in
   setup)
+    if (( $# > 2 )) || [[ -n "${2:-}" && "${2:-}" != --fresh ]]; then
+      printf '%s\n' 'Usage: bash scripts/reproduce.sh setup [--fresh]' >&2
+      exit 2
+    fi
     cmake_args=(-DCMAKE_BUILD_TYPE=Release
       -DGPUPREPROCESSOR_BUILD_HPRLP=ON -DGPUPREPROCESSOR_BUILD_TESTS=ON
       "-DHPRLP_GUROBI=$WITH_GUROBI")
+    if [[ "${2:-}" == --fresh ]]; then
+      cmake_args+=(--fresh)
+    fi
     if [[ -n "${CUDA_ARCH:-}" ]]; then
       cmake_args+=("-DCMAKE_CUDA_ARCHITECTURES=$CUDA_ARCH")
     fi
@@ -54,7 +61,7 @@ case "$stage" in
     ;;
   test)
     "$PYTHON" -m unittest discover -s scripts/tests -v
-    "${CTEST:-ctest}" --test-dir "$BUILD_DIR" --output-on-failure
+    "${CTEST:-ctest}" --test-dir "$BUILD_DIR" --output-on-failure --no-tests=error
     ;;
   smoke)
     prepare hans --instances FOME13
@@ -79,7 +86,7 @@ case "$stage" in
     ;;
   help|-h|--help)
     printf '%s\n' 'Usage: bash scripts/reproduce.sh STAGE' \
-      '  setup    Build the solver/tools/tests using installed dependencies.' \
+      '  setup [--fresh]  Build the solver/tools/tests; --fresh resets CMake configuration.' \
       '  data     Download/generate and verify all 92 paper input models (CPU).' \
       '  test     Run Python and C++/CUDA regression tests (requires one GPU).' \
       '  smoke    Prepare one model per group, run all selected methods, and summarize.' \

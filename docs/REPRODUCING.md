@@ -41,6 +41,18 @@ into `build-experiments/`. The experiment executable is
 CUDA Toolkit and targets the visible GPU. Optional compiler settings are
 listed in [solver integration](SOLVER_INTEGRATION.md#build).
 
+If multiple CUDA Toolkits are installed, set `CUDACXX` to the `nvcc` executable
+from the toolkit you want to use. After changing compilers or CUDA Toolkits,
+reset the cached build configuration with:
+
+```sh
+bash scripts/reproduce.sh setup --fresh
+```
+
+This resets CMake's configuration without changing input data or experiment
+results. Run `bash scripts/reproduce.sh test` after a successful build; it
+reports an error if no C++/CUDA tests are registered.
+
 ## 3. Prepare the data
 
 Allow at least 100 GB of free disk space. For the first full download, model

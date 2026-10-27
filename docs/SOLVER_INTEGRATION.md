@@ -31,6 +31,8 @@ CMake detects the visible GPU architecture. To select different compilers,
 set `CC`, `CXX`, `CUDACXX`, or `CUDAHOSTCXX` before building. Use
 `CUDAToolkit_ROOT` to select the CUDA Toolkit and `BUILD_JOBS` to set build
 parallelism. Run the included tests with `bash scripts/reproduce.sh test`.
+After changing compilers or CUDA Toolkits, use
+`bash scripts/reproduce.sh setup --fresh` to reset CMake's cached configuration.
 
 ## Backend selection
 
