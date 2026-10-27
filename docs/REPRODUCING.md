@@ -148,6 +148,9 @@ To check and plot those saved measurements without running a solver:
 .venv/bin/python scripts/plot_figure2.py --output-dir runs/archive-figure
 ```
 
+The verification command compares recomputed table values with the archived
+CSVs without modifying the saved results or logs.
+
 New measurements use the official release solver with external preprocessing
 adapters. They must be compared with the archived measurements before being
 used to replace manuscript values. See [statistical definitions](STATISTICS_AND_PROVENANCE.md)

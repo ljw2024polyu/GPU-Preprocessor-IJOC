@@ -1,6 +1,8 @@
-"""Check result reconstruction on a real selected run without Gurobi."""
+"""Check archived CSV verification and reconstruction of a selected run."""
+import contextlib
 import csv
 import importlib.util
+import io
 import json
 from pathlib import Path
 import shutil
@@ -8,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location('rebuild', ROOT / 'scripts/rebuild_results.py')
@@ -16,6 +19,53 @@ spec.loader.exec_module(rebuild)
 
 
 class RebuildResultsTests(unittest.TestCase):
+    def archived_results(self, directory):
+        (directory / 'docs').symlink_to(ROOT / 'docs', target_is_directory=True)
+        (directory / 'results').mkdir()
+        (directory / 'results/raw').symlink_to(ROOT / 'results/raw', target_is_directory=True)
+        paths = []
+        for number, (folder, _) in rebuild.TABLES.items():
+            path = directory / 'results' / folder / rebuild.TABLE_FILES[number]
+            path.parent.mkdir()
+            shutil.copyfile(ROOT / 'results' / folder / path.name, path)
+            paths.append(path)
+        return paths
+
+    def verify_archive(self, directory):
+        output = io.StringIO()
+        with patch.object(rebuild, 'ROOT', directory), \
+             patch.object(sys, 'argv', ['rebuild_results.py']), \
+             contextlib.redirect_stdout(output):
+            rebuild.main()
+        return json.loads(output.getvalue())
+
+    def test_archive_verification_preserves_csvs_without_tex_files(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            archive = Path(temporary)
+            paths = self.archived_results(archive)
+            saved = {p: p.read_bytes() for p in paths}
+            report = self.verify_archive(archive)
+            self.assertEqual(report['benchmark_instance_rows'], 435)
+            self.assertEqual(report['scale_results'], 15)
+            self.assertEqual(report['table_rows_matching_archived_csv'], 45)
+            self.assertTrue(all(t['matches_archived_csv'] for t in report['tables']))
+            self.assertEqual({p: p.read_bytes() for p in paths}, saved)
+            self.assertEqual(set((archive / 'results').rglob('*.csv')), set(paths))
+
+    def test_archive_mismatch_fails_without_overwriting_reference(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            archive = Path(temporary)
+            paths = self.archived_results(archive)
+            reference = archive / 'results/Table4_Preprocessing' / rebuild.TABLE_FILES[4]
+            rows = rebuild.read_csv(reference)
+            rows[0]['preprocessing_time_s'] = '999999.000'
+            rebuild.write_csv(reference, rows, list(rows[0]))
+            saved = {p: p.read_bytes() for p in paths}
+            with self.assertRaisesRegex(AssertionError, 'Table 4, row 1, preprocessing_time_s'):
+                self.verify_archive(archive)
+            self.assertEqual({p: p.read_bytes() for p in paths}, saved)
+            self.assertEqual(set((archive / 'results').rglob('*.csv')), set(paths))
+
     def selected_run(self, directory):
         plan = json.loads(subprocess.check_output(
             [sys.executable, str(ROOT / 'scripts/run_experiments.py'),

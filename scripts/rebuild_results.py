@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate Section 4 CSV tables from raw outputs; no solver is run."""
+"""Verify archived Section 4 tables or generate CSVs for a new run; no solver is run."""
 from pathlib import Path
 from decimal import Decimal, ROUND_HALF_UP
 import argparse
@@ -12,10 +12,10 @@ ROOT = Path(__file__).resolve().parents[1]
 DIMENSIONS = re.compile(r'problem information:\s*nRow\s*=\s*(\d+),\s*nCol\s*=\s*(\d+),\s*nnz A\s*=\s*(\d+)')
 GROUPS = ['Mittelmann', 'MIPLIB Large', 'QAP20']
 TABLES = {
-    3: ('Table3_Ablation', 'tab:ablation-components', ['None', 'Folding only', 'GPU-Preprocessor']),
-    4: ('Table4_Preprocessing', 'tab:preprocessing-performance', ['Gurobi', 'PSLP', 'GPU-Preprocessor']),
-    5: ('Table5_EndToEnd', 'tab:end-to-end-performance', ['None', 'Gurobi', 'PSLP', 'GPU-Preprocessor']),
-    6: ('Table6_QAPScalability', 'tab:qap-wil100-reduction', ['Gurobi', 'PSLP', 'GPU-Preprocessor']),
+    3: ('Table3_Ablation', ['None', 'Folding only', 'GPU-Preprocessor']),
+    4: ('Table4_Preprocessing', ['Gurobi', 'PSLP', 'GPU-Preprocessor']),
+    5: ('Table5_EndToEnd', ['None', 'Gurobi', 'PSLP', 'GPU-Preprocessor']),
+    6: ('Table6_QAPScalability', ['Gurobi', 'PSLP', 'GPU-Preprocessor']),
 }
 METRICS = {
     3: ['solved', 'preprocessing_time_s', 'solve_time_s', 'total_time_s', 'r_m', 'r_n', 'r_nnz'],
@@ -80,19 +80,15 @@ def scale_log(path, final_fields=False):
         'gurobi_original_solution_not_recovered': 'original_solution_recovery: NOT_PERFORMED' in text,
     }
 
-def manuscript_table(number, label):
-    path = ROOT / 'results' / TABLES[number][0] / TABLE_FILES[number].replace('_results.csv', '.tex')
-    block = path.read_text().strip()
-    assert '\\label{' + label + '}' in block, path
-    expected = []
-    body = block.split('\\midrule', 1)[1].split('\\bottomrule', 1)[0]
-    body = re.sub(r'\\textbf\{([\d.]+)\}', r'\1', body)
-    for line in body.split('\\\\'):
-        fields = [x.strip() for x in line.replace('\\midrule', '').split('&')]
-        count = len(METRICS[number])
-        if len(fields) >= count and all(re.fullmatch(r'\d+(?:\.\d+)?', x) for x in fields[-count:]):
-            expected.append(fields[-count:])
-    return expected
+def check_archived_table(number, path, records, fields):
+    expected = read_csv(path)
+    assert len(records) == len(expected), (
+        f'Table {number}: recomputed {len(records)} rows, archived CSV has {len(expected)}')
+    for index, (actual, saved) in enumerate(zip(records, expected), start=1):
+        for field in fields:
+            assert str(actual[field]) == saved[field], (
+                f'Table {number}, row {index}, {field}: '
+                f'recomputed {actual[field]!r}, archived CSV has {saved[field]!r}')
 
 def main():
     global ROOT
@@ -167,7 +163,7 @@ def main():
         result.update({k: rounded(math.fsum(r[i] for r in ratios) / len(ratios))
                        for i, k in enumerate(['r_m', 'r_n', 'r_nnz'])})
         aggregates[run['dataset'], run['variant']] = result
-    if instance_rows:
+    if instance_rows and args.run_dir:
         write_csv(ROOT / 'results/tables_3_4_5_instance_results.csv', instance_rows, list(instance_rows[0]))
     scale_index = read_csv(archive / 'docs/table_6_figure_2_log_index.csv')
     scale_rows = []
@@ -183,11 +179,11 @@ def main():
         scale_rows.append(record)
         scale_detailed.append({'N': entry['N'], 'method': entry['method'],
                                **parsed, 'raw_log': str(log.relative_to(ROOT))})
-    if scale_detailed:
+    if scale_detailed and args.run_dir:
         write_csv(ROOT / 'results/Table6_QAPScalability/table_6_full_precision_results.csv',
                   scale_detailed, list(scale_detailed[0]))
     checks = []
-    for number, (name, label, variants) in TABLES.items():
+    for number, (name, variants) in TABLES.items():
         folder = ROOT / 'results' / name
         if number == 6:
             records = scale_rows
@@ -209,21 +205,19 @@ def main():
         fields = keys + METRICS[number] + source
         if not records:
             continue
-        folder.mkdir(exist_ok=True)
-        write_csv(folder / TABLE_FILES[number], records, fields)
-        if not args.run_dir:
-            expected = manuscript_table(number, label)
-            actual = [[str(row[k]) for k in METRICS[number]] for row in records]
-            assert actual == expected, f'Table {number} differs from manuscript table: {actual!r} vs {expected!r}'
+        if args.run_dir:
+            write_csv(folder / TABLE_FILES[number], records, fields)
+        else:
+            check_archived_table(number, folder / TABLE_FILES[number], records, fields)
         checks.append({'table': number, 'rows': len(records),
-                       'matches_manuscript': None if args.run_dir else True})
+                       'matches_archived_csv': None if args.run_dir else True})
     figure_data = [{'N': r['N'], 'method': r['method'],
                     'preprocessing_time_s': r['preprocessing_time_s'], 'raw_log': r['raw_log']}
                    for r in scale_rows]
-    if figure_data:
+    if figure_data and args.run_dir:
         write_csv(ROOT / 'results/Figure2_QAPScalability/figure_2_preprocessing_times.csv', figure_data, list(figure_data[0]))
     report = {'benchmark_instance_rows': len(instance_rows), 'scale_results': len(scale_rows),
-              'table_rows_matching_manuscript': None if args.run_dir else sum(c['rows'] for c in checks),
+              'table_rows_matching_archived_csv': None if args.run_dir else sum(c['rows'] for c in checks),
               'tables': checks}
     if args.run_dir:
         report['postsolve_original_kkt_warnings'] = sum(

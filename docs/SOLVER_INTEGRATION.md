@@ -4,7 +4,7 @@ The `hprlp_solve` executable connects GPU-Preprocessor, PSLP, and optionally Gur
 
 | Component | Source / version | Included |
 | --- | --- | --- |
-| GPU-Preprocessor | Public main-branch snapshot linked in the root README | `cpp/` |
+| GPU-Preprocessor | This repository | `cpp/` |
 | HPR-LP | Official HPR-LP-C v0.1.3 release | `third_party/hprlp/` |
 | PSLP | 0.0.11, Apache-2.0 | `third_party/pslp/` |
 | Gurobi | 12.0.2 C API | Interface only; install the SDK/runtime and license separately |
@@ -139,4 +139,4 @@ python3 scripts/plot_figure2.py \
   --data runs/section4/results/Figure2_QAPScalability/figure_2_preprocessing_times.csv
 ```
 
-This writes new CSVs and the figure under the run directory; the manuscript's LaTeX tables are unchanged. Reconstruction uses `commands.json` to require exactly the selected instances, methods, and sizes. It supports the default run without Gurobi, a smaller finished check, or the full five-method run; an unfinished selected run is an error. A benchmark-only run has no scale figure. Without `--run-dir`, reconstruction reads all archived outputs and checks them against the paper tables. The [reproduction guide](REPRODUCING.md) provides a single entry script for the complete workflow.
+This writes new CSVs and the figure under the run directory; the archived paper results are unchanged. Reconstruction uses `commands.json` to require exactly the selected instances, methods, and sizes. It supports the default run without Gurobi, a smaller finished check, or the full five-method run; an unfinished selected run is an error. A benchmark-only run has no scale figure. Without `--run-dir`, the script recomputes the table values from archived raw outputs and checks them against the saved CSVs without modifying them. The [reproduction guide](REPRODUCING.md) provides a single entry script for the complete workflow.
