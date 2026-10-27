@@ -52,7 +52,7 @@ python3 scripts/prepare_inputs.py qap-scale --instances qap-wil100-n020 --output
 
 Add `--resume` to keep completed models and prepare only missing outputs after an interruption. Without it, an existing output model is an error. To use previously downloaded original source files, add `--source-dir /path/to/source-files`. Use `--julia /path/to/julia`, `--fc /path/to/gfortran`, `--cxx /path/to/c++`, and `--cc /path/to/cc` when tools are not on `PATH`. Fortran flags can be set with `--fflags='...'`; the default is `-O3 -std=legacy -mcmodel=large`.
 
-After building `hprlp_solve`, run `python3 scripts/check_inputs.py --input-root "$INPUT_ROOT"` to read all 92 prepared inputs on CPU and compare their dimensions with the paper inputs. The [complete reproduction guide](../docs/REPRODUCING.md) provides one entry script for setup, data preparation, testing, running, and result processing.
+The [complete reproduction guide](../docs/REPRODUCING.md) provides one entry script for setup, data preparation, testing, running, and result processing.
 
 ## MIPLIB Large: 18 LP relaxations
 

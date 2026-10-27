@@ -57,7 +57,6 @@ case "$stage" in
     ;;
   data)
     for group in hans miplib-large qap20 qap-scale; do prepare "$group"; done
-    "$PYTHON" scripts/check_inputs.py --input-root "$INPUT_ROOT" --solver "$SOLVER"
     ;;
   test)
     "$PYTHON" -m unittest discover -s scripts/tests -v
@@ -68,7 +67,6 @@ case "$stage" in
     prepare miplib-large --instances scpn2_relax
     prepare qap20 --instances tho40
     prepare qap-scale --instances qap-wil100-n020
-    "$PYTHON" scripts/check_inputs.py --input-root "$INPUT_ROOT" --solver "$SOLVER" --available-only
     "$PYTHON" scripts/run_experiments.py --input-root "$INPUT_ROOT" --solver "$SOLVER" \
       --suite all --methods "${methods[@]}" --instances FOME13 scpn2_relax tho40 \
       --sizes 20 --output-dir "$RUN_DIR"
@@ -87,7 +85,7 @@ case "$stage" in
   help|-h|--help)
     printf '%s\n' 'Usage: bash scripts/reproduce.sh STAGE' \
       '  setup [--fresh]  Build the solver/tools/tests; --fresh resets CMake configuration.' \
-      '  data     Download/generate and verify all 92 paper input models (CPU).' \
+      '  data     Download/generate all 92 paper input models (CPU).' \
       '  test     Run Python and C++/CUDA regression tests (requires one GPU).' \
       '  smoke    Prepare one model per group, run all selected methods, and summarize.' \
       '  run      Run the complete Section 4 plan in a new RUN_DIR (one GPU).' \

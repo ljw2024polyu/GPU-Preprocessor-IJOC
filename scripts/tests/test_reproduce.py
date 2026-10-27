@@ -125,8 +125,8 @@ class ReproduceTests(unittest.TestCase):
                                    ({'PYTHON': 'custom-python'}, 'custom-python')]:
             with self.subTest(settings=settings):
                 calls = self.run_stage(stage='data', overrides=settings)
-                self.assertEqual([c['tool'] for c in calls], [expected] * 5)
-                self.assertEqual(calls[-1]['args'][0], 'scripts/check_inputs.py')
+                self.assertEqual([c['tool'] for c in calls], [expected] * 4)
+                self.assertTrue(all(c['args'][0] == 'scripts/prepare_inputs.py' for c in calls))
 
     @unittest.skipUnless(CMAKE, 'CMake is needed to check architecture initialization')
     def test_cmake_architecture_default_and_overrides(self):

@@ -58,17 +58,15 @@ reports an error if no C++/CUDA tests are registered.
 
 ## 3. Prepare the data
 
-Allow at least 100 GB of free disk space. For the first full download, model
-generation, and input checks, budget approximately 2–4 hours. Actual time
+Allow at least 100 GB of free disk space. For the first full download and model
+generation, budget approximately 2–4 hours. Actual time
 depends on network speed, CPU performance, and disk I/O.
 
 ```sh
 bash scripts/reproduce.sh data
 ```
 
-This downloads or generates all 92 models under `runs/reproduction/inputs/`
-and checks their row, column, and matrix-nonzero counts against the input
-inventory.
+This downloads or generates all 92 models under `runs/reproduction/inputs/`.
 
 | Input group | Models | Preparation |
 | --- | ---: | --- |

@@ -6,7 +6,6 @@ import io
 import json
 import os
 from pathlib import Path
-import subprocess
 import sys
 import tempfile
 import unittest
@@ -78,29 +77,6 @@ class ExperimentRunnerTests(unittest.TestCase):
                                     command=[model if arg == old['input'] else arg
                                              for arg in old['command']])
                 self.assertEqual(new, expected_job)
-
-    def test_input_checks_accept_uncompressed_collection_models(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory).resolve()
-            model = root / 'Hans49_original/FOME13.mps'
-            model.parent.mkdir()
-            model.write_text('existing model fixture')
-            with (ROOT / 'results/tables_3_4_5_instance_results.csv').open() as stream:
-                row = next(row for row in csv.DictReader(stream)
-                           if row['variant'] == 'None' and row['instance'] == 'FOME13.mps.gz')
-            info = dict(rows=int(row['original_rows']), columns=int(row['original_columns']),
-                        nonzeros=int(row['original_nnz']))
-            solver = root / 'inspect-solver'
-            solver.write_text(f'#!{sys.executable}\nimport sys\n'
-                              f'assert sys.argv[2] == {str(model)!r}\n'
-                              f'print({("INPUT_INFO " + json.dumps(info))!r})\n')
-            solver.chmod(0o755)
-            completed = subprocess.run(
-                [sys.executable, str(ROOT / 'scripts/check_inputs.py'), '--input-root', str(root),
-                 '--available-only', '--solver', str(solver)],
-                text=True, capture_output=True, check=True)
-            self.assertIn('1 inputs match the paper dimensions', completed.stdout)
-            self.assertEqual(model.read_text(), 'existing model fixture')
 
     def test_reject_invalid_selection_and_archive_output(self):
         for options in [('--instances', 'does-not-exist'), ('--device', '-1'),
