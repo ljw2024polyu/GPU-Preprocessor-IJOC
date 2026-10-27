@@ -150,10 +150,6 @@ Follow [REPRODUCING.md](docs/REPRODUCING.md) for prerequisites, input preparatio
 and output locations. From a fresh clone on a CUDA machine:
 
 ~~~sh
-export CC=gcc-11 CXX=g++-11 FC=gfortran-11
-export CUDACXX=/usr/local/cuda-12.9/bin/nvcc CUDAHOSTCXX=g++-11
-export CUDA_ARCH=80                     # A100; use 90 for H100
-
 bash scripts/reproduce.sh setup
 bash scripts/reproduce.sh test
 RUN_DIR="$PWD/runs/smoke" bash scripts/reproduce.sh smoke
@@ -163,7 +159,11 @@ bash scripts/reproduce.sh run
 bash scripts/reproduce.sh results
 ~~~
 
-Adjust the compiler and CUDA paths for your machine. `setup` installs the pinned
+`setup` discovers the system compilers and CUDA Toolkit through CMake and
+detects the visible GPU architecture. See the
+[configuration options](docs/REPRODUCING.md#build-configuration) to select a
+different toolchain or target architecture, including builds without a visible
+GPU. `setup` installs the pinned
 Python packages from `requirements.txt` and builds the solver, tools, and tests.
 `smoke` prepares one input from each group and executes 14 solver calls.
 The full default experiment prepares 92 models and executes 358 calls using

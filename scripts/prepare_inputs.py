@@ -184,7 +184,7 @@ def main():
     parser.add_argument('--julia', default='julia', help='Julia executable for QAP20.')
     parser.add_argument('--fc', default=os.environ.get('FC', 'gfortran'), help='Fortran compiler executable for scale.')
     parser.add_argument('--fflags', default='-O3 -std=legacy -mcmodel=large', help='Fortran compiler flags (Linux x86-64 defaults).')
-    parser.add_argument('--cxx', default=os.environ.get('CXX', 'g++'), help='C++17 compiler for scale.')
+    parser.add_argument('--cxx', default=os.environ.get('CXX', 'c++'), help='C++17 compiler for scale.')
     parser.add_argument('--cc', default=os.environ.get('CC', 'cc'), help='C compiler for the Hans EMPS utility.')
     args = parser.parse_args()
     rows = inventory(args.group, args.instances)

@@ -28,13 +28,12 @@ From the repository root:
 ```sh
 cmake -S . -B build-experiments \
   -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_CUDA_ARCHITECTURES=90 \
   -DGPUPREPROCESSOR_BUILD_HPRLP=ON \
   -DHPRLP_GUROBI=OFF
-cmake --build build-experiments -j 4
+cmake --build build-experiments
 ```
 
-Set `CMAKE_CUDA_COMPILER` and `CUDAToolkit_ROOT` if the intended CUDA installation is not selected automatically. Architecture `90` is for H100; use the architecture of the GPU running the experiment. The HPR-LP interface uses 32-bit sparse offsets, so leave `GPUPREPROCESSOR_USE_INT64_NNZ` disabled.
+The build detects the visible GPU architecture by default. For a build without a visible GPU or for another target machine, set `CUDAARCHS` or pass `-DCMAKE_CUDA_ARCHITECTURES` explicitly. Set `CMAKE_CUDA_COMPILER` and `CUDAToolkit_ROOT` if the intended CUDA installation is not selected automatically. See [build configuration](REPRODUCING.md#build-configuration) for compiler and parallel-build overrides. The HPR-LP interface uses 32-bit sparse offsets, so leave `GPUPREPROCESSOR_USE_INT64_NNZ` disabled.
 
 HPR-LP and PSLP are built from the bundled sources; no separate solver installation is required. HDF5 support is optional (`-DHPRLP_HDF5=ON` plus HDF5 development headers/libraries); the paper experiments use `.mps.gz` files and do not need it.
 
@@ -78,10 +77,10 @@ export GUROBI_HOME=/path/to/gurobi1202/linux64
 export GRB_LICENSE_FILE=/path/to/gurobi.lic
 
 cmake -S . -B build-experiments \
-  -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES=90 \
+  -DCMAKE_BUILD_TYPE=Release \
   -DGPUPREPROCESSOR_BUILD_HPRLP=ON \
   -DHPRLP_GUROBI=ON -DGUROBI_ROOT="$GUROBI_HOME"
-cmake --build build-experiments -j 4
+cmake --build build-experiments
 
 build-experiments/bin/hprlp_solve -i examples/model.mps --presolver gurobi
 ```

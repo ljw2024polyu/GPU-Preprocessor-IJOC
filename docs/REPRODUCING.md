@@ -7,7 +7,8 @@ official PSLP v0.0.11 source, and GPU-Preprocessor. Gurobi comparisons are optio
 ## 1. Install the tools and clone
 
 Use Linux x86-64 with CUDA, an NVIDIA GPU, Python 3.10 or newer, CMake 3.24 or
-newer, GCC/G++ 11 or newer, gfortran, Julia 1.10 or newer, curl, gzip, and zlib
+newer, a CUDA-compatible C/C++17 compiler, GNU Fortran (`gfortran`), Julia 1.10
+or newer, curl, gzip, and zlib
 development headers. Set aside at least 100 GB of free disk space for downloads,
 generated models, and temporary files. The large-input validation machine has
 256 GB of host RAM and an A100 with 80 GB of GPU memory.
@@ -15,7 +16,7 @@ generated models, and temporary files. The large-input validation machine has
 On Ubuntu, the non-CUDA build dependencies can be installed with:
 
 ```sh
-sudo apt-get install git curl gzip gcc-11 g++-11 gfortran-11 \
+sudo apt-get install git curl gzip build-essential gfortran \
   python3-venv zlib1g-dev
 ```
 
@@ -26,16 +27,36 @@ is sufficient; the QAP generator does not install Julia packages.
 git clone git@github.com:ljw2024polyu/GPU-Preprocessor-IJOC.git
 cd GPU-Preprocessor-IJOC
 
-export CC=gcc-11 CXX=g++-11 FC=gfortran-11
-export CUDACXX=/usr/local/cuda-12.9/bin/nvcc
-export CUDAHOSTCXX=g++-11
-export CUDA_ARCH=80
 export WORK_ROOT="$PWD/runs/reproduction"
 ```
 
-Use the actual CUDA installation path on your machine. `CUDA_ARCH=80` targets
-A100; use `90` for H100. The private repository requires GitHub access for your
-own account. No server-specific credentials are bundled.
+The private repository requires GitHub access for your own account.
+
+### Build configuration
+
+CMake discovers the system C/C++ compilers and CUDA Toolkit. The default GPU
+architecture is `native`, which detects the visible GPU during configuration.
+Data preparation uses `cc`, `c++`, `gfortran`, and `julia` from `PATH`.
+
+Set these optional variables before `setup` or data preparation when using a
+different toolchain:
+
+| Variable | Purpose |
+| --- | --- |
+| `CC`, `CXX`, `FC` | C, C++, and Fortran compiler executables |
+| `CUDACXX`, `CUDAHOSTCXX` | CUDA compiler and its host C++ compiler |
+| `CUDAToolkit_ROOT` | CUDA Toolkit root if automatic discovery selects another installation |
+| `CUDA_ARCH` | Explicit GPU architecture or semicolon-separated target list |
+| `CUDAARCHS` | Standard CMake architecture setting, used when `CUDA_ARCH` is unset |
+| `BUILD_JOBS` | Explicit build parallelism; otherwise CMake uses `CMAKE_BUILD_PARALLEL_LEVEL` or the build tool's default |
+| `JULIA` | Julia executable for input generation |
+
+For a build without a visible GPU or for another target machine, set
+`CUDA_ARCH` or `CUDAARCHS` to the target architecture before configuration.
+For direct CMake builds, use `-DCMAKE_CUDA_ARCHITECTURES` instead of `CUDA_ARCH`.
+CMake caches toolchain selections; use a new `BUILD_DIR` when changing the
+compiler or CUDA installation. No compiler version, CUDA installation path, or
+GPU model is forced by the wrapper.
 
 ## 2. Build and check one example from every input group
 

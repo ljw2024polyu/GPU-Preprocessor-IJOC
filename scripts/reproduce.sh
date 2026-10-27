@@ -18,7 +18,7 @@ if [[ "$WITH_GUROBI" == ON ]]; then methods+=(gurobi); fi
 
 prepare() {
   "$PYTHON" scripts/prepare_inputs.py "$1" --output-dir "$INPUT_ROOT" --resume \
-    --julia "${JULIA:-julia}" --cc "${CC:-cc}" --cxx "${CXX:-g++}" \
+    --julia "${JULIA:-julia}" --cc "${CC:-cc}" --cxx "${CXX:-c++}" \
     --fc "${FC:-gfortran}" --fflags="${FFLAGS:--O3 -std=legacy -mcmodel=large}" "${@:2}"
 }
 
@@ -34,14 +34,21 @@ case "$stage" in
   setup)
     python3 -m venv .venv
     "$PYTHON" -m pip install -r requirements.txt
-    cmake_args=(-DCMAKE_BUILD_TYPE=Release "-DCMAKE_CUDA_ARCHITECTURES=${CUDA_ARCH:-80}"
+    cmake_args=(-DCMAKE_BUILD_TYPE=Release
       -DGPUPREPROCESSOR_BUILD_HPRLP=ON -DGPUPREPROCESSOR_BUILD_TESTS=ON
       "-DHPRLP_GUROBI=$WITH_GUROBI")
+    if [[ -n "${CUDA_ARCH:-}" ]]; then
+      cmake_args+=("-DCMAKE_CUDA_ARCHITECTURES=$CUDA_ARCH")
+    fi
     if [[ "$WITH_GUROBI" == ON ]]; then
       cmake_args+=("-DGUROBI_ROOT=${GUROBI_HOME:?Set GUROBI_HOME to the Gurobi 12.0.2 SDK}")
     fi
     "${CMAKE:-cmake}" -S . -B "$BUILD_DIR" "${cmake_args[@]}"
-    "${CMAKE:-cmake}" --build "$BUILD_DIR" -j "${BUILD_JOBS:-4}"
+    build_args=(--build "$BUILD_DIR")
+    if [[ -n "${BUILD_JOBS:-}" ]]; then
+      build_args+=(--parallel "$BUILD_JOBS")
+    fi
+    "${CMAKE:-cmake}" "${build_args[@]}"
     ;;
   data)
     for group in hans miplib-large qap20 qap-scale; do prepare "$group"; done
@@ -74,13 +81,15 @@ case "$stage" in
     ;;
   help|-h|--help)
     printf '%s\n' 'Usage: bash scripts/reproduce.sh STAGE' \
-      '  setup    Install pinned Python packages and build the solver/tests (CPU).' \
+      '  setup    Install pinned Python packages and build the solver/tests.' \
       '  data     Download/generate and verify all 92 paper input models (CPU).' \
       '  test     Run Python and C++/CUDA regression tests (requires one GPU).' \
       '  smoke    Prepare one model per group, run all selected methods, and summarize.' \
       '  run      Run the complete Section 4 plan in a new RUN_DIR (one GPU).' \
       '  results  Rebuild tables and Figure 2 from that run (CPU).' \
       '  all      Execute setup, data, test, run, and results in order.' \
+      'CMake discovers the toolchain and GPU architecture; set CUDA_ARCH for a target override.' \
+      'Set BUILD_JOBS to override CMake build parallelism.' \
       'The solver uses logical device 0 by default.' \
       'Set WORK_ROOT/RUN_DIR for outputs; see docs/REPRODUCING.md.'
     ;;
