@@ -358,8 +358,8 @@ bool ijoc_run_gurobi_presolve(const LP_info_cpu *model,
     (void)param;
 
 #if !HPRLP_HAS_GUROBI
-    std::cerr << "[error] Gurobi support was not found when HPRLP was built; "
-                 "set GUROBI_HOME or install third_party/gurobi/linux64"
+    std::cerr << "[error] Gurobi support is disabled; set WITH_GUROBI=ON and "
+                 "GUROBI_HOME, then run bash scripts/reproduce.sh setup"
               << std::endl;
     return false;
 #else
@@ -398,8 +398,7 @@ bool ijoc_run_gurobi_presolve(const LP_info_cpu *model,
             }
             std::cout << "Gurobi presolve reached TimeLimit=" << presolve_time_limit
                       << " seconds after " << elapsed
-                      << " seconds; discarding the presolved model and falling back "
-                         "to the original LP"
+                      << " seconds; discarding the presolved model; preprocessing failed"
                       << std::endl;
             return false;
         }

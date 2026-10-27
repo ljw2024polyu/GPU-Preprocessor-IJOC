@@ -131,6 +131,24 @@ class RebuildResultsTests(unittest.TestCase):
             self.assertEqual(result['solve_time_s'], '0.3')
             self.assertEqual(result['preprocessing_time_s'], '0.123456789')
 
+    def test_current_and_archived_gpu_timing_labels_are_equivalent(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            log = Path(temporary) / 'scale.log'
+            results = []
+            for label in ['GPU-Presolver-C', 'GPU-Preprocessor']:
+                log.write_text('problem information: nRow = 3, nCol = 4, nnz A = 5\n'
+                               'problem information: nRow = 2, nCol = 3, nnz A = 4\n'
+                               'Status: OPTIMAL\nIterations: 10\nPrimal Objective: 2\n'
+                               f'{label} preprocessing time: 0.125 seconds\n'
+                               'Solve Time: 0.5 seconds\n')
+                for final_fields in [False, True]:
+                    with self.subTest(label=label, final_fields=final_fields):
+                        result = rebuild.scale_log(log, final_fields=final_fields)
+                        self.assertEqual(result['preprocessing_time_s'], '0.125')
+                        self.assertEqual(result['total_time_s'], '0.625')
+                        results.append(result)
+            self.assertTrue(all(result == results[0] for result in results))
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -148,7 +148,7 @@ private:
 
 void run_timed_gpu_presolve(GpuPresolverHandle *handle,
                             const gp::PresolveParams &params) {
-    std::cout << "GPU-Presolver-C configuration: folding=" << (params.enable_folding ? "true" : "false")
+    std::cout << "GPU-Preprocessor configuration: folding=" << (params.enable_folding ? "true" : "false")
               << ", presolve=" << (params.enable_presolve ? "true" : "false")
               << ", new_rules=" << (params.enable_structure_specific_rules ? "true" : "false")
               << std::endl;
@@ -355,7 +355,7 @@ bool copy_reduced_lp_to_hprlp(const gp::LPInfoGpu &lp,
                               double obj_constant,
                               LP_info_cpu *reduced_model) {
     if (lp.A.rows <= 0 || lp.A.cols <= 0 || lp.A.nnz <= 0) {
-        std::cerr << "[warn] GPU-Presolver-C returned an empty reduced LP; preprocessing failed" << std::endl;
+        std::cerr << "[warn] GPU-Preprocessor returned an empty reduced LP; preprocessing failed" << std::endl;
         return false;
     }
 
@@ -449,7 +449,7 @@ bool copy_reduced_lp_to_hprlp_device(const gp::LPInfoGpu &lp,
                                      double obj_constant,
                                      LP_info_gpu *reduced_model) {
     if (lp.A.rows <= 0 || lp.A.cols <= 0 || lp.A.nnz <= 0) {
-        std::cerr << "[warn] GPU-Presolver-C returned an empty reduced LP; preprocessing failed" << std::endl;
+        std::cerr << "[warn] GPU-Preprocessor returned an empty reduced LP; preprocessing failed" << std::endl;
         return false;
     }
 
@@ -692,13 +692,13 @@ bool ijoc_run_gpu_presolve(const LP_info_cpu *model,
 
     std::unique_ptr<GpuPresolverHandle> handle(new (std::nothrow) GpuPresolverHandle);
     if (!handle) {
-        std::cerr << "[warn] Failed to allocate GPU-Presolver-C handle; preprocessing failed" << std::endl;
+        std::cerr << "[warn] Failed to allocate GPU-Preprocessor handle; preprocessing failed" << std::endl;
         return false;
     }
 
     try {
         if (param) {
-            throw_if_cuda_error(cudaSetDevice(param->device_number), "cudaSetDevice for GPU-Presolver-C");
+            throw_if_cuda_error(cudaSetDevice(param->device_number), "cudaSetDevice for GPU-Preprocessor");
         }
         upload_hprlp_model(model, &handle->original_lp);
 
@@ -711,7 +711,7 @@ bool ijoc_run_gpu_presolve(const LP_info_cpu *model,
             presolve_params.max_time = param->time_limit;
         }
 
-        std::cout << "Doing presolve (GPU-Presolver-C"
+        std::cout << "Doing preprocessing (GPU-Preprocessor"
                   << (presolve_params.enable_folding ? " folding" : "")
                   << ")..." << std::endl;
         run_timed_gpu_presolve(handle.get(), presolve_params);
@@ -729,23 +729,23 @@ bool ijoc_run_gpu_presolve(const LP_info_cpu *model,
             *folding_time_out = static_cast<HPRLP_FLOAT>(
                 handle->folding_summary.folding.profile.total_seconds);
         }
-        std::cout << "GPU-Presolver-C folding time: "
+        std::cout << "GPU-Preprocessor folding time: "
                   << handle->folding_summary.folding.profile.total_seconds << " seconds" << std::endl;
-        std::cout << "GPU-Presolver-C folding: ("
+        std::cout << "GPU-Preprocessor folding: ("
                   << handle->folding_summary.original_rows << ", "
                   << handle->folding_summary.original_cols << ") -> ("
                   << handle->folding_summary.folded_rows << ", "
                   << handle->folding_summary.folded_cols << ")" << std::endl;
         std::cout << std::endl;
-        std::cout << "GPU-Presolver-C presolve time: "
+        std::cout << "GPU-Preprocessor presolve time: "
                   << std::setprecision(8) << handle->presolve_seconds << " seconds" << std::endl;
-        std::cout << "GPU-Presolver-C preprocessing time: "
+        std::cout << "GPU-Preprocessor preprocessing time: "
                   << handle->preprocessing_seconds << " seconds" << std::endl;
-        std::cout << "GPU-Presolver-C presolve workspace setup time: "
+        std::cout << "GPU-Preprocessor presolve workspace setup time: "
                   << std::setprecision(8) << handle->presolve_setup_seconds << " seconds" << std::endl;
-        std::cout << "GPU-Presolver-C presolve workspace release time: "
+        std::cout << "GPU-Preprocessor presolve workspace release time: "
                   << handle->presolve_workspace_release_seconds << " seconds" << std::endl;
-        std::cout << "GPU-Presolver-C presolve: ("
+        std::cout << "GPU-Preprocessor presolve: ("
                   << handle->folding_summary.folded_rows << ", "
                   << handle->folding_summary.folded_cols << ") -> ("
                   << summary.reduced_rows << ", "
@@ -753,14 +753,14 @@ bool ijoc_run_gpu_presolve(const LP_info_cpu *model,
         std::cout << std::endl;
 
         if (summary.has_infeasible || summary.has_unbounded) {
-            std::cerr << "[warn] GPU-Presolver-C reported "
+            std::cerr << "[warn] GPU-Preprocessor reported "
                       << (summary.has_infeasible ? "infeasible" : "unbounded")
                       << "; preprocessing failed" << std::endl;
             free_gpu_presolver_handle_resources(handle.get());
             return false;
         }
 
-        std::cout << "GPU-Presolver-C reduced model:" << std::endl;
+        std::cout << "GPU-Preprocessor reduced model:" << std::endl;
         if (!copy_reduced_lp_to_hprlp(summary.reduced_lp,
                                       summary.record.obj_constant_new,
                                       reduced_model)) {
@@ -776,7 +776,7 @@ bool ijoc_run_gpu_presolve(const LP_info_cpu *model,
         *presolver_handle_out = released_handle;
         return true;
     } catch (const std::exception &err) {
-        std::cerr << "[warn] GPU-Presolver-C failed: " << err.what()
+        std::cerr << "[warn] GPU-Preprocessor failed: " << err.what()
                   << "; preprocessing failed" << std::endl;
         free_lp_info_cpu(reduced_model);
         initialize_empty_model(reduced_model);
@@ -786,7 +786,7 @@ bool ijoc_run_gpu_presolve(const LP_info_cpu *model,
         const cudaError_t recovery_status = cudaDeviceSynchronize();
         if (recovery_status != cudaSuccess &&
             recovery_status != cudaErrorMemoryAllocation) {
-            std::cerr << "[warn] GPU-Presolver-C CUDA recovery: "
+            std::cerr << "[warn] GPU-Preprocessor CUDA recovery: "
                       << cudaGetErrorString(recovery_status) << std::endl;
         }
         (void)cudaGetLastError();
@@ -828,19 +828,17 @@ bool ijoc_run_gpu_presolve_device(const LP_info_cpu *model,
 
     std::unique_ptr<GpuPresolverHandle> handle(new (std::nothrow) GpuPresolverHandle);
     if (!handle) {
-        std::cerr << "[warn] Failed to allocate GPU-Presolver-C handle; preprocessing failed" << std::endl;
+        std::cerr << "[warn] Failed to allocate GPU-Preprocessor handle; preprocessing failed" << std::endl;
         return false;
     }
 
     try {
         if (param) {
-            throw_if_cuda_error(cudaSetDevice(param->device_number), "cudaSetDevice for GPU-Presolver-C");
+            throw_if_cuda_error(cudaSetDevice(param->device_number), "cudaSetDevice for GPU-Preprocessor");
         }
         upload_hprlp_model(model, &handle->original_lp);
-        // This is the timing boundary for GPU-resident work: the complete
-        // original model (including its transpose) is now on the selected
-        // device.  Preserve it even if presolve later falls back and the
-        // original model must be uploaded a second time for the solver.
+        // Expose when the original model and its transpose are fully resident
+        // on the selected GPU, before preprocessing begins.
         if (first_device_ready_out) {
             *first_device_ready_out = std::chrono::steady_clock::now();
         }
@@ -854,7 +852,7 @@ bool ijoc_run_gpu_presolve_device(const LP_info_cpu *model,
             presolve_params.max_time = param->time_limit;
         }
 
-        std::cout << "Doing presolve (GPU-Presolver-C"
+        std::cout << "Doing preprocessing (GPU-Preprocessor"
                   << (presolve_params.enable_folding ? " folding" : "")
                   << ")..." << std::endl;
         run_timed_gpu_presolve(handle.get(), presolve_params);
@@ -872,23 +870,23 @@ bool ijoc_run_gpu_presolve_device(const LP_info_cpu *model,
             *folding_time_out = static_cast<HPRLP_FLOAT>(
                 handle->folding_summary.folding.profile.total_seconds);
         }
-        std::cout << "GPU-Presolver-C folding time: "
+        std::cout << "GPU-Preprocessor folding time: "
                   << handle->folding_summary.folding.profile.total_seconds << " seconds" << std::endl;
-        std::cout << "GPU-Presolver-C folding: ("
+        std::cout << "GPU-Preprocessor folding: ("
                   << handle->folding_summary.original_rows << ", "
                   << handle->folding_summary.original_cols << ") -> ("
                   << handle->folding_summary.folded_rows << ", "
                   << handle->folding_summary.folded_cols << ")" << std::endl;
         std::cout << std::endl;
-        std::cout << "GPU-Presolver-C presolve time: "
+        std::cout << "GPU-Preprocessor presolve time: "
                   << std::setprecision(8) << handle->presolve_seconds << " seconds" << std::endl;
-        std::cout << "GPU-Presolver-C preprocessing time: "
+        std::cout << "GPU-Preprocessor preprocessing time: "
                   << handle->preprocessing_seconds << " seconds" << std::endl;
-        std::cout << "GPU-Presolver-C presolve workspace setup time: "
+        std::cout << "GPU-Preprocessor presolve workspace setup time: "
                   << std::setprecision(8) << handle->presolve_setup_seconds << " seconds" << std::endl;
-        std::cout << "GPU-Presolver-C presolve workspace release time: "
+        std::cout << "GPU-Preprocessor presolve workspace release time: "
                   << handle->presolve_workspace_release_seconds << " seconds" << std::endl;
-        std::cout << "GPU-Presolver-C presolve: ("
+        std::cout << "GPU-Preprocessor presolve: ("
                   << handle->folding_summary.folded_rows << ", "
                   << handle->folding_summary.folded_cols << ") -> ("
                   << summary.reduced_rows << ", "
@@ -896,7 +894,7 @@ bool ijoc_run_gpu_presolve_device(const LP_info_cpu *model,
         std::cout << std::endl;
 
         if (summary.has_infeasible || summary.has_unbounded) {
-            std::cerr << "[warn] GPU-Presolver-C reported "
+            std::cerr << "[warn] GPU-Preprocessor reported "
                       << (summary.has_infeasible ? "infeasible" : "unbounded")
                       << "; preprocessing failed" << std::endl;
             free_gpu_presolver_handle_resources(handle.get());
@@ -923,7 +921,7 @@ bool ijoc_run_gpu_presolve_device(const LP_info_cpu *model,
 
         handle->reduced_m = reduced_model->m;
         handle->reduced_n = reduced_model->n;
-        std::cout << "GPU-Presolver-C reduced model:" << std::endl;
+        std::cout << "GPU-Preprocessor reduced model:" << std::endl;
         std::cout << "problem information: nRow = " << summary.reduced_rows
                   << ", nCol = " << summary.reduced_cols
                   << ", nnz A = " << summary.reduced_nnz << std::endl;
@@ -933,7 +931,7 @@ bool ijoc_run_gpu_presolve_device(const LP_info_cpu *model,
         *presolver_handle_out = handle.release();
         return true;
     } catch (const std::exception &err) {
-        std::cerr << "[warn] GPU-Presolver-C failed: " << err.what()
+        std::cerr << "[warn] GPU-Preprocessor failed: " << err.what()
                   << "; preprocessing failed" << std::endl;
         free_lp_info(reduced_model);
         initialize_empty_device_model(reduced_model);
@@ -943,7 +941,7 @@ bool ijoc_run_gpu_presolve_device(const LP_info_cpu *model,
         const cudaError_t recovery_status = cudaDeviceSynchronize();
         if (recovery_status != cudaSuccess &&
             recovery_status != cudaErrorMemoryAllocation) {
-            std::cerr << "[warn] GPU-Presolver-C CUDA recovery: "
+            std::cerr << "[warn] GPU-Preprocessor CUDA recovery: "
                       << cudaGetErrorString(recovery_status) << std::endl;
         }
         (void)cudaGetLastError();
@@ -1015,7 +1013,7 @@ bool ijoc_apply_gpu_postsolve(HPRLP_results *result,
         cudaFree(x_red);
         cudaFree(y_red);
         cudaFree(z_red);
-        std::cerr << "[warn] GPU-Presolver-C postsolve failed: " << err.what() << std::endl;
+        std::cerr << "[warn] GPU-Preprocessor postsolve failed: " << err.what() << std::endl;
         return false;
     }
 }
@@ -1029,7 +1027,7 @@ bool ijoc_gpu_postsolve_and_validate(HPRLP_results *result,
     }
 
     std::cout << "\n================================================================================" << std::endl;
-    std::cout << "GPU-PRESOLVER-C POSTSOLVE" << std::endl;
+    std::cout << "GPU-PREPROCESSOR POSTSOLVE" << std::endl;
     std::cout << "================================================================================" << std::endl;
 
     const bool reduced_solution_optimal =

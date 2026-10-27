@@ -54,7 +54,8 @@ def scale_log(path, final_fields=False):
         if not matches:
             raise ValueError(f'Missing {pattern} in {path}')
         return matches[-1] if final_fields else matches[0]
-    patterns = [r'^GPU-Presolver-C preprocessing time: ([\d.eE+-]+) seconds',
+    # Keep archived logs readable after the diagnostic label was renamed.
+    patterns = [r'^(?:GPU-Preprocessor|GPU-Presolver-C) preprocessing time: ([\d.eE+-]+) seconds',
                 r'^Preprocessing Time:\s*([\d.eE+-]+) seconds',
                 r'^Presolve Time:\s*([\d.eE+-]+) seconds']
     if final_fields:
