@@ -20,8 +20,6 @@ use `python3` from that environment; they do not install dependencies or create
 a virtual environment. Julia needs only its standard library. The sources for
 HPR-LP-C v0.1.3 and PSLP 0.0.11 are bundled and compiled with this project.
 
-Allow at least 100 GB of free disk space.
-
 ## 1. Download the project
 
 ```sh
@@ -44,6 +42,10 @@ CUDA Toolkit and targets the visible GPU. Optional compiler settings are
 listed in [solver integration](SOLVER_INTEGRATION.md#build).
 
 ## 3. Prepare the data
+
+Allow at least 100 GB of free disk space. For the first full download, model
+generation, and input checks, budget approximately 2–4 hours. Actual time
+depends on network speed, CPU performance, and disk I/O.
 
 ```sh
 bash scripts/reproduce.sh data
