@@ -65,11 +65,6 @@ model:
 ./build/bin/gpu_preprocessor_export_reduced examples/model.mps reduced/
 ~~~
 
-The MPS tools perform preprocessing and export; they do not solve the LP.
-Integer-marked inputs are treated as LP relaxations. The exporter writes
-`meta.txt` and binary LP data for an external solver. Use `--help` with either
-MPS tool to inspect its command-line options.
-
 To preprocess the bundled model with GPU-Preprocessor and solve it with HPR-LP,
 first build the experiment driver using the `setup` step in the
 [reproduction guide](docs/REPRODUCING.md), then run:
@@ -77,16 +72,6 @@ first build the experiment driver using the `setup` step in the
 ~~~sh
 ./build-experiments/bin/hprlp_solve -i examples/model.mps --presolver gpu
 ~~~
-
-The [public API](cpp/include/gpu_preprocessor/gpu_preprocessor.hpp) accepts a
-GPU-resident `DeviceLp`. Call `preprocess`, solve the reduced LP with an external
-solver, then call `postprocess` with the GPU-resident reduced solution arrays
-`x` (primal variables), `y` (row duals), and `z` (reduced costs).
-See [presolve_example.cpp](examples/presolve_example.cpp) for a minimal API
-example using an analytic solution to a toy LP. Validate primal feasibility,
-dual feasibility, and the duality gap on the original LP after recovery; see
-[recovery checks and solver status](docs/STATISTICS_AND_PROVENANCE.md#table-6-and-figure-2)
-for the interpretation of these checks.
 
 ## Description
 
@@ -104,12 +89,6 @@ GPU-Preprocessor applies folding and presolve to continuous linear programs befo
 | `scripts/` | Input preparation, experiment execution, and reconstruction of result tables and Figure 2 |
 | `docs/` | Experimental settings, statistical definitions, and log mappings |
 | `results/` | Raw logs, summary CSVs, CSV tables, and Figure 2 |
-
-All methods in the experiment driver use the same solver in `third_party/hprlp/`.
-The official HPR-LP source is kept unchanged. Before each solve, the driver
-disables HPR-LP's built-in presolve by setting `presolver = HPRLP_PRESOLVER_NONE`
-and `use_presolve = false`. Preprocessing is handled by the selected external
-backend, or skipped for the no-preprocessing baseline.
 
 ## Results
 
