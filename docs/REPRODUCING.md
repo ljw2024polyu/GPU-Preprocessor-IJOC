@@ -20,8 +20,7 @@ use `python3` from that environment; they do not install dependencies or create
 a virtual environment. Julia needs only its standard library. The sources for
 HPR-LP-C v0.1.3 and PSLP 0.0.11 are bundled and compiled with this project.
 
-Allow at least 100 GB of free disk space. The largest inputs were tested with
-256 GB of host RAM and 80 GB of GPU memory.
+Allow at least 100 GB of free disk space.
 
 ## 1. Download the project
 
