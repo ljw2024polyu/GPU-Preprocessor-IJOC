@@ -93,7 +93,7 @@ class RebuildResultsTests(unittest.TestCase):
     def test_selected_methods_and_instances_reconstruct_without_gurobi(self):
         with tempfile.TemporaryDirectory() as temporary:
             run = Path(temporary)
-            self.selected_run(run)
+            plan = self.selected_run(run)
             completed = subprocess.run(
                 [sys.executable, str(ROOT / 'scripts/rebuild_results.py'), '--run-dir', str(run)],
                 text=True, capture_output=True, check=True)
@@ -105,6 +105,22 @@ class RebuildResultsTests(unittest.TestCase):
             with (run / 'results/Figure2_QAPScalability/figure_2_preprocessing_times.csv').open() as stream:
                 self.assertEqual({r['method'] for r in csv.DictReader(stream)},
                                  {'PSLP', 'GPU-Preprocessor'})
+            summaries = {job['summary'] for job in plan if job['summary']}
+            for summary in summaries:
+                with (run / summary).open() as stream:
+                    reader = csv.DictReader(stream)
+                    rows = list(reader)
+                    self.assertEqual(reader.fieldnames,
+                                     ['name', 'status', 'preprocessing_time', 'solve_time',
+                                      'original_m', 'original_n', 'original_nnz',
+                                      'reduced_m', 'reduced_n', 'reduced_nnz'])
+                    self.assertTrue(rows)
+            saved = {p: p.read_bytes() for p in (run / 'results').rglob('*.csv')}
+            repeated = subprocess.run(
+                [sys.executable, str(ROOT / 'scripts/rebuild_results.py'), '--run-dir', str(run)],
+                text=True, capture_output=True, check=True)
+            self.assertEqual(json.loads(repeated.stdout), report)
+            self.assertEqual({p: p.read_bytes() for p in saved}, saved)
 
     def test_an_incomplete_selected_run_fails(self):
         with tempfile.TemporaryDirectory() as temporary:

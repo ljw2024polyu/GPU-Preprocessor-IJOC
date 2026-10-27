@@ -97,6 +97,28 @@ class ExperimentRunnerTests(unittest.TestCase):
                 runner.parse_result('Status: OPTIMAL\nPreprocessing Time: ' + invalid +
                                     '\nPresolve Time: 0\nSolve Time: 1\n', 'invalid')
 
+    def test_summary_has_two_times_and_original_and_preprocessed_dimensions(self):
+        text = ('problem information: nRow = 10, nCol = 20, nnz A = 30\n'
+                'problem information: nRow = 5, nCol = 12, nnz A = 18\n'
+                'problem information: nRow = 4, nCol = 11, nnz A = 16\n'
+                'Warning: postsolve original KKT check failed\n'
+                'Status: OPTIMAL\nPresolve Time: 0.1 seconds\n'
+                'Preprocessing Time: 0.25 seconds\nSolve Time: 1.5 seconds\n'
+                'Status: TIME_LIMIT\nPreprocessing Time: 0.333333333333 seconds\n'
+                'Solve Time: 1000.123456789 seconds\n')
+        self.assertEqual(runner.parse_result(text, 'model.mps.gz'), {
+            'name': 'model.mps.gz', 'status': 'TIME_LIMIT',
+            'preprocessing_time': '0.333333333333', 'solve_time': '1000.123456789',
+            'original_m': 10, 'original_n': 20, 'original_nnz': 30,
+            'reduced_m': 5, 'reduced_n': 12, 'reduced_nnz': 18,
+        })
+        baseline = ('problem information: nRow = 10, nCol = 20, nnz A = 30\n'
+                    'Status: OPTIMAL\nPresolve Time: 0 seconds\nSolve Time: 1 seconds\n')
+        result = runner.parse_result(baseline, 'baseline.mps')
+        self.assertEqual(result['preprocessing_time'], '0')
+        self.assertEqual([result[k] for k in ['reduced_m', 'reduced_n', 'reduced_nnz']],
+                         [10, 20, 30])
+
     def test_run_writes_summary_and_preserves_environment_and_existing_outputs(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -108,6 +130,8 @@ class ExperimentRunnerTests(unittest.TestCase):
                 'assert os.environ["CUDA_VISIBLE_DEVICES"] == "2"\n'
                 'assert os.environ["HPRLP_TEST_SETTING"] == "recorded"\n'
                 'assert "GPUPRESOLVER_UNRECORDED" not in os.environ\n'
+                'print("problem information: nRow = 3, nCol = 4, nnz A = 5")\n'
+                'print("problem information: nRow = 2, nCol = 3, nnz A = 4")\n'
                 'print("Status: OPTIMAL\\nPreprocessing Time: 0.2 seconds\\n"'
                 ' "Presolve Time: 0.1 seconds\\nSolve Time: 0.3 seconds")\n')
             job = dict(command=[sys.executable, str(fake)], input=str(model),
@@ -122,8 +146,14 @@ class ExperimentRunnerTests(unittest.TestCase):
                  contextlib.redirect_stdout(io.StringIO()):
                 runner.run_jobs([job], output)
             with (output / job['summary']).open() as handle:
-                rows = list(csv.DictReader(handle))
+                reader = csv.DictReader(handle)
+                rows = list(reader)
+                self.assertEqual(reader.fieldnames,
+                                 ['name', 'status', 'preprocessing_time', 'solve_time',
+                                  'original_m', 'original_n', 'original_nnz',
+                                  'reduced_m', 'reduced_n', 'reduced_nnz'])
             self.assertEqual(rows[0]['preprocessing_time'], '0.2')
+            self.assertEqual(rows[0]['reduced_nnz'], '4')
             saved = (output / job['log']).read_bytes()
             with self.assertRaises(FileExistsError):
                 runner.run_jobs([job], output)

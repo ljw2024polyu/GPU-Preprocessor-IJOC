@@ -124,6 +124,7 @@ def main():
         if selected is not None:
             assert sorted(r['name'] for r in rows) == sorted(j['instance'] for j in selected), batch
         ratios = []
+        summary_rows = []
         prep_times, solve_times, total_times = [], [], []
         for row in rows:
             name = row['name']
@@ -137,8 +138,15 @@ def main():
             reduced = dimensions[1] if len(dimensions) > 1 else original
             ratio = tuple(b / a for a, b in zip(original, reduced))
             ratios.append(ratio)
-            prep = float(row.get('preprocessing_time') or row.get('presolve_time') or 0)
+            prep_value = row.get('preprocessing_time') or row.get('presolve_time') or '0'
+            prep = float(prep_value)
             solve = float(row['solve_time']) if row['status'] == 'OPTIMAL' else 1000.0
+            summary_rows.append({
+                'name': name, 'status': row['status'],
+                'preprocessing_time': prep_value, 'solve_time': row['solve_time'],
+                **dict(zip(['original_m', 'original_n', 'original_nnz'], original)),
+                **dict(zip(['reduced_m', 'reduced_n', 'reduced_nnz'], reduced)),
+            })
             prep_times.append(prep)
             solve_times.append(solve)
             total_times.append(prep + solve)
@@ -154,6 +162,8 @@ def main():
                 **({'postsolve_original_kkt_warning': 'Warning: postsolve original KKT check failed' in text}
                    if args.run_dir else {}),
             })
+        if summary_rows and args.run_dir:
+            write_csv(ROOT / run['local_summary'], summary_rows, list(summary_rows[0]))
         result = {
             'dataset': run['dataset'], 'variant': run['variant'],
             'solved': sum(r['status'] == 'OPTIMAL' for r in rows),

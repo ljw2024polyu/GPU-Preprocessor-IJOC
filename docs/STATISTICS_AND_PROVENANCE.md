@@ -35,8 +35,10 @@ in Table 6; the full-precision CSV retains the underlying measurements.
 
 `OPTIMAL` describes the stopping criterion on the LP passed to the solver.
 For preprocessed runs, validation after recovery in the original model is
-separate. New-run CSVs retain `postsolve_original_kkt_warning`, and the
-reconstruction report counts these warnings separately from solver status.
+separate. Detailed per-instance and scalability CSVs retain
+`postsolve_original_kkt_warning`, and the reconstruction report counts these
+warnings separately from solver status. Batch summary CSVs omit this diagnostic;
+the original log messages are preserved.
 
 Dual feasibility or duality-gap warnings can occur even when the recovered
 primal solution meets the original-model feasibility tolerance. Primal

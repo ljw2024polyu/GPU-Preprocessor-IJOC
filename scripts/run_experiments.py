@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DATASETS = {'hans': 'Mittelmann', 'miplib-large': 'MIPLIB Large', 'qap20': 'QAP20'}
 METHODS = {'None': 'none', 'Folding only': 'folding',
            'GPU-Preprocessor': 'gpu', 'PSLP': 'pslp', 'Gurobi': 'gurobi'}
+DIMENSIONS = re.compile(r'problem information:\s*nRow\s*=\s*(\d+),\s*nCol\s*=\s*(\d+),\s*nnz A\s*=\s*(\d+)')
 
 
 def read_csv(path):
@@ -88,14 +89,19 @@ def parse_result(text, name):
             raise ValueError(f'Missing final {label} field in the solver output for {name}')
         return matches[-1]
     result = {'name': name, 'status': field('Status')}
-    presolve = field('Presolve Time')
-    for key, label in [('preprocessing_time', 'Preprocessing Time'),
-                       ('presolve_time', 'Presolve Time'), ('solve_time', 'Solve Time')]:
-        value = field(label, presolve if key == 'preprocessing_time' else None)
+    prep_label = 'Preprocessing Time' if re.search(r'^Preprocessing Time:', text, re.M) else 'Presolve Time'
+    for key, label in [('preprocessing_time', prep_label), ('solve_time', 'Solve Time')]:
+        value = field(label)
         if not float(value) >= 0 or not float(value) < float('inf'):
             raise ValueError(f'Invalid {label} for {name}: {value}')
         result[key] = value
-    result['postsolve_original_kkt_warning'] = 'Warning: postsolve original KKT check failed' in text
+    dimensions = [tuple(map(int, match)) for match in DIMENSIONS.findall(text)]
+    if not dimensions:
+        raise ValueError(f'Missing model dimensions in the solver output for {name}')
+    original = dimensions[0]
+    reduced = dimensions[1] if len(dimensions) > 1 else original
+    result.update(zip(['original_m', 'original_n', 'original_nnz'], original))
+    result.update(zip(['reduced_m', 'reduced_n', 'reduced_nnz'], reduced))
     return result
 
 

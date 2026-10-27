@@ -130,6 +130,10 @@ Figure 2 for the selected methods, using only the new run's outputs.
 | Table CSVs | `results/Table3_Ablation/`, `results/Table4_Preprocessing/`, `results/Table5_EndToEnd/`, `results/Table6_QAPScalability/` |
 | Figure 2 data and PDF | `results/Figure2_QAPScalability/` |
 
+Batch summary CSVs contain `name`, `status`, `preprocessing_time`, `solve_time`,
+`original_m`, `original_n`, `original_nnz`, `reduced_m`, `reduced_n`, and
+`reduced_nnz`. The results step also updates older batch summaries to this format.
+
 Use the same `RUN_DIR` for running and generating results. New outputs are
 separate from the archived paper measurements in the repository's `results/`.
 For timing definitions, aggregation, and recovered-solution checks, see
