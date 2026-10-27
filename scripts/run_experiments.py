@@ -29,6 +29,7 @@ def instance_stem(name):
 
 def jobs_for(args):
     inventory = read_csv(ROOT / 'data/section_4_input_inventory.csv')
+    config = json.loads((ROOT / 'scripts/experiment_config.json').read_text())
     methods = set(args.methods or ['none', 'folding', 'gpu', 'pslp'])
     jobs = []
     if args.suite in {'benchmarks', 'all'}:
@@ -37,7 +38,7 @@ def jobs_for(args):
         if args.instances and not set(args.instances) <= allowed:
             raise ValueError('Unknown instance in the selected datasets: ' +
                              ', '.join(sorted(set(args.instances) - allowed)))
-        for run in read_csv(ROOT / 'docs/tables_3_4_5_batch_index.csv'):
+        for run in config['benchmarks']:
             method = METHODS[run['variant']]
             if run['dataset'] not in selected or method not in methods:
                 continue
@@ -51,7 +52,7 @@ def jobs_for(args):
                 log = f"{run['local_directory']}/logs/{run['paper_batch_id']}_{stem}.log"
                 command = [x.replace('{solver_executable}', str(args.solver))
                            .replace('{input_mps}', str(input_mps))
-                           for x in json.loads(run['command_template_json'])]
+                           for x in run['command']]
                 jobs.append(dict(dataset=run['dataset'], method=method, instance=entry['name'],
                                  input=str(input_mps), log=log, command=command, environment={},
                                  summary=run['local_summary']))
@@ -59,17 +60,17 @@ def jobs_for(args):
         if args.instances and args.suite == 'scalability':
             raise ValueError('--instances is for the benchmarks suite; use --sizes for scalability')
         input_dir = args.input_root / 'QAP_wil100_scale'
-        for entry in read_csv(ROOT / 'docs/table_6_figure_2_log_index.csv'):
+        for entry in config['scalability']:
             method = METHODS[entry['method']]
             if method not in methods or int(entry['N']) not in args.sizes:
                 continue
             name = f"qap-wil100-n{int(entry['N']):03d}.mps.gz"
             command = [x.replace('{solver_executable}', str(args.solver))
                        .replace('{input_dir}', str(input_dir))
-                       for x in json.loads(entry['command_template_json'])]
+                       for x in entry['command']]
             jobs.append(dict(dataset='QAP scalability', method=method, instance=name,
                              input=str(input_dir / name), log=entry['local_log'], command=command,
-                             environment=json.loads(entry['environment_json']), summary=None))
+                             environment=entry['environment'], summary=None))
     for job in jobs:
         command = job['command']
         command[command.index('--device') + 1] = str(args.device)

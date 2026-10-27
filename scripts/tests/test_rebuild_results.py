@@ -20,7 +20,7 @@ spec.loader.exec_module(rebuild)
 
 class RebuildResultsTests(unittest.TestCase):
     def archived_results(self, directory):
-        (directory / 'docs').symlink_to(ROOT / 'docs', target_is_directory=True)
+        (directory / 'scripts').symlink_to(ROOT / 'scripts', target_is_directory=True)
         (directory / 'results').mkdir()
         (directory / 'results/raw').symlink_to(ROOT / 'results/raw', target_is_directory=True)
         paths = []

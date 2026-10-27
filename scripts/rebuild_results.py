@@ -108,7 +108,8 @@ def main():
         # instances/sizes are absent, rather than copied from the paper archive.
         if not plan:
             parser.error('The run command plan is empty')
-    runs = read_csv(archive / 'docs/tables_3_4_5_batch_index.csv')
+    config = json.loads((archive / 'scripts/experiment_config.json').read_text())
+    runs = config['benchmarks']
     aggregates = {}
     instance_rows = []
     for run in runs:
@@ -165,7 +166,7 @@ def main():
         aggregates[run['dataset'], run['variant']] = result
     if instance_rows and args.run_dir:
         write_csv(ROOT / 'results/tables_3_4_5_instance_results.csv', instance_rows, list(instance_rows[0]))
-    scale_index = read_csv(archive / 'docs/table_6_figure_2_log_index.csv')
+    scale_index = config['scalability']
     scale_rows = []
     scale_detailed = []
     for entry in scale_index:

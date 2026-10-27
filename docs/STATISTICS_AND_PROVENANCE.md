@@ -24,6 +24,6 @@ both meet the requested tolerance.
 
 ## Execution records
 
-The [benchmark index](tables_3_4_5_batch_index.csv) and [scalability index](table_6_figure_2_log_index.csv) preserve recorded algorithm settings. Their command templates use `{solver_executable}`, `{input_mps}`, and `{input_dir}` for the solver executable, input model, and input directory, respectively. Device indices use the default logical device 0; the runner applies the user's `--device` selection at runtime. The scale index also records captured environment variables. An empty environment object means no separate environment record was captured.
+The [experiment configuration](../scripts/experiment_config.json) preserves recorded algorithm settings and log paths in its `benchmarks` and `scalability` sections. Its command templates use `{solver_executable}`, `{input_mps}`, and `{input_dir}` for the solver executable, input model, and input directory, respectively. Device indices use the default logical device 0; the runner applies the user's `--device` selection at runtime. The `environment` field records captured scalability environment variables. An empty environment object means no separate environment record was captured.
 
 The [environment record](experiment_environment.json) describes hardware and software versions.

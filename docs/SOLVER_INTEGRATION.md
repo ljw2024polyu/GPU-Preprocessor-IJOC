@@ -128,7 +128,7 @@ python3 scripts/run_experiments.py --input-root /path/to/benchmark-inputs \
 
 Omitting `--methods` selects the four methods that do not require Gurobi. `--suite benchmarks` selects Tables 3-5; `--suite scalability --sizes 20` selects one scalability size. Use `--solver /path/to/hprlp_solve` to override the default executable and `--device 0` for the first GPU visible to the process.
 
-The runner reads the [benchmark](tables_3_4_5_batch_index.csv) and [scalability](table_6_figure_2_log_index.csv) command records. The recorded tolerance is `1e-6`, the HPR-LP solve limit is 1000 seconds, and the check interval is 150. Recorded scalability environment settings are applied per run; inherited HPR-LP/GPU-Preprocessor tuning variables are cleared to avoid accidental overrides. Scheduler GPU visibility and license settings are preserved.
+The runner and result reconstruction script share [experiment_config.json](../scripts/experiment_config.json). Its `benchmarks` and `scalability` sections contain command arguments, output paths, and recorded scalability environment settings. The recorded tolerance is `1e-6`, the HPR-LP solve limit is 1000 seconds, and the check interval is 150. Recorded scalability environment settings are applied per run; inherited HPR-LP/GPU-Preprocessor tuning variables are cleared to avoid accidental overrides. Scheduler GPU visibility and license settings are preserved.
 
 Each output directory must be new. It receives `commands.json`, raw logs, and benchmark summary CSVs. Output names follow the paper's table/log mapping. The runner stops on missing inputs, process failures, or unsupported/failed preprocessing, keeping completed logs for inspection. New runs never overwrite the archived `results/` directory.
 

@@ -1,0 +1,261 @@
+{
+  "benchmarks": [
+    {
+      "dataset": "Mittelmann",
+      "variant": "None",
+      "paper_tables": [3, 5],
+      "instances": 49,
+      "paper_batch_id": "tables_3_5_mittelmann_no_preprocessing",
+      "local_directory": "results/raw/benchmarks/Mittelmann/01_No_preprocessing",
+      "local_summary": "results/raw/benchmarks/Mittelmann/01_No_preprocessing/tables_3_5_mittelmann_no_preprocessing_summary.csv",
+      "command": ["{solver_executable}", "-i", "{input_mps}", "--device", "0", "--time-limit", "1000.0", "--tol", "1e-06", "--check-iter", "150", "--presolver", "none", "--gpu-folding", "false", "--reduced-matrix", "true", "--auto-memory-policy", "false", "--print-debug-info", "true", "--max-iter", "2147483647"]
+    },
+    {
+      "dataset": "Mittelmann",
+      "variant": "Folding only",
+      "paper_tables": [3],
+      "instances": 49,
+      "paper_batch_id": "table_3_mittelmann_folding_only",
+      "local_directory": "results/raw/benchmarks/Mittelmann/02_Folding_only",
+      "local_summary": "results/raw/benchmarks/Mittelmann/02_Folding_only/table_3_mittelmann_folding_only_summary.csv",
+      "command": ["{solver_executable}", "-i", "{input_mps}", "--device", "0", "--time-limit", "1000.0", "--tol", "1e-06", "--check-iter", "150", "--presolver", "gpu", "--gpu-folding", "true", "--gpu-presolve", "false", "--gpu-new-rules", "true", "--reduced-matrix", "true", "--auto-memory-policy", "false", "--print-debug-info", "true", "--max-iter", "2147483647"]
+    },
+    {
+      "dataset": "Mittelmann",
+      "variant": "GPU-Preprocessor",
+      "paper_tables": [3, 4, 5],
+      "instances": 49,
+      "paper_batch_id": "tables_3_4_5_mittelmann_gpu_preprocessor",
+      "local_directory": "results/raw/benchmarks/Mittelmann/03_GPU-Preprocessor",
+      "local_summary": "results/raw/benchmarks/Mittelmann/03_GPU-Preprocessor/tables_3_4_5_mittelmann_gpu_preprocessor_summary.csv",
+      "command": ["{solver_executable}", "-i", "{input_mps}", "--device", "0", "--time-limit", "1000.0", "--tol", "1e-06", "--check-iter", "150", "--presolver", "gpu", "--gpu-folding", "true", "--gpu-presolve", "true", "--gpu-new-rules", "true", "--reduced-matrix", "true", "--auto-memory-policy", "false", "--print-debug-info", "true", "--max-iter", "2147483647"]
+    },
+    {
+      "dataset": "Mittelmann",
+      "variant": "PSLP",
+      "paper_tables": [4, 5],
+      "instances": 49,
+      "paper_batch_id": "tables_4_5_mittelmann_pslp",
+      "local_directory": "results/raw/benchmarks/Mittelmann/04_PSLP",
+      "local_summary": "results/raw/benchmarks/Mittelmann/04_PSLP/tables_4_5_mittelmann_pslp_summary.csv",
+      "command": ["{solver_executable}", "-i", "{input_mps}", "--device", "0", "--time-limit", "1000.0", "--tol", "1e-06", "--check-iter", "150", "--presolver", "pslp0011", "--gpu-folding", "false", "--gpu-presolve", "true", "--gpu-new-rules", "true", "--reduced-matrix", "true", "--auto-memory-policy", "false", "--print-debug-info", "true", "--max-iter", "2147483647"]
+    },
+    {
+      "dataset": "Mittelmann",
+      "variant": "Gurobi",
+      "paper_tables": [4, 5],
+      "instances": 49,
+      "paper_batch_id": "tables_4_5_mittelmann_gurobi",
+      "local_directory": "results/raw/benchmarks/Mittelmann/05_Gurobi",
+      "local_summary": "results/raw/benchmarks/Mittelmann/05_Gurobi/tables_4_5_mittelmann_gurobi_summary.csv",
+      "command": ["{solver_executable}", "-i", "{input_mps}", "--device", "0", "--time-limit", "1000.0", "--tol", "1e-06", "--check-iter", "150", "--presolver", "gurobi", "--gpu-folding", "false", "--reduced-matrix", "true", "--auto-memory-policy", "false", "--print-debug-info", "true", "--max-iter", "2147483647"]
+    },
+    {
+      "dataset": "MIPLIB Large",
+      "variant": "None",
+      "paper_tables": [3, 5],
+      "instances": 18,
+      "paper_batch_id": "tables_3_5_miplib_large_no_preprocessing",
+      "local_directory": "results/raw/benchmarks/MIPLIB_Large/01_No_preprocessing",
+      "local_summary": "results/raw/benchmarks/MIPLIB_Large/01_No_preprocessing/tables_3_5_miplib_large_no_preprocessing_summary.csv",
+      "command": ["{solver_executable}", "-i", "{input_mps}", "--device", "0", "--time-limit", "1000.0", "--tol", "1e-06", "--check-iter", "150", "--presolver", "none", "--gpu-folding", "false", "--reduced-matrix", "true", "--auto-memory-policy", "false", "--print-debug-info", "true", "--max-iter", "2147483647"]
+    },
+    {
+      "dataset": "MIPLIB Large",
+      "variant": "Folding only",
+      "paper_tables": [3],
+      "instances": 18,
+      "paper_batch_id": "table_3_miplib_large_folding_only",
+      "local_directory": "results/raw/benchmarks/MIPLIB_Large/02_Folding_only",
+      "local_summary": "results/raw/benchmarks/MIPLIB_Large/02_Folding_only/table_3_miplib_large_folding_only_summary.csv",
+      "command": ["{solver_executable}", "-i", "{input_mps}", "--device", "0", "--time-limit", "1000.0", "--tol", "1e-06", "--check-iter", "150", "--presolver", "gpu", "--gpu-folding", "true", "--gpu-presolve", "false", "--gpu-new-rules", "true", "--reduced-matrix", "true", "--auto-memory-policy", "false", "--print-debug-info", "true", "--max-iter", "2147483647"]
+    },
+    {
+      "dataset": "MIPLIB Large",
+      "variant": "GPU-Preprocessor",
+      "paper_tables": [3, 4, 5],
+      "instances": 18,
+      "paper_batch_id": "tables_3_4_5_miplib_large_gpu_preprocessor",
+      "local_directory": "results/raw/benchmarks/MIPLIB_Large/03_GPU-Preprocessor",
+      "local_summary": "results/raw/benchmarks/MIPLIB_Large/03_GPU-Preprocessor/tables_3_4_5_miplib_large_gpu_preprocessor_summary.csv",
+      "command": ["{solver_executable}", "-i", "{input_mps}", "--device", "0", "--time-limit", "1000.0", "--tol", "1e-06", "--check-iter", "150", "--presolver", "gpu", "--gpu-folding", "true", "--gpu-presolve", "true", "--gpu-new-rules", "true", "--reduced-matrix", "true", "--auto-memory-policy", "false", "--print-debug-info", "true", "--max-iter", "2147483647"]
+    },
+    {
+      "dataset": "MIPLIB Large",
+      "variant": "PSLP",
+      "paper_tables": [4, 5],
+      "instances": 18,
+      "paper_batch_id": "tables_4_5_miplib_large_pslp",
+      "local_directory": "results/raw/benchmarks/MIPLIB_Large/04_PSLP",
+      "local_summary": "results/raw/benchmarks/MIPLIB_Large/04_PSLP/tables_4_5_miplib_large_pslp_summary.csv",
+      "command": ["{solver_executable}", "-i", "{input_mps}", "--device", "0", "--time-limit", "1000.0", "--tol", "1e-06", "--check-iter", "150", "--presolver", "pslp0011", "--gpu-folding", "false", "--gpu-presolve", "true", "--gpu-new-rules", "true", "--reduced-matrix", "true", "--auto-memory-policy", "false", "--print-debug-info", "true", "--max-iter", "2147483647"]
+    },
+    {
+      "dataset": "MIPLIB Large",
+      "variant": "Gurobi",
+      "paper_tables": [4, 5],
+      "instances": 18,
+      "paper_batch_id": "tables_4_5_miplib_large_gurobi",
+      "local_directory": "results/raw/benchmarks/MIPLIB_Large/05_Gurobi",
+      "local_summary": "results/raw/benchmarks/MIPLIB_Large/05_Gurobi/tables_4_5_miplib_large_gurobi_summary.csv",
+      "command": ["{solver_executable}", "-i", "{input_mps}", "--device", "0", "--time-limit", "1000.0", "--tol", "1e-06", "--check-iter", "150", "--presolver", "gurobi", "--gpu-folding", "false", "--reduced-matrix", "true", "--auto-memory-policy", "false", "--print-debug-info", "true", "--max-iter", "2147483647"]
+    },
+    {
+      "dataset": "QAP20",
+      "variant": "None",
+      "paper_tables": [3, 5],
+      "instances": 20,
+      "paper_batch_id": "tables_3_5_qap20_no_preprocessing",
+      "local_directory": "results/raw/benchmarks/QAP20/01_No_preprocessing",
+      "local_summary": "results/raw/benchmarks/QAP20/01_No_preprocessing/tables_3_5_qap20_no_preprocessing_summary.csv",
+      "command": ["{solver_executable}", "-i", "{input_mps}", "--device", "0", "--time-limit", "1000.0", "--tol", "1e-06", "--check-iter", "150", "--presolver", "none", "--gpu-folding", "false", "--reduced-matrix", "true", "--auto-memory-policy", "false", "--print-debug-info", "true", "--max-iter", "2147483647"]
+    },
+    {
+      "dataset": "QAP20",
+      "variant": "Folding only",
+      "paper_tables": [3],
+      "instances": 20,
+      "paper_batch_id": "table_3_qap20_folding_only",
+      "local_directory": "results/raw/benchmarks/QAP20/02_Folding_only",
+      "local_summary": "results/raw/benchmarks/QAP20/02_Folding_only/table_3_qap20_folding_only_summary.csv",
+      "command": ["{solver_executable}", "-i", "{input_mps}", "--device", "0", "--time-limit", "1000.0", "--tol", "1e-06", "--check-iter", "150", "--presolver", "gpu", "--gpu-folding", "true", "--gpu-presolve", "false", "--gpu-new-rules", "true", "--reduced-matrix", "true", "--auto-memory-policy", "false", "--print-debug-info", "true", "--max-iter", "2147483647"]
+    },
+    {
+      "dataset": "QAP20",
+      "variant": "GPU-Preprocessor",
+      "paper_tables": [3, 4, 5],
+      "instances": 20,
+      "paper_batch_id": "tables_3_4_5_qap20_gpu_preprocessor",
+      "local_directory": "results/raw/benchmarks/QAP20/03_GPU-Preprocessor",
+      "local_summary": "results/raw/benchmarks/QAP20/03_GPU-Preprocessor/tables_3_4_5_qap20_gpu_preprocessor_summary.csv",
+      "command": ["{solver_executable}", "-i", "{input_mps}", "--device", "0", "--time-limit", "1000.0", "--tol", "1e-06", "--check-iter", "150", "--presolver", "gpu", "--gpu-folding", "true", "--gpu-presolve", "true", "--gpu-new-rules", "true", "--reduced-matrix", "true", "--auto-memory-policy", "false", "--print-debug-info", "true", "--max-iter", "2147483647"]
+    },
+    {
+      "dataset": "QAP20",
+      "variant": "PSLP",
+      "paper_tables": [4, 5],
+      "instances": 20,
+      "paper_batch_id": "tables_4_5_qap20_pslp",
+      "local_directory": "results/raw/benchmarks/QAP20/04_PSLP",
+      "local_summary": "results/raw/benchmarks/QAP20/04_PSLP/tables_4_5_qap20_pslp_summary.csv",
+      "command": ["{solver_executable}", "-i", "{input_mps}", "--device", "0", "--time-limit", "1000.0", "--tol", "1e-06", "--check-iter", "150", "--presolver", "pslp0011", "--gpu-folding", "false", "--gpu-presolve", "true", "--gpu-new-rules", "true", "--reduced-matrix", "true", "--auto-memory-policy", "false", "--print-debug-info", "true", "--max-iter", "2147483647"]
+    },
+    {
+      "dataset": "QAP20",
+      "variant": "Gurobi",
+      "paper_tables": [4, 5],
+      "instances": 20,
+      "paper_batch_id": "tables_4_5_qap20_gurobi",
+      "local_directory": "results/raw/benchmarks/QAP20/05_Gurobi",
+      "local_summary": "results/raw/benchmarks/QAP20/05_Gurobi/tables_4_5_qap20_gurobi_summary.csv",
+      "command": ["{solver_executable}", "-i", "{input_mps}", "--device", "0", "--time-limit", "1000.0", "--tol", "1e-06", "--check-iter", "150", "--presolver", "gurobi", "--gpu-folding", "false", "--reduced-matrix", "true", "--auto-memory-policy", "false", "--print-debug-info", "true", "--max-iter", "2147483647"]
+    }
+  ],
+  "scalability": [
+    {
+      "N": 20,
+      "method": "Gurobi",
+      "local_log": "results/raw/table_6_figure_2/gurobi/table_6_figure_2_qap_wil100_n020_gurobi.log",
+      "command": ["{solver_executable}", "-i", "{input_dir}/qap-wil100-n020.mps.gz", "--device", "0", "--time-limit", "1000.0", "--tol", "1e-06", "--check-iter", "150", "--presolver", "gurobi", "--gpu-folding", "false", "--reduced-matrix", "true", "--auto-memory-policy", "false", "--print-debug-info", "true", "--max-iter", "2147483647"],
+      "environment": {}
+    },
+    {
+      "N": 20,
+      "method": "PSLP",
+      "local_log": "results/raw/table_6_figure_2/pslp/table_6_figure_2_qap_wil100_n020_pslp.log",
+      "command": ["{solver_executable}", "-i", "{input_dir}/qap-wil100-n020.mps.gz", "--device", "0", "--time-limit", "1000.0", "--tol", "1e-06", "--check-iter", "150", "--presolver", "pslp0011", "--gpu-folding", "false", "--gpu-presolve", "true", "--gpu-new-rules", "true", "--reduced-matrix", "true", "--auto-memory-policy", "false", "--print-debug-info", "true", "--max-iter", "2147483647"],
+      "environment": {}
+    },
+    {
+      "N": 20,
+      "method": "GPU-Preprocessor",
+      "local_log": "results/raw/table_6_figure_2/gpu_preprocessor/table_6_figure_2_qap_wil100_n020_gpu_preprocessor.log",
+      "command": ["{solver_executable}", "-i", "{input_dir}/qap-wil100-n020.mps.gz", "--device", "0", "--time-limit", "1000.0", "--tol", "1e-6", "--check-iter", "150", "--presolver", "gpu", "--gpu-folding", "true", "--gpu-presolve", "true", "--gpu-new-rules", "true", "--reduced-matrix", "true", "--auto-memory-policy", "false", "--print-debug-info", "true", "--max-iter", "2147483647"],
+      "environment": {"HPRLP_DEFER_REDUCED_EMPTY_ROWS_TO_CHECK": "1", "HPRLP_ENABLE_COMPRESSIBLE_MEMORY": "1", "HPRLP_REDUCED_RESET_MASK_ON_RESTART": "1", "HPRLP_REDUCED_RESTART_MASK_MIN_CURRENT_COLUMNS": "95000", "HPRLP_REDUCED_RESTART_MASK_MIN_RECOVERY": "0.25", "HPRLP_REDUCED_RESTART_MASK_MIN_SAVED_COLUMNS": "25000", "HPRLP_USE_REDUCED_COMPRESSED_AUTOTUNE": "1", "HPRLP_USE_REDUCED_NONEMPTY_CUSPARSE": "1", "HPRLP_USE_ROW_COMPRESSED_AUTOTUNE": "1", "HPRLP_USE_ROW_REDUCTION": "1"}
+    },
+    {
+      "N": 40,
+      "method": "Gurobi",
+      "local_log": "results/raw/table_6_figure_2/gurobi/table_6_figure_2_qap_wil100_n040_gurobi.log",
+      "command": ["{solver_executable}", "-i", "{input_dir}/qap-wil100-n040.mps.gz", "--device", "0", "--time-limit", "1000.0", "--tol", "1e-06", "--check-iter", "150", "--presolver", "gurobi", "--gpu-folding", "false", "--reduced-matrix", "true", "--auto-memory-policy", "false", "--print-debug-info", "true", "--max-iter", "2147483647"],
+      "environment": {}
+    },
+    {
+      "N": 40,
+      "method": "PSLP",
+      "local_log": "results/raw/table_6_figure_2/pslp/table_6_figure_2_qap_wil100_n040_pslp.log",
+      "command": ["{solver_executable}", "-i", "{input_dir}/qap-wil100-n040.mps.gz", "--device", "0", "--time-limit", "1000.0", "--tol", "1e-06", "--check-iter", "150", "--presolver", "pslp0011", "--gpu-folding", "false", "--gpu-presolve", "true", "--gpu-new-rules", "true", "--reduced-matrix", "true", "--auto-memory-policy", "false", "--print-debug-info", "true", "--max-iter", "2147483647"],
+      "environment": {}
+    },
+    {
+      "N": 40,
+      "method": "GPU-Preprocessor",
+      "local_log": "results/raw/table_6_figure_2/gpu_preprocessor/table_6_figure_2_qap_wil100_n040_gpu_preprocessor.log",
+      "command": ["{solver_executable}", "-i", "{input_dir}/qap-wil100-n040.mps.gz", "--device", "0", "--time-limit", "1000.0", "--tol", "1e-06", "--check-iter", "150", "--presolver", "gpu", "--gpu-folding", "true", "--gpu-presolve", "true", "--gpu-new-rules", "true", "--reduced-matrix", "true", "--auto-memory-policy", "false", "--print-debug-info", "true", "--max-iter", "2147483647"],
+      "environment": {}
+    },
+    {
+      "N": 60,
+      "method": "Gurobi",
+      "local_log": "results/raw/table_6_figure_2/gurobi/table_6_figure_2_qap_wil100_n060_gurobi.log",
+      "command": ["{solver_executable}", "-i", "{input_dir}/qap-wil100-n060.mps.gz", "--device", "0", "--time-limit", "1000.0", "--tol", "1e-06", "--check-iter", "150", "--presolver", "gurobi", "--gpu-folding", "false", "--reduced-matrix", "true", "--auto-memory-policy", "false", "--print-debug-info", "true", "--max-iter", "2147483647"],
+      "environment": {}
+    },
+    {
+      "N": 60,
+      "method": "PSLP",
+      "local_log": "results/raw/table_6_figure_2/pslp/table_6_figure_2_qap_wil100_n060_pslp.log",
+      "command": ["{solver_executable}", "-i", "{input_dir}/qap-wil100-n060.mps.gz", "--device", "0", "--time-limit", "1000.0", "--tol", "1e-06", "--check-iter", "150", "--presolver", "pslp0011", "--gpu-folding", "false", "--gpu-presolve", "true", "--gpu-new-rules", "true", "--reduced-matrix", "true", "--auto-memory-policy", "false", "--print-debug-info", "true", "--max-iter", "2147483647"],
+      "environment": {}
+    },
+    {
+      "N": 60,
+      "method": "GPU-Preprocessor",
+      "local_log": "results/raw/table_6_figure_2/gpu_preprocessor/table_6_figure_2_qap_wil100_n060_gpu_preprocessor.log",
+      "command": ["{solver_executable}", "-i", "{input_dir}/qap-wil100-n060.mps.gz", "--device", "0", "--time-limit", "1000.0", "--tol", "1e-06", "--check-iter", "150", "--presolver", "gpu", "--gpu-folding", "true", "--gpu-presolve", "true", "--gpu-new-rules", "true", "--reduced-matrix", "true", "--auto-memory-policy", "false", "--print-debug-info", "true", "--max-iter", "2147483647"],
+      "environment": {}
+    },
+    {
+      "N": 80,
+      "method": "Gurobi",
+      "local_log": "results/raw/table_6_figure_2/gurobi/table_6_figure_2_qap_wil100_n080_gurobi.log",
+      "command": ["{solver_executable}", "-i", "{input_dir}/qap-wil100-n080.mps.gz", "--device", "0", "--time-limit", "1000.0", "--tol", "1e-06", "--check-iter", "150", "--presolver", "gurobi", "--gpu-folding", "false", "--reduced-matrix", "true", "--auto-memory-policy", "false", "--print-debug-info", "true", "--max-iter", "2147483647"],
+      "environment": {}
+    },
+    {
+      "N": 80,
+      "method": "PSLP",
+      "local_log": "results/raw/table_6_figure_2/pslp/table_6_figure_2_qap_wil100_n080_pslp.log",
+      "command": ["{solver_executable}", "-i", "{input_dir}/qap-wil100-n080.mps.gz", "--device", "0", "--time-limit", "1000.0", "--tol", "1e-06", "--check-iter", "150", "--presolver", "pslp0011", "--gpu-folding", "false", "--gpu-presolve", "true", "--gpu-new-rules", "true", "--reduced-matrix", "true", "--auto-memory-policy", "false", "--print-debug-info", "true", "--max-iter", "2147483647"],
+      "environment": {}
+    },
+    {
+      "N": 80,
+      "method": "GPU-Preprocessor",
+      "local_log": "results/raw/table_6_figure_2/gpu_preprocessor/table_6_figure_2_qap_wil100_n080_gpu_preprocessor.log",
+      "command": ["{solver_executable}", "-i", "{input_dir}/qap-wil100-n080.mps.gz", "--device", "0", "--time-limit", "1000.0", "--tol", "1e-6", "--check-iter", "150", "--presolver", "gpu", "--gpu-folding", "true", "--gpu-presolve", "true", "--gpu-new-rules", "true", "--reduced-matrix", "true", "--auto-memory-policy", "false", "--print-debug-info", "true", "--max-iter", "2147483647"],
+      "environment": {"HPRLP_DEFER_REDUCED_EMPTY_ROWS_TO_CHECK": "1", "HPRLP_ENABLE_COMPRESSIBLE_MEMORY": "1", "HPRLP_REDUCED_RESET_MASK_ON_RESTART": "1", "HPRLP_REDUCED_RESTART_MASK_MIN_CURRENT_COLUMNS": "95000", "HPRLP_REDUCED_RESTART_MASK_MIN_RECOVERY": "0.25", "HPRLP_REDUCED_RESTART_MASK_MIN_SAVED_COLUMNS": "25000", "HPRLP_USE_REDUCED_COMPRESSED_AUTOTUNE": "1", "HPRLP_USE_REDUCED_NONEMPTY_CUSPARSE": "1", "HPRLP_USE_ROW_COMPRESSED_AUTOTUNE": "1", "HPRLP_USE_ROW_REDUCTION": "1"}
+    },
+    {
+      "N": 100,
+      "method": "Gurobi",
+      "local_log": "results/raw/table_6_figure_2/gurobi/table_6_figure_2_qap_wil100_n100_gurobi.log",
+      "command": ["{solver_executable}", "-i", "{input_dir}/qap-wil100-n100.mps.gz", "--device", "0", "--time-limit", "1000.0", "--tol", "1e-06", "--check-iter", "150", "--presolver", "gurobi", "--gpu-folding", "false", "--reduced-matrix", "true", "--auto-memory-policy", "false", "--print-debug-info", "true", "--max-iter", "2147483647"],
+      "environment": {}
+    },
+    {
+      "N": 100,
+      "method": "PSLP",
+      "local_log": "results/raw/table_6_figure_2/pslp/table_6_figure_2_qap_wil100_n100_pslp.log",
+      "command": ["{solver_executable}", "-i", "{input_dir}/qap-wil100-n100.mps.gz", "--device", "0", "--time-limit", "1000.0", "--tol", "1e-06", "--check-iter", "150", "--presolver", "pslp0011", "--gpu-folding", "false", "--gpu-presolve", "true", "--gpu-new-rules", "true", "--reduced-matrix", "true", "--auto-memory-policy", "false", "--print-debug-info", "true", "--max-iter", "2147483647"],
+      "environment": {}
+    },
+    {
+      "N": 100,
+      "method": "GPU-Preprocessor",
+      "local_log": "results/raw/table_6_figure_2/gpu_preprocessor/table_6_figure_2_qap_wil100_n100_gpu_preprocessor.log",
+      "command": ["{solver_executable}", "-i", "{input_dir}/qap-wil100-n100.mps.gz", "--device", "0", "--time-limit", "1000.0", "--tol", "1e-6", "--check-iter", "150", "--presolver", "gpu", "--gpu-folding", "true", "--gpu-presolve", "true", "--gpu-new-rules", "true", "--reduced-matrix", "true", "--auto-memory-policy", "false", "--print-debug-info", "true", "--max-iter", "2147483647"],
+      "environment": {"HPRLP_DEFER_REDUCED_EMPTY_ROWS_TO_CHECK": "1", "HPRLP_ENABLE_COMPRESSIBLE_MEMORY": "1", "HPRLP_REDUCED_RESET_MASK_ON_RESTART": "1", "HPRLP_REDUCED_RESTART_MASK_MIN_CURRENT_COLUMNS": "95000", "HPRLP_REDUCED_RESTART_MASK_MIN_RECOVERY": "0.25", "HPRLP_REDUCED_RESTART_MASK_MIN_SAVED_COLUMNS": "25000", "HPRLP_USE_REDUCED_COMPRESSED_AUTOTUNE": "1", "HPRLP_USE_REDUCED_NONEMPTY_CUSPARSE": "1", "HPRLP_USE_ROW_COMPRESSED_AUTOTUNE": "1", "HPRLP_USE_ROW_REDUCTION": "1"}
+    }
+  ]
+}

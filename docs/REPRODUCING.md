@@ -81,6 +81,8 @@ The default run selects no preprocessing, folding only, GPU-Preprocessor, and
 PSLP: 348 benchmark calls and 10 scalability calls, all solved with HPR-LP.
 It uses one visible GPU (logical device 0), a tolerance of 1e-6, a solve time
 limit of 1000 seconds per call, and a check interval of 150.
+The shared [experiment configuration](../scripts/experiment_config.json)
+defines the command arguments, output paths, and recorded environment settings.
 
 Gurobi comparisons require its 12.0.2 C SDK and a full license. To include them,
 set `WITH_GUROBI=ON` and `GUROBI_HOME` before step 2 and keep them set for step 4;
