@@ -17,7 +17,7 @@ See [solver integration](docs/SOLVER_INTEGRATION.md) for setup and usage.
 
 ## Cite
 
-Please cite the [paper](https://arxiv.org/abs/2610.19840) and this [repository](https://github.com/ljw2024polyu/GPU-Preprocessor-IJOC). The citations below identify the preprint and working repository. Once IJOC assigns the archive identifier and DOIs, update this section with both DOI links and the archive BibTeX in the [journal's format](https://informsjoc.github.io/InstructionsForAuthors.html#citing-the-repo-in-your-paper), including `publisher`, `doi`, and the official archive URL in `url` and `note`.
+Please cite the [paper](https://arxiv.org/abs/2610.19840) and this [repository](https://github.com/ljw2024polyu/GPU-Preprocessor-IJOC).
 
 BibTeX for the paper:
 
@@ -34,7 +34,7 @@ BibTeX for the paper:
 }
 ~~~
 
-BibTeX for this repository, pending the official IJOC archive and DOI:
+BibTeX for this repository:
 
 ~~~bibtex
 @misc{gpuPreprocessorIJOC,
@@ -46,29 +46,6 @@ BibTeX for this repository, pending the official IJOC archive and DOI:
   note = {Available for download at https://github.com/ljw2024polyu/GPU-Preprocessor-IJOC}
 }
 ~~~
-
-## Description
-
-GPU-Preprocessor applies folding and presolve to continuous linear programs before an external solver solves the reduced problem. Postsolve and unfolding recover a solution in the original model space. Both preprocessing stages are enabled by default.
-
-| Directory | Contents |
-| --- | --- |
-| `cpp/` | C++/CUDA library, MPS tools, and regression tests |
-| `cmake/` | Build and installation configuration |
-| `examples/` | C++ integration example and a small MPS model |
-| `solver_interface/` | Preprocessing adapters, experiment driver, build rules, and tests that use the solver in `third_party/hprlp/` |
-| `third_party/hprlp/` | Official HPR-LP-C v0.1.3 solver source, with its bundled dependencies and licenses |
-| `third_party/pslp/` | PSLP 0.0.11 source and license for the comparison backend |
-| `data/` | Benchmark input inventory and data sources |
-| `scripts/` | Input preparation, experiment execution, and reconstruction of result tables and Figure 2 |
-| `docs/` | Experimental settings, statistical definitions, and log mappings |
-| `results/` | Raw logs, summary CSVs, CSV tables, and Figure 2 |
-
-All methods in the experiment driver use the same solver in `third_party/hprlp/`.
-The official HPR-LP source is kept unchanged. Before each solve, the driver
-disables HPR-LP's built-in presolve by setting `presolver = HPRLP_PRESOLVER_NONE`
-and `use_presolve = false`. Preprocessing is handled by the selected external
-backend, or skipped for the no-preprocessing baseline.
 
 ## Building
 
@@ -125,6 +102,29 @@ example using an analytic solution to a toy LP. Validate primal feasibility,
 dual feasibility, and the duality gap on the original LP after recovery; see
 [recovery checks and solver status](docs/STATISTICS_AND_PROVENANCE.md#table-6-and-figure-2)
 for the interpretation of these checks.
+
+## Description
+
+GPU-Preprocessor applies folding and presolve to continuous linear programs before an external solver solves the reduced problem. Postsolve and unfolding recover a solution in the original model space. Both preprocessing stages are enabled by default.
+
+| Directory | Contents |
+| --- | --- |
+| `cpp/` | C++/CUDA library, MPS tools, and regression tests |
+| `cmake/` | Build and installation configuration |
+| `examples/` | C++ integration example and a small MPS model |
+| `solver_interface/` | Preprocessing adapters, experiment driver, build rules, and tests that use the solver in `third_party/hprlp/` |
+| `third_party/hprlp/` | Official HPR-LP-C v0.1.3 solver source, with its bundled dependencies and licenses |
+| `third_party/pslp/` | PSLP 0.0.11 source and license for the comparison backend |
+| `data/` | Benchmark input inventory and data sources |
+| `scripts/` | Input preparation, experiment execution, and reconstruction of result tables and Figure 2 |
+| `docs/` | Experimental settings, statistical definitions, and log mappings |
+| `results/` | Raw logs, summary CSVs, CSV tables, and Figure 2 |
+
+All methods in the experiment driver use the same solver in `third_party/hprlp/`.
+The official HPR-LP source is kept unchanged. Before each solve, the driver
+disables HPR-LP's built-in presolve by setting `presolver = HPRLP_PRESOLVER_NONE`
+and `use_presolve = false`. Preprocessing is handled by the selected external
+backend, or skipped for the no-preprocessing baseline.
 
 ## Results
 
