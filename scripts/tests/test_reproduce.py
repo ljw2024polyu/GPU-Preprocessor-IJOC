@@ -15,7 +15,8 @@ TOOLCHAIN = ('CC', 'CXX', 'FC', 'CUDACXX', 'CUDAHOSTCXX', 'CUDAToolkit_ROOT',
              'CUDAARCHS', 'CMAKE_BUILD_PARALLEL_LEVEL')
 CONFIGURATION = TOOLCHAIN + ('CUDA_ARCH', 'BUILD_JOBS', 'BUILD_DIR', 'CMAKE_ARGS',
                             'WORK_ROOT', 'RUN_DIR', 'INPUT_ROOT', 'WITH_GUROBI',
-                            'GUROBI_HOME', 'JULIA', 'FFLAGS', 'MAKEFLAGS', 'MFLAGS')
+                            'GUROBI_HOME', 'JULIA', 'FFLAGS', 'MAKEFLAGS', 'MFLAGS',
+                            'PYTHON')
 
 
 class ReproduceTests(unittest.TestCase):
@@ -38,13 +39,13 @@ class ReproduceTests(unittest.TestCase):
                 '        "args": sys.argv[1:],\n'
                 '        "environment": {k: os.environ[k] for k in keys if k in os.environ}}) + "\\n")\n'
             )
-            for name in ['python3', 'cmake']:
+            for name in ['python3', 'custom-python', 'cmake']:
                 executable = tools / name
                 executable.write_text(fake_tool)
                 executable.chmod(0o755)
             environment = {k: v for k, v in os.environ.items() if k not in CONFIGURATION}
             environment.update(PATH=str(tools) + os.pathsep + os.environ['PATH'],
-                               CMAKE=str(tools / 'cmake'), PYTHON=str(tools / 'python3'),
+                               CMAKE=str(tools / 'cmake'),
                                TEST_CALL_LOG=str(log))
             environment.update(overrides or {})
             command = ['make'] if make else ['bash', 'scripts/reproduce.sh', stage]
@@ -55,7 +56,8 @@ class ReproduceTests(unittest.TestCase):
     def test_default_builds_do_not_force_toolchain_target_or_parallelism(self):
         for make in [False, True]:
             with self.subTest(make=make):
-                calls = [c for c in self.run_stage(make=make) if c['tool'] == 'cmake']
+                calls = self.run_stage(make=make)
+                self.assertEqual([c['tool'] for c in calls], ['cmake', 'cmake'])
                 self.assertEqual(len(calls), 2)
                 configure, build = calls
                 self.assertIn('-S', configure['args'])
@@ -102,6 +104,14 @@ class ReproduceTests(unittest.TestCase):
                                                      ('--fc', 'FC', 'gfortran')]:
                         self.assertEqual(call['args'][call['args'].index(flag) + 1],
                                          settings.get(variable, default))
+
+    def test_data_preparation_uses_the_current_or_selected_python(self):
+        for settings, expected in [({}, 'python3'),
+                                   ({'PYTHON': 'custom-python'}, 'custom-python')]:
+            with self.subTest(settings=settings):
+                calls = self.run_stage(stage='data', overrides=settings)
+                self.assertEqual([c['tool'] for c in calls], [expected] * 5)
+                self.assertEqual(calls[-1]['args'][0], 'scripts/check_inputs.py')
 
     @unittest.skipUnless(CMAKE, 'CMake is needed to check architecture initialization')
     def test_cmake_architecture_default_and_overrides(self):

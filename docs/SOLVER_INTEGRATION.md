@@ -35,7 +35,7 @@ cmake -S . -B build-experiments \
 cmake --build build-experiments
 ```
 
-The build detects the visible GPU architecture by default. For a build without a visible GPU or for another target machine, set `CUDAARCHS` or pass `-DCMAKE_CUDA_ARCHITECTURES` explicitly. Set `CMAKE_CUDA_COMPILER` and `CUDAToolkit_ROOT` if the intended CUDA installation is not selected automatically. See [build configuration](REPRODUCING.md#build-configuration) for compiler and parallel-build overrides. The HPR-LP interface uses 32-bit sparse offsets, so leave `GPUPREPROCESSOR_USE_INT64_NNZ` disabled.
+The build detects the visible GPU architecture by default. Set `CC`, `CXX`, `CUDACXX`, or `CUDAHOSTCXX` before configuration to select your compilers, and `CUDAToolkit_ROOT` to select the CUDA Toolkit. Set `CMAKE_BUILD_PARALLEL_LEVEL` for build parallelism. The [reproduction guide](REPRODUCING.md#2-build) uses the same build through the entry script. The HPR-LP interface uses 32-bit sparse offsets, so leave `GPUPREPROCESSOR_USE_INT64_NNZ` disabled.
 
 HPR-LP and PSLP are built from the bundled sources; no separate solver installation is required. HDF5 support is optional (`-DHPRLP_HDF5=ON` plus HDF5 development headers/libraries); the paper experiments use `.mps.gz` files and do not need it.
 

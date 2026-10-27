@@ -9,7 +9,7 @@ stage=${1:-help}
 WORK_ROOT=${WORK_ROOT:-"$PWD/runs/reproduction"}
 INPUT_ROOT=${INPUT_ROOT:-"$WORK_ROOT/inputs"}
 RUN_DIR=${RUN_DIR:-"$WORK_ROOT/experiment"}
-PYTHON=${PYTHON:-"$PWD/.venv/bin/python"}
+PYTHON=${PYTHON:-python3}
 BUILD_DIR=${BUILD_DIR:-"$PWD/build-experiments"}
 SOLVER="$BUILD_DIR/bin/hprlp_solve"
 WITH_GUROBI=${WITH_GUROBI:-OFF}
@@ -32,8 +32,6 @@ summarize() {
 
 case "$stage" in
   setup)
-    python3 -m venv .venv
-    "$PYTHON" -m pip install -r requirements.txt
     cmake_args=(-DCMAKE_BUILD_TYPE=Release
       -DGPUPREPROCESSOR_BUILD_HPRLP=ON -DGPUPREPROCESSOR_BUILD_TESTS=ON
       "-DHPRLP_GUROBI=$WITH_GUROBI")
@@ -81,7 +79,7 @@ case "$stage" in
     ;;
   help|-h|--help)
     printf '%s\n' 'Usage: bash scripts/reproduce.sh STAGE' \
-      '  setup    Install pinned Python packages and build the solver/tests.' \
+      '  setup    Build the solver/tools/tests using installed dependencies.' \
       '  data     Download/generate and verify all 92 paper input models (CPU).' \
       '  test     Run Python and C++/CUDA regression tests (requires one GPU).' \
       '  smoke    Prepare one model per group, run all selected methods, and summarize.' \
