@@ -38,6 +38,10 @@ For preprocessed runs, validation after recovery in the original model is
 separate. New-run CSVs retain `postsolve_original_kkt_warning`, and the
 reconstruction report counts these warnings separately from solver status.
 
+Dual feasibility or duality-gap warnings can occur even when the recovered
+primal solution meets the original-model feasibility tolerance. Primal
+feasibility is assessed separately.
+
 The Gurobi adapter does not recover original-space solutions. This is recorded
 in the logs and in `gurobi_original_solution_not_recovered` in the scalability
 full-precision CSV.
