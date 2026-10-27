@@ -10,13 +10,15 @@ SGM10 = exp(mean(log(t + 10))) - 10
 ```
 
 Preprocessing time uses `preprocessing_time`, or `presolve_time` when the former
-is unavailable. Non-`OPTIMAL` runs contribute 1000 seconds of solve time. Each
-instance's total is preprocessing plus solve time, calculated before
-aggregation. The solved count is the number of `OPTIMAL` statuses.
+is unavailable. For aggregation, non-`OPTIMAL` runs are assigned 1000 seconds
+of solve time. Each instance's total is preprocessing plus solve time,
+calculated before aggregation. The solved count is the number of `OPTIMAL` statuses.
 
-These times exclude MPS parsing, host/device transfers, postsolve, and
-original-space validation. The solver's `total_time` field is a different
-measurement.
+Table totals use the recorded phase times and the penalty above, rather than
+end-to-end wall-clock runtime. MPS parsing, initial model uploads, HPR-LP
+workspace setup and scaling, postsolve, and original-space validation are
+excluded. Data transfers within a timed phase remain included. The solver's
+`total_time` field is not used for these totals.
 
 Reduction ratios are reduced/original rows, columns, and nonzeros, averaged
 arithmetically across instances. For these tables, dimensions come from the
