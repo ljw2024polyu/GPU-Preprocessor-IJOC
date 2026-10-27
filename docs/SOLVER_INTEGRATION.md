@@ -76,7 +76,7 @@ Gurobi uses automatic presolve (`Presolve=-1`) without a presolve time limit.
 The solve time limit applies to the subsequent HPR-LP solve. This adapter
 reports reduced-LP results and does not recover original-space solutions.
 
-## Running Section 4
+## Running selected experiments
 
 Follow [REPRODUCING.md](REPRODUCING.md) to prepare the data and run the complete
 experiment set. For a smaller selection, choose the datasets, instances, and

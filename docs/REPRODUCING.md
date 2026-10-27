@@ -92,7 +92,7 @@ see [Gurobi setup](SOLVER_INTEGRATION.md#gurobi-optional). The five-method run h
 A run writes to a new `runs/reproduction/experiment/` directory and can take
 several hours. For another run, set `RUN_DIR` to a new directory before steps
 4 and 5. For selected datasets, instances, or methods, see
-[running Section 4](SOLVER_INTEGRATION.md#running-section-4).
+[running selected experiments](SOLVER_INTEGRATION.md#running-selected-experiments).
 
 ## 5. Generate the results
 
