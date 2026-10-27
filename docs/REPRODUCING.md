@@ -85,6 +85,23 @@ not the complete paper experiment.
 For a second smoke run choose a new `RUN_DIR`. Completed input files are reused;
 experiment outputs are never silently overwritten.
 
+### Optional library tests
+
+For a library-only build and numerical tests on a CUDA machine, run from the
+repository root:
+
+```sh
+make BUILD_DIR=build-tests CMAKE_ARGS=-DGPUPREPROCESSOR_BUILD_TESTS=ON
+ctest --test-dir build-tests --output-on-failure
+```
+
+This builds the library, MPS tools, example, and numerical tests using the
+local GPU architecture. The [MPS reader tests](../cpp/mps_reader/README.md)
+can also be built independently without CUDA. See
+[solver integration](SOLVER_INTEGRATION.md#build) for manual CMake options
+and HDF5 support, and [Gurobi setup](SOLVER_INTEGRATION.md#gurobi-optional)
+for the optional comparison adapter.
+
 ## 3. Download and generate all paper inputs
 
 ```sh

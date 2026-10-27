@@ -55,20 +55,6 @@ The library requires Linux, Make, CMake 3.24 or newer, a C++17 compiler, CUDA To
 make
 ~~~
 
-This builds the library, MPS tools, and example, selecting the local GPU architecture. To build and run the existing numerical tests on a CUDA machine:
-
-~~~sh
-make BUILD_DIR=build-tests CMAKE_ARGS=-DGPUPREPROCESSOR_BUILD_TESTS=ON
-ctest --test-dir build-tests --output-on-failure
-~~~
-
-The [MPS reader tests](cpp/mps_reader/README.md) can also be built independently without CUDA.
-
-The integrated HPR-LP/PSLP experiment driver is built by the reproduction
-workflow below. See [REPRODUCING.md](docs/REPRODUCING.md) for dependencies and
-[SOLVER_INTEGRATION.md](docs/SOLVER_INTEGRATION.md) for manual CMake options,
-HDF5 support, and the optional Gurobi adapter.
-
 ## Usage
 
 From the repository root, run the minimal API example or preprocess and export
