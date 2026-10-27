@@ -4,6 +4,10 @@ This guide starts with a fresh clone and ends with new CSV tables and a PDF
 figure. The default workflow uses the official HPR-LP-C v0.1.3 release, the
 official PSLP v0.0.11 source, and GPU-Preprocessor. Gurobi comparisons are optional.
 
+HPR-LP source is included in `third_party/hprlp/` and compiled by `setup`;
+no separate HPR-LP download or installation is required. Its original
+[MIT license](../third_party/hprlp/LICENSE) is retained.
+
 ## 1. Install the tools and clone
 
 Use Linux x86-64 with CUDA, an NVIDIA GPU, Python 3.10 or newer, CMake 3.24 or
@@ -67,9 +71,9 @@ RUN_DIR="$WORK_ROOT/smoke" bash scripts/reproduce.sh smoke
 ```
 
 Use your site's allocation procedure before the GPU stages. The solver uses
-logical device 0 by default. `setup` installs the pinned Python
-packages in `.venv/` and builds the integrated solver, library tools, examples,
-and numerical tests in `build-experiments/`.
+logical device 0 by default. `setup` installs the pinned Python packages from
+[requirements.txt](../requirements.txt) in `.venv/` and builds the integrated
+solver, library tools, examples, and numerical tests in `build-experiments/`.
 
 `smoke` downloads and prepares FOME13, the LP relaxation of scpn2, tho40, and
 wil100 at N=20. It runs the four benchmark pipelines (no preprocessing, folding
@@ -118,7 +122,8 @@ bash scripts/reproduce.sh run
 bash scripts/reproduce.sh results
 ```
 
-The default plan has 348 benchmark solver calls and 10 scale solver calls.
+The default plan uses no preprocessing, folding only, GPU-Preprocessor, and
+PSLP, with 348 benchmark solver calls and 10 scale solver calls (358 in total).
 The solve tolerance is 1e-6, the HPR-LP time limit is 1000 seconds per call, and
 the check interval is 150. This is a long run; allow several hours in addition
 to data preparation. The machine's GPU and CPU affect the measured times.
@@ -129,13 +134,27 @@ inspect its last log before choosing a new output directory. Reconstruction
 requires every solver call selected in that run's `commands.json` to finish;
 it does not fill missing measurements with archived values.
 
-After setup, the complete sequence can also be launched with one command:
+The complete sequence can also be launched with one command:
 
 ```sh
 bash scripts/reproduce.sh all
 ```
 
+`all` executes `setup`, `data`, `test`, `run`, and `results` in order, without
+the smoke stage.
+
+For individual datasets, instances, methods, or sizes, see
+[running Section 4](SOLVER_INTEGRATION.md#running-section-4).
+The [benchmark index](tables_3_4_5_batch_index.csv) and
+[scalability index](table_6_figure_2_log_index.csv) record the commands;
+`{solver_executable}`, `{input_mps}`, and `{input_dir}` are placeholders for
+the solver executable, input model, and input directory, respectively.
+
 ## 5. Locate the outputs
+
+Set `WORK_ROOT` to change the default `runs/reproduction/` root, or `RUN_DIR`
+to select a different experiment output directory. Use the same settings for
+the `run` and `results` stages.
 
 ```text
 runs/reproduction/

@@ -9,11 +9,13 @@ The `hprlp_solve` executable connects GPU-Preprocessor, PSLP, and optionally Gur
 | PSLP | 0.0.11, Apache-2.0 | `third_party/pslp/` |
 | Gurobi | 12.0.2 C API | Interface only; install the SDK/runtime and license separately |
 
-HPR-LP is pinned to the official [v0.1.3 release](https://github.com/PolyU-IOR/HPR-LP-C/releases/tag/v0.1.3), commit `89d3cc06806b4d31d029f7b5c8591db58219ff6d`. The copied source files, headers, release tests, licenses, and native PSLP dependency are byte-identical to that release. Build rules and all IJOC adapters live under `integrations/hprlp/`; the release source is not patched.
+HPR-LP is pinned to the official [v0.1.3 release](https://github.com/PolyU-IOR/HPR-LP-C/releases/tag/v0.1.3), commit `89d3cc06806b4d31d029f7b5c8591db58219ff6d`. The copied source files, headers, release tests, licenses, and native PSLP dependency are byte-identical to that release. Build rules and all IJOC adapters live under `solver_interface/`; the release source is not patched.
 
-The bundled directory contains the files needed by this integrated build. Use
-the repository-root build instructions below. For a standalone upstream build,
-download the full official release archive and follow its own README.
+The bundled directory contains the files needed by this integrated build and
+retains the original [MIT license](../third_party/hprlp/LICENSE). The build
+compiles these local sources without downloading or separately installing
+HPR-LP. Use the repository-root instructions below; upstream links identify
+the source release.
 
 The official release's built-in PSLP 0.0.8 dependency is retained for the native library. The external driver disables built-in presolve and selects GPU-Preprocessor, PSLP 0.0.11, Gurobi, or no preprocessing. The comparison PSLP symbols are prefixed at compile time so the two versions cannot be confused. Both public CLI names `pslp` and `pslp0011` select 0.0.11.
 
@@ -43,7 +45,7 @@ Run the integration tests on a GPU machine:
 ctest --test-dir build-experiments --output-on-failure
 ```
 
-Tests cover preprocessing, objective constants, original-space primal/dual recovery, and the folding/presolve switches. `ctest --test-dir build-experiments -L cpu --output-on-failure` runs only the CPU PSLP handoff and the release's restart-control test. This subset does not validate GPU solving. With testing enabled, `build-experiments/integrations/hprlp/hprlp_release_reference` is built from the unmodified release CLI for direct baseline comparison (use `--presolver none`). On managed servers, submit GPU tests and experiments through the site's scheduler.
+Tests cover preprocessing, objective constants, original-space primal/dual recovery, and the folding/presolve switches. `ctest --test-dir build-experiments -L cpu --output-on-failure` runs only the CPU PSLP handoff and the release's restart-control test. This subset does not validate GPU solving. With testing enabled, `build-experiments/solver_interface/hprlp_release_reference` is built from the unmodified release CLI for direct baseline comparison (use `--presolver none`). On managed servers, submit GPU tests and experiments through the site's scheduler.
 
 ## Backend selection
 
