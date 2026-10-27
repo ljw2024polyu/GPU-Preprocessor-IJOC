@@ -6,12 +6,14 @@ import io
 import json
 import os
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 import unittest
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / 'scripts'))
 spec = importlib.util.spec_from_file_location('runner', ROOT / 'scripts/run_experiments.py')
 runner = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(runner)
@@ -47,6 +49,58 @@ class ExperimentRunnerTests(unittest.TestCase):
         for flag, expected in [('--presolver', 'gpu'), ('--gpu-folding', 'true'),
                                ('--gpu-presolve', 'false'), ('--device', '1')]:
             self.assertEqual(command[command.index(flag) + 1], expected)
+
+    def test_existing_collections_are_read_in_place_without_changing_experiment_options(self):
+        options = ('--suite', 'all', '--instances', 'FOME13', 'a2864-99blp_relax',
+                   'tho40', '--sizes', '20')
+        expected = self.plan(*options)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            files = {
+                'FOME13.mps.gz': 'Hans49_original/FOME13.mps',
+                'a2864-99blp_relax.mps.gz': 'MIP_large18_original/a2864-99blp_relax.mps',
+                'tho40.mps.gz': 'QAP20_original/tho40.mps',
+                'qap-wil100-n020.mps.gz': 'QAP_wil100_nested/mps/qap-wil100-n020.mps.gz',
+            }
+            for filename in files.values():
+                path = root / filename
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text('existing model fixture')
+            before = sorted(root.rglob('*'))
+            actual = self.plan('--input-root', str(root), *options)
+            self.assertEqual(len(actual), 14)
+            self.assertEqual(sorted(root.rglob('*')), before)
+            for old, new in zip(expected, actual):
+                model = str(root / files[new['instance']])
+                self.assertEqual(new['input'], model)
+                self.assertEqual(new['command'][new['command'].index('-i') + 1], model)
+                expected_job = dict(old, input=model,
+                                    command=[model if arg == old['input'] else arg
+                                             for arg in old['command']])
+                self.assertEqual(new, expected_job)
+
+    def test_input_checks_accept_uncompressed_collection_models(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            model = root / 'Hans49_original/FOME13.mps'
+            model.parent.mkdir()
+            model.write_text('existing model fixture')
+            with (ROOT / 'results/tables_3_4_5_instance_results.csv').open() as stream:
+                row = next(row for row in csv.DictReader(stream)
+                           if row['variant'] == 'None' and row['instance'] == 'FOME13.mps.gz')
+            info = dict(rows=int(row['original_rows']), columns=int(row['original_columns']),
+                        nonzeros=int(row['original_nnz']))
+            solver = root / 'inspect-solver'
+            solver.write_text(f'#!{sys.executable}\nimport sys\n'
+                              f'assert sys.argv[2] == {str(model)!r}\n'
+                              f'print({("INPUT_INFO " + json.dumps(info))!r})\n')
+            solver.chmod(0o755)
+            completed = subprocess.run(
+                [sys.executable, str(ROOT / 'scripts/check_inputs.py'), '--input-root', str(root),
+                 '--available-only', '--solver', str(solver)],
+                text=True, capture_output=True, check=True)
+            self.assertIn('1 inputs match the paper dimensions', completed.stdout)
+            self.assertEqual(model.read_text(), 'existing model fixture')
 
     def test_reject_invalid_selection_and_archive_output(self):
         for options in [('--instances', 'does-not-exist'), ('--device', '-1'),

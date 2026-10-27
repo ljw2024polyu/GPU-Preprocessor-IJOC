@@ -10,10 +10,10 @@ import shlex
 import subprocess
 import sys
 
+from input_paths import model_path
+
 ROOT = Path(__file__).resolve().parents[1]
-DATASETS = {'hans': ('Mittelmann', 'Mittelmann'),
-            'miplib-large': ('MIPLIB Large', 'MIPLIB_Large'),
-            'qap20': ('QAP20', 'QAP20')}
+DATASETS = {'hans': 'Mittelmann', 'miplib-large': 'MIPLIB Large', 'qap20': 'QAP20'}
 METHODS = {'None': 'none', 'Folding only': 'folding',
            'GPU-Preprocessor': 'gpu', 'PSLP': 'pslp', 'Gurobi': 'gurobi'}
 
@@ -33,7 +33,7 @@ def jobs_for(args):
     methods = set(args.methods or ['none', 'folding', 'gpu', 'pslp'])
     jobs = []
     if args.suite in {'benchmarks', 'all'}:
-        selected = {DATASETS[key][0]: DATASETS[key][1] for key in args.datasets}
+        selected = {DATASETS[key] for key in args.datasets}
         allowed = {instance_stem(row['name']) for row in inventory if row['dataset'] in selected}
         if args.instances and not set(args.instances) <= allowed:
             raise ValueError('Unknown instance in the selected datasets: ' +
@@ -47,7 +47,7 @@ def jobs_for(args):
                     continue
                 if args.instances and instance_stem(entry['name']) not in args.instances:
                     continue
-                input_mps = args.input_root / selected[entry['dataset']] / entry['name']
+                input_mps = model_path(args.input_root, entry['dataset'], entry['name'])
                 stem = re.sub(r'[^a-z0-9]+', '_', instance_stem(entry['name']).lower()).strip('_')
                 log = f"{run['local_directory']}/logs/{run['paper_batch_id']}_{stem}.log"
                 command = [x.replace('{solver_executable}', str(args.solver))
@@ -59,17 +59,17 @@ def jobs_for(args):
     if args.suite in {'scalability', 'all'}:
         if args.instances and args.suite == 'scalability':
             raise ValueError('--instances is for the benchmarks suite; use --sizes for scalability')
-        input_dir = args.input_root / 'QAP_wil100_scale'
         for entry in config['scalability']:
             method = METHODS[entry['method']]
             if method not in methods or int(entry['N']) not in args.sizes:
                 continue
             name = f"qap-wil100-n{int(entry['N']):03d}.mps.gz"
+            input_mps = model_path(args.input_root, 'QAP wil100 scale', name)
             command = [x.replace('{solver_executable}', str(args.solver))
-                       .replace('{input_dir}', str(input_dir))
+                       .replace('{input_dir}/' + name, str(input_mps))
                        for x in entry['command']]
             jobs.append(dict(dataset='QAP scalability', method=method, instance=name,
-                             input=str(input_dir / name), log=entry['local_log'], command=command,
+                             input=str(input_mps), log=entry['local_log'], command=command,
                              environment=entry['environment'], summary=None))
     for job in jobs:
         command = job['command']

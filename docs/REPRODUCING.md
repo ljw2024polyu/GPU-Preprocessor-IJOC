@@ -86,6 +86,12 @@ See the [input guide](../data/README.md) for download URLs and generator details
 If preparation is interrupted, repeat the same command; completed models are
 reused.
 
+To reuse existing models, skip this step and set `INPUT_ROOT` to their root
+directory. Both `.mps` and `.mps.gz` are accepted and read in place. The input
+folders may use the prepared names (`Mittelmann`, `MIPLIB_Large`, `QAP20`,
+`QAP_wil100_scale`) or the collection names (`Hans49_original`,
+`MIP_large18_original`, `QAP20_original`, `QAP_wil100_nested/mps`).
+
 ## 4. Run the experiments
 
 ```sh

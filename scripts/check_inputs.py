@@ -8,9 +8,9 @@ import re
 import subprocess
 import sys
 
+from input_paths import model_path
+
 ROOT = Path(__file__).resolve().parents[1]
-FOLDERS = {'Mittelmann': 'Mittelmann', 'MIPLIB Large': 'MIPLIB_Large',
-           'QAP20': 'QAP20', 'QAP wil100 scale': 'QAP_wil100_scale'}
 
 
 def read_csv(path):
@@ -35,7 +35,7 @@ def main():
     checked = 0
     failures = []
     for row in read_csv(ROOT / 'data/section_4_input_inventory.csv'):
-        path = args.input_root / FOLDERS[row['dataset']] / row['name']
+        path = model_path(args.input_root, row['dataset'], row['name'])
         if args.available_only and not path.is_file():
             continue
         if not path.is_file():
