@@ -60,11 +60,14 @@ inventory.
 | QAP20 | 20 | Download QAPLIB data and generate LPs with Julia |
 | QAP scalability | 5 | Generate scaled wil100 LPs for N = 20, 40, 60, 80, 100 |
 
-Data preparation uses `gurobipy` to read, relax, and export MIP inputs without
-optimization or presolve. This was checked with its bundled size-limited
-license. See the [input guide](../data/README.md) for download URLs and generator
-details. If preparation is interrupted, repeat the same command; completed
-models are reused.
+Data preparation uses `gurobipy` to read MIP inputs and export their LP
+relaxations without optimization or presolve. The package is publicly
+available from PyPI, and this conversion was verified with its bundled
+size-limited license, without a separate full Gurobi license; see the
+[official installation guide](https://support.gurobi.com/hc/en-us/articles/360044290292-How-do-I-install-Gurobi-for-Python).
+See the [input guide](../data/README.md) for download URLs and generator details.
+If preparation is interrupted, repeat the same command; completed models are
+reused.
 
 ## 4. Run the experiments
 
