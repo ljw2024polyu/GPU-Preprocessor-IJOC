@@ -7,7 +7,8 @@ distributed under the [MIT license](LICENSE). Bundled third-party components
 retain their original licenses. Benchmark sources and usage terms are
 described in the [input guide](data/README.md#data-use-and-references).
 
-The experiment driver combines HPR-LP-C v0.1.3 with GPU-Preprocessor,
+This project uses [HPR-LP-C](https://github.com/PolyU-IOR/HPR-LP-C) v0.1.3
+as its LP solver. The experiment driver combines it with GPU-Preprocessor,
 PSLP 0.0.11, or optional Gurobi presolve. The HPR-LP source needed for this
 integration is bundled in [third_party/hprlp/](third_party/hprlp/) and built
 locally; no separate HPR-LP download or installation is required. It comes

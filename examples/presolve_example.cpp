@@ -69,7 +69,7 @@ int main(int argc, char** argv) {
     if(sol.x.size()!=2 || std::abs(sol.x[0]-1)>1e-8 || std::abs(sol.x[1]-1)>1e-8)
       throw std::runtime_error("original primal recovery failed");
     std::cout<<"original primal: "<<sol.x[0]<<", "<<sol.x[1]<<"; objective: "<<sol.x[0]+sol.x[1]<<"\n";
-    std::cout<<"This checks primal recovery for a toy LP; validate original KKT in your solver integration.\n";
+    std::cout<<"This example demonstrates preprocessing and primal recovery for a toy LP.\n";
     return 0;
   } catch(const std::exception& e) { std::cerr<<e.what()<<"\n"; return 1; }
 }

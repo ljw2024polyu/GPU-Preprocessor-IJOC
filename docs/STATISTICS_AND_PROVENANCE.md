@@ -16,7 +16,7 @@ calculated before aggregation. The solved count is the number of `OPTIMAL` statu
 
 Table totals use the recorded phase times and the penalty above, rather than
 end-to-end wall-clock runtime. MPS parsing, initial model uploads, HPR-LP
-workspace setup and scaling, postsolve, and original-space validation are
+workspace setup and scaling, postsolve, and solution validation are
 excluded. Data transfers within a timed phase remain included. The solver's
 `total_time` field is not used for these totals.
 

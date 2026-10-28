@@ -25,5 +25,5 @@ own recovery kernels. Their `.hpp` files declare internal host entry points.
 
 `../device_recovery.cu` and `../fixed_col_tape.cu` still create and manage
 recovery records during presolve. Folding expansion remains in
-`../../folding/folding_map.cu`. Shared records need not have one implementation
-per presolve rule; this split does not extend the existing dual-recovery coverage.
+`../../folding/folding_map.cu`. Shared recovery records can serve multiple
+presolve rules.

@@ -10,10 +10,13 @@ HPR-LP to solve the resulting LP, including the Gurobi comparison.
 | PSLP | 0.0.11 | `third_party/pslp/` |
 | Gurobi | 12.0.2 | Install separately; optional |
 
-HPR-LP source is bundled from the official [v0.1.3 release](https://github.com/PolyU-IOR/HPR-LP-C/releases/tag/v0.1.3)
-and retains its [MIT license](../third_party/hprlp/LICENSE). The source is
-unchanged; the connection code is in `solver_interface/`. The driver disables
-HPR-LP's built-in presolve and applies the selected external preprocessor.
+This project uses [HPR-LP-C](https://github.com/PolyU-IOR/HPR-LP-C) v0.1.3
+as its LP solver. The source is bundled unchanged from the official
+[v0.1.3 release](https://github.com/PolyU-IOR/HPR-LP-C/releases/tag/v0.1.3),
+[commit `89d3cc0`](https://github.com/PolyU-IOR/HPR-LP-C/commit/89d3cc06806b4d31d029f7b5c8591db58219ff6d),
+and retains its [MIT license](../third_party/hprlp/LICENSE). The connection
+code is in `solver_interface/`. The driver disables HPR-LP's built-in
+presolve and applies the selected external preprocessor.
 
 ## Build
 
@@ -100,9 +103,5 @@ RUN_DIR="$PWD/runs/qap20-check" bash scripts/reproduce.sh results
 
 The shared [experiment configuration](../scripts/experiment_config.json)
 contains command arguments, output paths, and recorded environment settings.
-For timing definitions, solver status, and original-space recovery checks,
-see [statistics and provenance](STATISTICS_AND_PROVENANCE.md).
-
-New runs use the bundled official solver release. Archived paper measurements
-used a different solver implementation; compare new measurements with them
-before replacing paper values.
+For timing definitions, aggregation, and solver status, see
+[statistics and provenance](STATISTICS_AND_PROVENANCE.md).

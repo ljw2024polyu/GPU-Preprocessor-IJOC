@@ -23,7 +23,7 @@ inline Summary preprocess(const DeviceLp& input, const Parameters& params = {}) 
 // x (primal), y (row duals), and z (reduced costs) are caller-owned device
 // arrays in reduced-LP order, with reduced_cols/rows/cols entries. The dual
 // convention is c - A^T y - z = 0. The returned x/y/z vectors are on the host
-// in original-model order; validate their feasibility and KKT conditions.
+// in original-model order.
 inline Solution postprocess(double* x, double* y, double* z,
                             const Summary& summary, const DeviceLp& original) {
   return gpu_presolver::folding::postsolve_and_unfold_to_host(x, y, z, summary, &original);
