@@ -86,9 +86,9 @@ std::uint64_t record_hash(const gpu_presolver::presolve::PresolveRecordGpu& reco
   hash.add_scalar(static_cast<std::uint8_t>(
       record.has_primal_only_projected_auxiliary_reduction));
 
-  const std::uint64_t recovery_count =
+  const std::uint64_t absolute_value_recovery_count =
       static_cast<std::uint64_t>(record.piecewise_linear_reformulation_absolute_value_recoveries.size());
-  hash.add_scalar(recovery_count);
+  hash.add_scalar(absolute_value_recovery_count);
   for (const auto& recovery : record.piecewise_linear_reformulation_absolute_value_recoveries) {
     hash.add_string(recovery.pattern);
     const std::uint64_t split_count = static_cast<std::uint64_t>(recovery.splits.size());
@@ -121,10 +121,10 @@ std::uint64_t record_hash(const gpu_presolver::presolve::PresolveRecordGpu& reco
     }
   }
 
-  const std::uint64_t piecewise_linear_reformulation_variable_pair_shifted_antipodal_recovery_count =
+  const std::uint64_t variable_pair_recovery_count =
       static_cast<std::uint64_t>(
           record.piecewise_linear_reformulation_variable_pair_recoveries.size());
-  hash.add_scalar(piecewise_linear_reformulation_variable_pair_shifted_antipodal_recovery_count);
+  hash.add_scalar(variable_pair_recovery_count);
   for (const auto& recovery : record.piecewise_linear_reformulation_variable_pair_recoveries) {
     hash.add_vector(recovery.plus_cols);
     hash.add_vector(recovery.minus_cols);

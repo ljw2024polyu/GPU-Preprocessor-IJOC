@@ -19,7 +19,7 @@ namespace gpu_presolver::presolve {
 namespace {
 
 constexpr int GPU_PRESOLVE_THREADS = 256;
-constexpr double ABSOLUTE_VALUE_EPIGRAPH_SUB_TOL = 1.0e-12;
+constexpr double ABSOLUTE_VALUE_COEFFICIENT_TOL = 1.0e-12;
 constexpr std::int32_t STRUCTURAL_OUTER_UNASSIGNED = -1;
 constexpr std::int32_t STRUCTURAL_OUTER_BOUND_ROLE = -2;
 constexpr std::int32_t STRUCTURAL_OUTER_BLOCK_ROLE = -3;
@@ -38,7 +38,7 @@ __global__ void _kernel_fill_i32(std::int32_t* values, std::int32_t value, std::
   }
 }
 
-__global__ void _kernel_inclusive_scan_i32_serial(NnzOffset* values, std::int32_t n) {
+__global__ void _kernel_inclusive_scan_offsets_serial(NnzOffset* values, std::int32_t n) {
   if (blockIdx.x == 0 && threadIdx.x == 0) {
     NnzOffset running = 0;
     for (std::int32_t i = 0; i < n; ++i) {
@@ -571,7 +571,7 @@ __global__ void _kernel_piecewise_linear_reformulation_absolute_value_split_vali
   std::int32_t t_r1_count = 0;
   std::int32_t t_r2_count = 0;
   for (NnzOffset p = at_row_ptr[t_col]; p < at_row_ptr[t_col + 1]; ++p) {
-    if (fabs(at_nz_val[p]) <= ABSOLUTE_VALUE_EPIGRAPH_SUB_TOL) {
+    if (fabs(at_nz_val[p]) <= ABSOLUTE_VALUE_COEFFICIENT_TOL) {
       incidence_valid = false;
       continue;
     }
@@ -589,7 +589,7 @@ __global__ void _kernel_piecewise_linear_reformulation_absolute_value_split_vali
   std::int32_t e_r1_count = 0;
   std::int32_t e_r2_count = 0;
   for (NnzOffset p = at_row_ptr[e_col]; p < at_row_ptr[e_col + 1]; ++p) {
-    if (fabs(at_nz_val[p]) <= ABSOLUTE_VALUE_EPIGRAPH_SUB_TOL) {
+    if (fabs(at_nz_val[p]) <= ABSOLUTE_VALUE_COEFFICIENT_TOL) {
       incidence_valid = false;
       continue;
     }
@@ -812,7 +812,7 @@ __global__ void _kernel_structural_graph_extract_blocks(std::int32_t* status_fla
     atomicMax(status_flag, 1);
     return;
   }
-  if (!(coeff_t < -ABSOLUTE_VALUE_EPIGRAPH_SUB_TOL && coeff_s > ABSOLUTE_VALUE_EPIGRAPH_SUB_TOL)) {
+  if (!(coeff_t < -ABSOLUTE_VALUE_COEFFICIENT_TOL && coeff_s > ABSOLUTE_VALUE_COEFFICIENT_TOL)) {
     atomicMax(status_flag, 1);
     return;
   }
@@ -945,8 +945,8 @@ __global__ void _kernel_structural_graph_mark_extra_rows(std::int32_t* status_fl
       }
     }
     valid_row = valid_row && slack_col >= 0 && slack_col < n &&
-                coeff_t < -ABSOLUTE_VALUE_EPIGRAPH_SUB_TOL &&
-                coeff_s > ABSOLUTE_VALUE_EPIGRAPH_SUB_TOL;
+                coeff_t < -ABSOLUTE_VALUE_COEFFICIENT_TOL &&
+                coeff_s > ABSOLUTE_VALUE_COEFFICIENT_TOL;
     const double factor = valid_row ? -coeff_t / coeff_s : 0.0;
     valid_row = valid_row && isfinite(factor) && factor > 0.0;
     if (!valid_row) {
@@ -1029,7 +1029,7 @@ __global__ void _kernel_structural_graph_dual_fix_auxiliaries(std::int32_t* stat
     const std::int32_t row = at_col_val[p];
     valid = row >= 0 && row < m && row_to_block[row] >= 0 &&
             row_slack_col[row] == col &&
-            at_nz_val[p] > ABSOLUTE_VALUE_EPIGRAPH_SUB_TOL &&
+            at_nz_val[p] > ABSOLUTE_VALUE_COEFFICIENT_TOL &&
             AL[row] == 0.0 && isinf(AU[row]) && AU[row] > 0.0;
     if (valid) {
       row_removable[row] = std::uint8_t{1};
@@ -1511,7 +1511,7 @@ __global__ void _kernel_structural_outer_block_validate(
     const std::int32_t x_col = local_x_cols[idx * 4 + k];
     if (x_col < 0 || x_col >= n ||
         !(l[x_col] == 0.0 && isinf(u[x_col]) && u[x_col] > 0.0 &&
-          isfinite(c[x_col]) && c[x_col] > ABSOLUTE_VALUE_EPIGRAPH_SUB_TOL)) {
+          isfinite(c[x_col]) && c[x_col] > ABSOLUTE_VALUE_COEFFICIENT_TOL)) {
       atomicMax(status_flag, 1);
       return;
     }
@@ -1691,8 +1691,8 @@ DeviceCsrMatrix build_structural_outer_new_A(const DeviceCsrMatrix& source,
   _kernel_structural_outer_count_rows<<<row_blocks, GPU_PRESOLVE_THREADS>>>(
       row_counts, source.rowPtr, start_row, out.rows);
   throw_if_cuda_error(cudaGetLastError(), "_kernel_structural_outer_count_rows");
-  _kernel_inclusive_scan_i32_serial<<<1, 1>>>(row_counts, out.rows);
-  throw_if_cuda_error(cudaGetLastError(), "_kernel_inclusive_scan_i32_serial structural outer");
+  _kernel_inclusive_scan_offsets_serial<<<1, 1>>>(row_counts, out.rows);
+  throw_if_cuda_error(cudaGetLastError(), "_kernel_inclusive_scan_offsets_serial structural outer");
   throw_if_cuda_error(cudaMemcpy(&out.nnz, row_counts + out.rows - 1, sizeof(NnzOffset), cudaMemcpyDeviceToHost),
                       "cudaMemcpy structural outer nnz");
   _kernel_row_ptr_from_prefix<<<row_blocks, GPU_PRESOLVE_THREADS>>>(out.rowPtr, row_counts, out.rows);
@@ -1740,8 +1740,8 @@ DeviceCsrMatrix build_piecewise_linear_reformulation_absolute_value_split_new_A(
   _kernel_piecewise_linear_reformulation_absolute_value_split_count_rows<<<row_blocks, GPU_PRESOLVE_THREADS>>>(
       row_counts, source.rowPtr, preserve_bound_row, out.rows);
   throw_if_cuda_error(cudaGetLastError(), "_kernel_piecewise_linear_reformulation_absolute_value_split_count_rows");
-  _kernel_inclusive_scan_i32_serial<<<1, 1>>>(row_counts, out.rows);
-  throw_if_cuda_error(cudaGetLastError(), "_kernel_inclusive_scan_i32_serial structural l1 split");
+  _kernel_inclusive_scan_offsets_serial<<<1, 1>>>(row_counts, out.rows);
+  throw_if_cuda_error(cudaGetLastError(), "_kernel_inclusive_scan_offsets_serial structural l1 split");
   throw_if_cuda_error(cudaMemcpy(&out.nnz, row_counts + out.rows - 1, sizeof(NnzOffset), cudaMemcpyDeviceToHost),
                       "cudaMemcpy structural l1 split nnz");
   _kernel_row_ptr_from_prefix<<<row_blocks, GPU_PRESOLVE_THREADS>>>(out.rowPtr, row_counts, out.rows);
@@ -1802,8 +1802,8 @@ DeviceCsrMatrix build_structural_graph_new_A(const DeviceCsrMatrix& source,
   _kernel_structural_graph_count_rows<<<row_blocks, GPU_PRESOLVE_THREADS>>>(
       row_counts, coupling_keep, source.rowPtr, out.rows);
   throw_if_cuda_error(cudaGetLastError(), "_kernel_structural_graph_count_rows");
-  _kernel_inclusive_scan_i32_serial<<<1, 1>>>(row_counts, out.rows);
-  throw_if_cuda_error(cudaGetLastError(), "_kernel_inclusive_scan_i32_serial structural graph");
+  _kernel_inclusive_scan_offsets_serial<<<1, 1>>>(row_counts, out.rows);
+  throw_if_cuda_error(cudaGetLastError(), "_kernel_inclusive_scan_offsets_serial structural graph");
   throw_if_cuda_error(cudaMemcpy(&out.nnz, row_counts + out.rows - 1, sizeof(NnzOffset), cudaMemcpyDeviceToHost),
                       "cudaMemcpy structural graph nnz");
   _kernel_row_ptr_from_prefix<<<row_blocks, GPU_PRESOLVE_THREADS>>>(out.rowPtr, row_counts, out.rows);
@@ -2373,8 +2373,8 @@ __device__ bool _sls_prefix_possible_graph_device(const NnzOffset* row_ptr,
   const PrefixRow2 r1 = _sls_prefix_row2_device(1, row_ptr, col_val, nz_val, AL, AU);
   const PrefixRow2 r2 = _sls_prefix_row2_device(2, row_ptr, col_val, nz_val, AL, AU);
   const PrefixRow2 r3 = _sls_prefix_row2_device(3, row_ptr, col_val, nz_val, AL, AU);
-  const bool has_pos = r3.zl_val1 > ABSOLUTE_VALUE_EPIGRAPH_SUB_TOL || r3.zl_val2 > ABSOLUTE_VALUE_EPIGRAPH_SUB_TOL;
-  const bool has_neg = r3.zl_val1 < -ABSOLUTE_VALUE_EPIGRAPH_SUB_TOL || r3.zl_val2 < -ABSOLUTE_VALUE_EPIGRAPH_SUB_TOL;
+  const bool has_pos = r3.zl_val1 > ABSOLUTE_VALUE_COEFFICIENT_TOL || r3.zl_val2 > ABSOLUTE_VALUE_COEFFICIENT_TOL;
+  const bool has_neg = r3.zl_val1 < -ABSOLUTE_VALUE_COEFFICIENT_TOL || r3.zl_val2 < -ABSOLUTE_VALUE_COEFFICIENT_TOL;
   const bool overlaps = r3.zl_col1 == r1.zl_col1 || r3.zl_col1 == r1.zl_col2 ||
                         r3.zl_col2 == r1.zl_col1 || r3.zl_col2 == r1.zl_col2;
   return eq.is_eq != 0 &&

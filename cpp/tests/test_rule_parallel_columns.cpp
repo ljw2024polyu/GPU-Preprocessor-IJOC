@@ -46,7 +46,7 @@ std::vector<T> copy_to_host(T* device, std::size_t size) {
 
 }  // namespace
 
-void test_merges_objective_compatible_parallel_columnumns() {
+void test_merges_objective_compatible_parallel_columns() {
   using gpu_presolver::presolve::LPInfoGpu;
   using gpu_presolver::presolve::PostsolveDualMode;
   using gpu_presolver::presolve::PostsolveReductionType;
@@ -108,7 +108,7 @@ void test_merges_objective_compatible_parallel_columnumns() {
   cudaFree(plan.new_AU);
 }
 
-void test_fixed_parallel_columnumn_records_tape() {
+void test_fixed_parallel_column_records_tape() {
   using gpu_presolver::presolve::LPInfoGpu;
   using gpu_presolver::presolve::PostsolveDualMode;
   using gpu_presolver::presolve::PostsolveReductionType;
@@ -175,7 +175,7 @@ void test_fixed_parallel_columnumn_records_tape() {
   cudaFree(plan.new_AU);
 }
 
-void test_ratio_guard_keeps_scaled_parallel_columnumns() {
+void test_ratio_guard_keeps_scaled_parallel_columns() {
   using gpu_presolver::presolve::LPInfoGpu;
   using gpu_presolver::presolve::PresolveParams;
   using gpu_presolver::presolve::PresolvePlanGpu;
@@ -520,9 +520,9 @@ int main() {
   for (bool flag : {false,true}) for (bool signature : {false,true}) {
     runtime::options().column_signatures = (signature) ? runtime::SignatureMode::Enabled : runtime::SignatureMode::Disabled;
     runtime::options().parallel_column_prefilter = flag;
-    test_merges_objective_compatible_parallel_columnumns();
-    test_fixed_parallel_columnumn_records_tape();
-    test_ratio_guard_keeps_scaled_parallel_columnumns();
+    test_merges_objective_compatible_parallel_columns();
+    test_fixed_parallel_column_records_tape();
+    test_ratio_guard_keeps_scaled_parallel_columns();
     test_bounded_objective_prefilter();
     test_small_coefficients_do_not_hide_nonproportional_columns();
     for (bool masked : {false, true})

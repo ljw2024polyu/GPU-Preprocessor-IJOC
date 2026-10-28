@@ -413,7 +413,7 @@ void validate_postsolve_tape(const PostsolveTape& tape) {
   const std::size_t count = tape.types.size();
   if (count > static_cast<std::size_t>(
                   std::numeric_limits<NnzOffset>::max())) {
-    throw std::runtime_error("postsolve tape exceeds 64-bit replay range");
+    throw std::runtime_error("postsolve tape exceeds replay offset range");
   }
   if (tape.index_starts.size() != count + 1 ||
       tape.value_starts.size() != count + 1 ||
@@ -460,9 +460,9 @@ void validate_primal_recovery_timeline(const PresolveRecordGpu& record) {
     throw std::runtime_error(
         "primal recovery payload exceeds 32-bit checkpoint range");
   }
-  std::vector<std::uint8_t> seen_structural(
+  std::vector<std::uint8_t> seen_absolute_value(
       record.piecewise_linear_reformulation_absolute_value_recoveries.size(), std::uint8_t{0});
-  std::vector<std::uint8_t> seen_antipodal(
+  std::vector<std::uint8_t> seen_variable_pair(
       record.piecewise_linear_reformulation_variable_pair_recoveries.size(), std::uint8_t{0});
   NnzOffset previous_tape_position = 0;
   const NnzOffset tape_count =
@@ -478,13 +478,13 @@ void validate_primal_recovery_timeline(const PresolveRecordGpu& record) {
     if (checkpoint.kind == PrimalRecoveryKind::PiecewiseLinearReformulationAbsoluteValue) {
       if (checkpoint.payload_index < 0 ||
           checkpoint.payload_index >=
-              static_cast<std::int32_t>(seen_structural.size()) ||
-          seen_structural[static_cast<std::size_t>(
+              static_cast<std::int32_t>(seen_absolute_value.size()) ||
+          seen_absolute_value[static_cast<std::size_t>(
               checkpoint.payload_index)] != std::uint8_t{0}) {
         throw std::runtime_error(
             "invalid or duplicate piecewise_linear_reformulation_absolute_value recovery checkpoint");
       }
-      seen_structural[static_cast<std::size_t>(checkpoint.payload_index)] =
+      seen_absolute_value[static_cast<std::size_t>(checkpoint.payload_index)] =
           std::uint8_t{1};
       validate_piecewise_linear_reformulation_absolute_value_recovery(
           record.piecewise_linear_reformulation_absolute_value_recoveries[static_cast<std::size_t>(
@@ -494,13 +494,13 @@ void validate_primal_recovery_timeline(const PresolveRecordGpu& record) {
                PrimalRecoveryKind::PiecewiseLinearReformulationVariablePair) {
       if (checkpoint.payload_index < 0 ||
           checkpoint.payload_index >=
-              static_cast<std::int32_t>(seen_antipodal.size()) ||
-          seen_antipodal[static_cast<std::size_t>(
+              static_cast<std::int32_t>(seen_variable_pair.size()) ||
+          seen_variable_pair[static_cast<std::size_t>(
               checkpoint.payload_index)] != std::uint8_t{0}) {
         throw std::runtime_error(
             "invalid or duplicate piecewise_linear_reformulation_variable_pair recovery checkpoint");
       }
-      seen_antipodal[static_cast<std::size_t>(checkpoint.payload_index)] =
+      seen_variable_pair[static_cast<std::size_t>(checkpoint.payload_index)] =
           std::uint8_t{1};
       validate_piecewise_linear_reformulation_variable_pair_recovery(
           record.piecewise_linear_reformulation_variable_pair_recoveries[static_cast<std::size_t>(
@@ -510,13 +510,13 @@ void validate_primal_recovery_timeline(const PresolveRecordGpu& record) {
       throw std::runtime_error("unknown primal recovery checkpoint kind");
     }
   }
-  for (const std::uint8_t seen : seen_structural) {
+  for (const std::uint8_t seen : seen_absolute_value) {
     if (seen == std::uint8_t{0}) {
       throw std::runtime_error(
           "piecewise_linear_reformulation_absolute_value recovery payload is missing a checkpoint");
     }
   }
-  for (const std::uint8_t seen : seen_antipodal) {
+  for (const std::uint8_t seen : seen_variable_pair) {
     if (seen == std::uint8_t{0}) {
       throw std::runtime_error(
           "piecewise_linear_reformulation_variable_pair recovery payload is missing a checkpoint");

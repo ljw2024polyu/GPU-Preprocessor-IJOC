@@ -381,7 +381,7 @@ void test_empty_column_fixed_value_is_recorded_for_postsolve() {
   cudaFree(lp.u);
 }
 
-void test_parallel_columnumn_tape_replay_restores_primal_and_dual() {
+void test_parallel_column_tape_replay_restores_primal_and_dual() {
   using gpu_presolver::presolve::GpuPostsolveResult;
   using gpu_presolver::presolve::PostsolveDualMode;
   using gpu_presolver::presolve::PostsolveReductionType;
@@ -1100,7 +1100,7 @@ void test_postsolve_rejects_invalid_primal_recovery_checkpoint() {
   assert(threw);
 }
 
-void test_parallel_columnumn_rule_records_globalized_postsolve_tape() {
+void test_parallel_column_rule_records_globalized_postsolve_tape() {
   using gpu_presolver::presolve::GpuPostsolveResult;
   using gpu_presolver::presolve::GpuPresolveSummary;
   using gpu_presolver::presolve::LPInfoGpu;
@@ -1192,7 +1192,7 @@ int main() {
   test_infeasible_and_fixed_variables_postsolve(1.0e-8, true);
   test_infeasible_and_fixed_variables_postsolve(5.0e-7, false);
   test_empty_column_fixed_value_is_recorded_for_postsolve();
-  test_parallel_columnumn_tape_replay_restores_primal_and_dual();
+  test_parallel_column_tape_replay_restores_primal_and_dual();
   test_doubleton_equations_tape_replay_restores_primal_and_basic_dual();
   test_doubleton_equations_original_model_replay_splits_induced_bound_dual();
   test_sub_col_tape_replay_restores_primal_and_dual();
@@ -1206,7 +1206,7 @@ int main() {
   test_tape_checkpoint_replays_after_structural_primal();
   test_structural_tape_structural_timeline_replays_exact_reverse_order();
   test_postsolve_rejects_invalid_primal_recovery_checkpoint();
-  test_parallel_columnumn_rule_records_globalized_postsolve_tape();
+  test_parallel_column_rule_records_globalized_postsolve_tape();
   std::cout << "test_gpu_postsolve passed\n";
   return 0;
 }

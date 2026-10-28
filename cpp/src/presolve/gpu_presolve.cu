@@ -1459,7 +1459,7 @@ struct HostTapeChunks {
     if (source.types.size() > INT64_MAX - records ||
         source.indices.size() > INT64_MAX - indices ||
         source.vals.size() > INT64_MAX - values)
-      throw std::runtime_error("chunked postsolve tape exceeds 32-bit range");
+      throw std::runtime_error("chunked postsolve tape exceeds storage capacity");
     // The source starts and types remain read-only while disjoint index
     // segments are globalized in place, before moving ownership from the plan.
     remap_postsolve_tape_indices(source, source, 0, rows, cols);
@@ -1692,7 +1692,7 @@ void update_record_from_plan(PresolveRecordGpu &record, PresolvePlanGpu &plan,
   if (plan.has_piecewise_linear_reformulation_absolute_value_recovery &&
       plan.has_piecewise_linear_reformulation_variable_pair_recovery) {
     throw std::runtime_error(
-        "a presolve plan cannot commit structural and antipodal primal "
+        "a presolve plan cannot commit absolute-value and variable-pair primal "
         "recoveries at the same chronological position");
   }
   if (has_primal_recovery && !plan.tape.types.empty()) {
@@ -1702,7 +1702,7 @@ void update_record_from_plan(PresolveRecordGpu &record, PresolvePlanGpu &plan,
   }
   const auto tape_size=tape_chunks.enabled?tape_chunks.records:record.tape.types.size();
   if (tape_size > static_cast<std::size_t>(INT64_MAX)) {
-    throw std::runtime_error("postsolve tape exceeds 32-bit checkpoint range");
+    throw std::runtime_error("postsolve tape exceeds checkpoint capacity");
   }
   const NnzOffset tape_position =
       static_cast<NnzOffset>(tape_size);
@@ -1710,7 +1710,7 @@ void update_record_from_plan(PresolveRecordGpu &record, PresolvePlanGpu &plan,
     if (record.piecewise_linear_reformulation_absolute_value_recoveries.size() >=
         static_cast<std::size_t>(INT64_MAX)) {
       throw std::runtime_error(
-          "structural recovery payload exceeds 32-bit checkpoint range");
+          "absolute-value recovery payload exceeds checkpoint capacity");
     }
     const NnzOffset payload_index = static_cast<NnzOffset>(
         record.piecewise_linear_reformulation_absolute_value_recoveries.size());
@@ -1724,7 +1724,7 @@ void update_record_from_plan(PresolveRecordGpu &record, PresolvePlanGpu &plan,
     if (record.piecewise_linear_reformulation_variable_pair_recoveries.size() >=
         static_cast<std::size_t>(INT64_MAX)) {
       throw std::runtime_error(
-          "antipodal recovery payload exceeds 32-bit checkpoint range");
+          "variable-pair recovery payload exceeds checkpoint capacity");
     }
     const NnzOffset payload_index = static_cast<NnzOffset>(
         record.piecewise_linear_reformulation_variable_pair_recoveries.size());
