@@ -1,7 +1,7 @@
 #include "gpu_presolver/detail/runtime_options.hpp"
 #include "gpu_presolver/presolve/device_recovery.hpp"
 #include "gpu_presolver/offset.hpp"
-#include "gpu_presolver/presolve/rules/rule_absolute_value_epigraph_reduction.hpp"
+#include "gpu_presolver/presolve/rules/rule_piecewise_linear_reformulation_absolute_value.hpp"
 
 #include <cuda_runtime.h>
 #include <thrust/device_ptr.h>
@@ -400,7 +400,7 @@ __global__ void _kernel_structural_outer_extract_pairs(std::int32_t* bound_cols,
   }
 }
 
-__global__ void _kernel_absolute_value_epigraph_split_extract_pairs(std::int32_t* status_flag,
+__global__ void _kernel_piecewise_linear_reformulation_absolute_value_split_extract_pairs(std::int32_t* status_flag,
                                                           std::int32_t* t_cols,
                                                           std::int32_t* e_cols,
                                                           const std::uint8_t* eq_row,
@@ -438,7 +438,7 @@ __global__ void _kernel_absolute_value_epigraph_split_extract_pairs(std::int32_t
   e_cols[idx] = e_col;
 }
 
-__global__ void _kernel_absolute_value_epigraph_split_claim_roles(std::int32_t* status_flag,
+__global__ void _kernel_piecewise_linear_reformulation_absolute_value_split_claim_roles(std::int32_t* status_flag,
                                                         std::int32_t* role_owner,
                                                         const std::int32_t* t_cols,
                                                         const std::int32_t* e_cols,
@@ -466,7 +466,7 @@ __global__ void _kernel_absolute_value_epigraph_split_claim_roles(std::int32_t* 
   }
 }
 
-__global__ void _kernel_absolute_value_epigraph_split_validate_blocks(
+__global__ void _kernel_piecewise_linear_reformulation_absolute_value_split_validate_blocks(
     std::int32_t* status_flag,
     std::uint8_t* preserve_bound_row,
     const std::uint8_t* keep_row,
@@ -513,13 +513,13 @@ __global__ void _kernel_absolute_value_epigraph_split_validate_blocks(
                                isinf(u_e) && u_e > 0.0;
   const bool preserve_finite_mode =
       residual_bound_mode ==
-      static_cast<std::uint8_t>(AbsoluteValueEpigraphResidualBoundMode::PreserveFinite);
+      static_cast<std::uint8_t>(PiecewiseLinearReformulationAbsoluteValueResidualBoundMode::PreserveFinite);
   const bool strict_free_mode =
       residual_bound_mode ==
-      static_cast<std::uint8_t>(AbsoluteValueEpigraphResidualBoundMode::StrictFreeOnly);
+      static_cast<std::uint8_t>(PiecewiseLinearReformulationAbsoluteValueResidualBoundMode::StrictFreeOnly);
   const bool legacy_mode =
       residual_bound_mode ==
-      static_cast<std::uint8_t>(AbsoluteValueEpigraphResidualBoundMode::LegacyWideAsFree);
+      static_cast<std::uint8_t>(PiecewiseLinearReformulationAbsoluteValueResidualBoundMode::LegacyWideAsFree);
   const bool legacy_wide_as_free =
       legacy_mode &&
       isfinite(residual_bound_as_free_min) && residual_bound_as_free_min > 0.0 &&
@@ -615,7 +615,7 @@ __global__ void _kernel_absolute_value_epigraph_split_validate_blocks(
       (preserve_finite_mode && !e_is_truly_free) ? std::uint8_t{1} : std::uint8_t{0};
 }
 
-__global__ void _kernel_absolute_value_epigraph_split_apply_plan(
+__global__ void _kernel_piecewise_linear_reformulation_absolute_value_split_apply_plan(
     std::uint8_t* keep_row,
     double* new_c,
     double* new_l,
@@ -655,7 +655,7 @@ __global__ void _kernel_absolute_value_epigraph_split_apply_plan(
   new_u[e_col] = INFINITY;
 }
 
-__global__ void _kernel_absolute_value_epigraph_split_count_rows(NnzOffset* row_nnz_new,
+__global__ void _kernel_piecewise_linear_reformulation_absolute_value_split_count_rows(NnzOffset* row_nnz_new,
                                                        const NnzOffset* row_ptr,
                                                        const std::uint8_t* preserve_bound_row,
                                                        std::int32_t m) {
@@ -673,7 +673,7 @@ __global__ void _kernel_absolute_value_epigraph_split_count_rows(NnzOffset* row_
   }
 }
 
-__global__ void _kernel_absolute_value_epigraph_split_fill(std::int32_t* col_val_new,
+__global__ void _kernel_piecewise_linear_reformulation_absolute_value_split_fill(std::int32_t* col_val_new,
                                                  double* nz_val_new,
                                                  const NnzOffset* row_ptr_new,
                                                  const NnzOffset* row_ptr_org,
@@ -1718,7 +1718,7 @@ DeviceCsrMatrix build_structural_outer_new_A(const DeviceCsrMatrix& source,
   return out;
 }
 
-DeviceCsrMatrix build_absolute_value_epigraph_split_new_A(const DeviceCsrMatrix& source,
+DeviceCsrMatrix build_piecewise_linear_reformulation_absolute_value_split_new_A(const DeviceCsrMatrix& source,
                                                 const std::int32_t* t_cols,
                                                 const std::int32_t* e_cols,
                                                 const std::uint8_t* preserve_bound_row) {
@@ -1737,9 +1737,9 @@ DeviceCsrMatrix build_absolute_value_epigraph_split_new_A(const DeviceCsrMatrix&
   throw_if_cuda_error(cudaMalloc(&row_counts, sizeof(NnzOffset) * static_cast<std::size_t>(out.rows)),
                       "cudaMalloc structural l1 split row_counts");
   const int row_blocks = (out.rows + GPU_PRESOLVE_THREADS - 1) / GPU_PRESOLVE_THREADS;
-  _kernel_absolute_value_epigraph_split_count_rows<<<row_blocks, GPU_PRESOLVE_THREADS>>>(
+  _kernel_piecewise_linear_reformulation_absolute_value_split_count_rows<<<row_blocks, GPU_PRESOLVE_THREADS>>>(
       row_counts, source.rowPtr, preserve_bound_row, out.rows);
-  throw_if_cuda_error(cudaGetLastError(), "_kernel_absolute_value_epigraph_split_count_rows");
+  throw_if_cuda_error(cudaGetLastError(), "_kernel_piecewise_linear_reformulation_absolute_value_split_count_rows");
   _kernel_inclusive_scan_i32_serial<<<1, 1>>>(row_counts, out.rows);
   throw_if_cuda_error(cudaGetLastError(), "_kernel_inclusive_scan_i32_serial structural l1 split");
   throw_if_cuda_error(cudaMemcpy(&out.nnz, row_counts + out.rows - 1, sizeof(NnzOffset), cudaMemcpyDeviceToHost),
@@ -1752,10 +1752,10 @@ DeviceCsrMatrix build_absolute_value_epigraph_split_new_A(const DeviceCsrMatrix&
                         "cudaMalloc structural l1 split colVal");
     throw_if_cuda_error(cudaMalloc(&out.nzVal, sizeof(double) * static_cast<std::size_t>(out.nnz)),
                         "cudaMalloc structural l1 split nzVal");
-    _kernel_absolute_value_epigraph_split_fill<<<row_blocks, GPU_PRESOLVE_THREADS>>>(
+    _kernel_piecewise_linear_reformulation_absolute_value_split_fill<<<row_blocks, GPU_PRESOLVE_THREADS>>>(
         out.colVal, out.nzVal, out.rowPtr, source.rowPtr, source.colVal, source.nzVal,
         t_cols, e_cols, preserve_bound_row, out.rows);
-    throw_if_cuda_error(cudaGetLastError(), "_kernel_absolute_value_epigraph_split_fill");
+    throw_if_cuda_error(cudaGetLastError(), "_kernel_piecewise_linear_reformulation_absolute_value_split_fill");
   }
   cudaFree(row_counts);
   return out;
@@ -1853,18 +1853,18 @@ void record_l1_split_recovery(PresolvePlanGpu& plan,
   if (rhos != nullptr) {
     rho_h = copy_device_vector(rhos, count, "cudaMemcpy structural recovery rhos");
   }
-  plan.absolute_value_epigraph_recovery.pattern = pattern;
-  plan.absolute_value_epigraph_recovery.splits.clear();
-  plan.absolute_value_epigraph_recovery.outer_pairs.clear();
-  plan.absolute_value_epigraph_recovery.linked_slacks.clear();
-  plan.absolute_value_epigraph_recovery.max_slacks.clear();
-  plan.absolute_value_epigraph_recovery.splits.reserve(static_cast<std::size_t>(count));
+  plan.piecewise_linear_reformulation_absolute_value_recovery.pattern = pattern;
+  plan.piecewise_linear_reformulation_absolute_value_recovery.splits.clear();
+  plan.piecewise_linear_reformulation_absolute_value_recovery.outer_pairs.clear();
+  plan.piecewise_linear_reformulation_absolute_value_recovery.linked_slacks.clear();
+  plan.piecewise_linear_reformulation_absolute_value_recovery.max_slacks.clear();
+  plan.piecewise_linear_reformulation_absolute_value_recovery.splits.reserve(static_cast<std::size_t>(count));
   for (std::int32_t i = 0; i < count; ++i) {
-    plan.absolute_value_epigraph_recovery.splits.push_back({t_h[static_cast<std::size_t>(i)],
+    plan.piecewise_linear_reformulation_absolute_value_recovery.splits.push_back({t_h[static_cast<std::size_t>(i)],
                                                        e_h[static_cast<std::size_t>(i)],
                                                        rho_h[static_cast<std::size_t>(i)]});
   }
-  plan.has_absolute_value_epigraph_recovery = true;
+  plan.has_piecewise_linear_reformulation_absolute_value_recovery = true;
 }
 
 bool try_apply_l1_split(PresolvePlanGpu& plan,
@@ -1876,7 +1876,7 @@ bool try_apply_l1_split(PresolvePlanGpu& plan,
                         const std::int32_t* zl_col2,
                         const double* zl_val1,
                         const double* zl_val2,
-                        AbsoluteValueEpigraphResidualBoundMode residual_bound_mode,
+                        PiecewiseLinearReformulationAbsoluteValueResidualBoundMode residual_bound_mode,
                         double residual_bound_as_free_min,
                         bool profile) {
   const std::int32_t m = source_A.rows;
@@ -1903,15 +1903,15 @@ bool try_apply_l1_split(PresolvePlanGpu& plan,
                       "cudaMalloc structural l1 split preserve_bound_row");
   throw_if_cuda_error(cudaMemset(status_flag, 0, sizeof(std::int32_t)), "cudaMemset structural l1 split status");
 
-  _kernel_absolute_value_epigraph_split_extract_pairs<<<blocks, GPU_PRESOLVE_THREADS>>>(
+  _kernel_piecewise_linear_reformulation_absolute_value_split_extract_pairs<<<blocks, GPU_PRESOLVE_THREADS>>>(
       status_flag, t_cols, e_cols, eq_row, zero_lower_two_nnz,
       zl_col1, zl_col2, zl_val1, zl_val2, nblocks);
-  throw_if_cuda_error(cudaGetLastError(), "_kernel_absolute_value_epigraph_split_extract_pairs");
+  throw_if_cuda_error(cudaGetLastError(), "_kernel_piecewise_linear_reformulation_absolute_value_split_extract_pairs");
   std::int32_t status = 0;
   throw_if_cuda_error(cudaMemcpy(&status, status_flag, sizeof(std::int32_t), cudaMemcpyDeviceToHost),
                       "cudaMemcpy structural l1 split extract status");
   if (profile) {
-    std::cerr << ">>> [absolute_value_epigraph C++] l1_split extract status=" << status
+    std::cerr << ">>> [piecewise_linear_reformulation_absolute_value C++] l1_split extract status=" << status
               << " nblocks=" << nblocks << "\n";
   }
   if (status != 0) {
@@ -1928,13 +1928,13 @@ bool try_apply_l1_split(PresolvePlanGpu& plan,
   _kernel_fill_i32<<<(n + GPU_PRESOLVE_THREADS - 1) / GPU_PRESOLVE_THREADS,
                      GPU_PRESOLVE_THREADS>>>(role_owner, -1, n);
   throw_if_cuda_error(cudaGetLastError(), "_kernel_fill_i32 structural l1 split role_owner");
-  _kernel_absolute_value_epigraph_split_claim_roles<<<blocks, GPU_PRESOLVE_THREADS>>>(
+  _kernel_piecewise_linear_reformulation_absolute_value_split_claim_roles<<<blocks, GPU_PRESOLVE_THREADS>>>(
       status_flag, role_owner, t_cols, e_cols, nblocks, n);
-  throw_if_cuda_error(cudaGetLastError(), "_kernel_absolute_value_epigraph_split_claim_roles");
+  throw_if_cuda_error(cudaGetLastError(), "_kernel_piecewise_linear_reformulation_absolute_value_split_claim_roles");
   throw_if_cuda_error(cudaMemcpy(&status, status_flag, sizeof(std::int32_t), cudaMemcpyDeviceToHost),
                       "cudaMemcpy structural l1 split ownership status");
   if (profile) {
-    std::cerr << ">>> [absolute_value_epigraph C++] l1_split ownership status=" << status << "\n";
+    std::cerr << ">>> [piecewise_linear_reformulation_absolute_value C++] l1_split ownership status=" << status << "\n";
   }
   if (status != 0) {
     cudaFree(status_flag);
@@ -1947,18 +1947,18 @@ bool try_apply_l1_split(PresolvePlanGpu& plan,
 
   throw_if_cuda_error(cudaMemset(status_flag, 0, sizeof(std::int32_t)),
                       "cudaMemset structural l1 split validation status");
-  _kernel_absolute_value_epigraph_split_validate_blocks<<<blocks, GPU_PRESOLVE_THREADS>>>(
+  _kernel_piecewise_linear_reformulation_absolute_value_split_validate_blocks<<<blocks, GPU_PRESOLVE_THREADS>>>(
       status_flag, preserve_bound_row, plan.keep_row_mask, plan.keep_col_mask,
       plan.new_c, plan.new_l, plan.new_u,
       source_A.rowPtr, source_A.colVal, source_A.nzVal,
       lp.AT.rowPtr, lp.AT.colVal, lp.AT.nzVal,
       t_cols, e_cols, static_cast<std::uint8_t>(residual_bound_mode),
       residual_bound_as_free_min, nblocks);
-  throw_if_cuda_error(cudaGetLastError(), "_kernel_absolute_value_epigraph_split_validate_blocks");
+  throw_if_cuda_error(cudaGetLastError(), "_kernel_piecewise_linear_reformulation_absolute_value_split_validate_blocks");
   throw_if_cuda_error(cudaMemcpy(&status, status_flag, sizeof(std::int32_t), cudaMemcpyDeviceToHost),
                       "cudaMemcpy structural l1 split validation status");
   if (profile) {
-    std::cerr << ">>> [absolute_value_epigraph C++] l1_split validation status=" << status << "\n";
+    std::cerr << ">>> [piecewise_linear_reformulation_absolute_value C++] l1_split validation status=" << status << "\n";
   }
   if (status != 0) {
     cudaFree(status_flag);
@@ -1972,12 +1972,12 @@ bool try_apply_l1_split(PresolvePlanGpu& plan,
   // Commit only after every block has passed the global role and incidence
   // certificate.  A rejected structural match therefore leaves the shared
   // presolve plan exactly as it was on entry.
-  DeviceCsrMatrix rewritten_A = build_absolute_value_epigraph_split_new_A(
+  DeviceCsrMatrix rewritten_A = build_piecewise_linear_reformulation_absolute_value_split_new_A(
       source_A, t_cols, e_cols, preserve_bound_row);
-  _kernel_absolute_value_epigraph_split_apply_plan<<<blocks, GPU_PRESOLVE_THREADS>>>(
+  _kernel_piecewise_linear_reformulation_absolute_value_split_apply_plan<<<blocks, GPU_PRESOLVE_THREADS>>>(
       plan.keep_row_mask, plan.new_c, plan.new_l, plan.new_u,
       plan.new_AL, plan.new_AU, preserve_bound_row, t_cols, e_cols, nblocks);
-  throw_if_cuda_error(cudaGetLastError(), "_kernel_absolute_value_epigraph_split_apply_plan");
+  throw_if_cuda_error(cudaGetLastError(), "_kernel_piecewise_linear_reformulation_absolute_value_split_apply_plan");
   throw_if_cuda_error(cudaDeviceSynchronize(), "structural l1 split apply synchronize");
 
   plan.new_A = rewritten_A;
@@ -1987,7 +1987,7 @@ bool try_apply_l1_split(PresolvePlanGpu& plan,
   plan.has_row_action = true;
   record_l1_split_recovery(plan, t_cols, e_cols, nullptr, nblocks, "l1_split_3row");
   if (profile) {
-    std::cerr << ">>> [absolute_value_epigraph C++] l1_split changed=1 new_A_nnz=" << plan.new_A.nnz << "\n";
+    std::cerr << ">>> [piecewise_linear_reformulation_absolute_value C++] l1_split changed=1 new_A_nnz=" << plan.new_A.nnz << "\n";
   }
 
   cudaFree(status_flag);
@@ -2052,7 +2052,7 @@ bool try_apply_graph_l1(PresolvePlanGpu& plan,
   throw_if_cuda_error(cudaMemcpy(&status, status_flag, sizeof(std::int32_t), cudaMemcpyDeviceToHost),
                       "cudaMemcpy structural graph extract status");
   if (profile) {
-    std::cerr << ">>> [absolute_value_epigraph C++] graph extract status=" << status
+    std::cerr << ">>> [piecewise_linear_reformulation_absolute_value C++] graph extract status=" << status
               << " block_count=" << block_count << "\n";
   }
   if (status != 0) {
@@ -2073,7 +2073,7 @@ bool try_apply_graph_l1(PresolvePlanGpu& plan,
   throw_if_cuda_error(cudaGetLastError(), "_kernel_fill_i32 structural graph role_owner");
   throw_if_cuda_error(cudaMemset(status_flag, 0, sizeof(std::int32_t)),
                       "cudaMemset structural graph ownership status");
-  _kernel_absolute_value_epigraph_split_claim_roles<<<block_blocks, GPU_PRESOLVE_THREADS>>>(
+  _kernel_piecewise_linear_reformulation_absolute_value_split_claim_roles<<<block_blocks, GPU_PRESOLVE_THREADS>>>(
       status_flag, role_owner, t_cols, e_cols, block_count, n);
   throw_if_cuda_error(cudaGetLastError(), "_kernel_structural_graph_claim_roles");
   throw_if_cuda_error(cudaMemcpy(&status, status_flag, sizeof(std::int32_t), cudaMemcpyDeviceToHost),
@@ -2129,7 +2129,7 @@ bool try_apply_graph_l1(PresolvePlanGpu& plan,
   throw_if_cuda_error(cudaMemcpy(&status, status_flag, sizeof(std::int32_t), cudaMemcpyDeviceToHost),
                       "cudaMemcpy structural graph validate status");
   if (profile) {
-    std::cerr << ">>> [absolute_value_epigraph C++] graph validate status=" << status << "\n";
+    std::cerr << ">>> [piecewise_linear_reformulation_absolute_value C++] graph validate status=" << status << "\n";
   }
   if (status != 0) {
     cudaFree(status_flag);
@@ -2159,7 +2159,7 @@ bool try_apply_graph_l1(PresolvePlanGpu& plan,
   throw_if_cuda_error(cudaMemcpy(&status, status_flag, sizeof(std::int32_t), cudaMemcpyDeviceToHost),
                       "cudaMemcpy structural graph apply status");
   if (profile) {
-    std::cerr << ">>> [absolute_value_epigraph C++] graph apply status=" << status << "\n";
+    std::cerr << ">>> [piecewise_linear_reformulation_absolute_value C++] graph apply status=" << status << "\n";
   }
   if (status != 0) {
     cudaFree(rewritten_A.rowPtr);
@@ -2208,13 +2208,13 @@ bool try_apply_graph_l1(PresolvePlanGpu& plan,
       if (block_idx >= 0 && slack_col >= 0) {
         std::int32_t recovery_idx = recovery_by_slack[static_cast<std::size_t>(slack_col)];
         if (recovery_idx < 0) {
-          plan.absolute_value_epigraph_recovery.max_slacks.push_back({slack_col, {}, {}});
+          plan.piecewise_linear_reformulation_absolute_value_recovery.max_slacks.push_back({slack_col, {}, {}});
           recovery_idx = static_cast<std::int32_t>(
-              plan.absolute_value_epigraph_recovery.max_slacks.size() - 1);
+              plan.piecewise_linear_reformulation_absolute_value_recovery.max_slacks.size() - 1);
           recovery_by_slack[static_cast<std::size_t>(slack_col)] = recovery_idx;
         }
         AbsoluteValueMaxSlackRecovery& recovery =
-            plan.absolute_value_epigraph_recovery.max_slacks[static_cast<std::size_t>(recovery_idx)];
+            plan.piecewise_linear_reformulation_absolute_value_recovery.max_slacks[static_cast<std::size_t>(recovery_idx)];
         recovery.t_cols.push_back(t_h[static_cast<std::size_t>(block_idx)]);
         recovery.factors.push_back(row_factor_h[static_cast<std::size_t>(row)]);
       }
@@ -2223,10 +2223,10 @@ bool try_apply_graph_l1(PresolvePlanGpu& plan,
   }
 
   if (profile) {
-    std::cerr << ">>> [absolute_value_epigraph C++] graph changed=1 new_A_nnz=" << plan.new_A.nnz
-              << " max_slacks=" << (plan.absolute_value_epigraph_device
-                  ? plan.absolute_value_epigraph_device->max_slacks.size()
-                  : plan.absolute_value_epigraph_recovery.max_slacks.size()) << "\n";
+    std::cerr << ">>> [piecewise_linear_reformulation_absolute_value C++] graph changed=1 new_A_nnz=" << plan.new_A.nnz
+              << " max_slacks=" << (plan.piecewise_linear_reformulation_absolute_value_device
+                  ? plan.piecewise_linear_reformulation_absolute_value_device->max_slacks.size()
+                  : plan.piecewise_linear_reformulation_absolute_value_recovery.max_slacks.size()) << "\n";
   }
 
   cudaFree(status_flag);
@@ -2405,7 +2405,7 @@ __global__ void _kernel_structural_prefix_auto_screen(std::uint8_t* screen_flag,
 
 }  // namespace
 
-bool absolute_value_epigraph_prefix_screen_passes(const LPInfoGpu& lp) {
+bool piecewise_linear_reformulation_absolute_value_prefix_screen_passes(const LPInfoGpu& lp) {
   if (lp.A.rows <= 0 || lp.A.cols <= 0) {
     return false;
   }
@@ -2421,22 +2421,22 @@ bool absolute_value_epigraph_prefix_screen_passes(const LPInfoGpu& lp) {
   return host_flag != std::uint8_t{0};
 }
 
-void apply_rule_absolute_value_epigraph_reduction(PresolvePlanGpu& plan,
+void apply_rule_piecewise_linear_reformulation_absolute_value(PresolvePlanGpu& plan,
                                            const LPInfoGpu& lp,
                                            const PresolveStatsGpu& stats,
                                            const PresolveParams& pparams) {
   (void)stats;
-  if (plan.has_infeasible || plan.has_unbounded || !pparams.enable_absolute_value_epigraph_reduction) {
+  if (plan.has_infeasible || plan.has_unbounded || !pparams.enable_piecewise_linear_reformulation_absolute_value) {
     return;
   }
 
   const DeviceCsrMatrix& source_A = plan.has_new_A ? plan.new_A : lp.A;
   const std::int32_t m = source_A.rows;
   const std::int32_t n = source_A.cols;
-  const bool profile = runtime::options().profile_absolute_value;
+  const bool profile = runtime::options().profile_piecewise_linear_reformulation_absolute_value;
   if (m < 3 || n < 2) {
     if (profile) {
-      std::cerr << ">>> [absolute_value_epigraph C++] skip small m=" << m << " n=" << n << "\n";
+      std::cerr << ">>> [piecewise_linear_reformulation_absolute_value C++] skip small m=" << m << " n=" << n << "\n";
     }
     return;
   }
@@ -2495,8 +2495,8 @@ void apply_rule_absolute_value_epigraph_reduction(PresolvePlanGpu& plan,
 
   if (try_apply_l1_split(plan, lp, source_A, eq_row, zero_lower_two_nnz,
                          zl_col1, zl_col2, zl_val1, zl_val2,
-                         pparams.absolute_value_epigraph_residual_bound_mode,
-                         pparams.absolute_value_epigraph_residual_bound_as_free_min, profile)) {
+                         pparams.piecewise_linear_reformulation_absolute_value_residual_bound_mode,
+                         pparams.piecewise_linear_reformulation_absolute_value_residual_bound_as_free_min, profile)) {
     goto cleanup;
   }
 
@@ -2512,7 +2512,7 @@ void apply_rule_absolute_value_epigraph_reduction(PresolvePlanGpu& plan,
   throw_if_cuda_error(cudaMemcpy(&start_row, start_row_d, sizeof(std::int32_t), cudaMemcpyDeviceToHost),
                       "cudaMemcpy structural start_row");
   if (profile) {
-    std::cerr << ">>> [absolute_value_epigraph C++] count_pairs status=" << status
+    std::cerr << ">>> [piecewise_linear_reformulation_absolute_value C++] count_pairs status=" << status
               << " pair_count=" << pair_count << " start_row0=" << start_row
               << " m=" << m << " n=" << n << "\n";
   }
@@ -2564,7 +2564,7 @@ void apply_rule_absolute_value_epigraph_reduction(PresolvePlanGpu& plan,
     cudaFree(pair_cost_after);
     pair_cost_after = nullptr;
     if (profile) {
-      std::cerr << ">>> [absolute_value_epigraph C++] validate_pairs status=" << status << "\n";
+      std::cerr << ">>> [piecewise_linear_reformulation_absolute_value C++] validate_pairs status=" << status << "\n";
     }
     if (status != 0) {
       (void)try_apply_graph_l1(plan, lp, source_A, eq_row, zero_lower_two_nnz,
@@ -2574,7 +2574,7 @@ void apply_rule_absolute_value_epigraph_reduction(PresolvePlanGpu& plan,
 
     if (block_count <= 0) {
       if (profile) {
-        std::cerr << ">>> [absolute_value_epigraph C++] skip block_count=" << block_count << "\n";
+        std::cerr << ">>> [piecewise_linear_reformulation_absolute_value C++] skip block_count=" << block_count << "\n";
       }
       (void)try_apply_graph_l1(plan, lp, source_A, eq_row, zero_lower_two_nnz,
                                zl_col1, zl_col2, zl_val1, zl_val2, profile);
@@ -2600,7 +2600,7 @@ void apply_rule_absolute_value_epigraph_reduction(PresolvePlanGpu& plan,
     throw_if_cuda_error(cudaMemcpy(&status, status_flag, sizeof(std::int32_t), cudaMemcpyDeviceToHost),
                         "cudaMemcpy structural status extract_blocks");
     if (profile) {
-      std::cerr << ">>> [absolute_value_epigraph C++] extract_blocks status=" << status
+      std::cerr << ">>> [piecewise_linear_reformulation_absolute_value C++] extract_blocks status=" << status
                 << " block_count=" << block_count << "\n";
     }
     if (status != 0) {
@@ -2630,7 +2630,7 @@ void apply_rule_absolute_value_epigraph_reduction(PresolvePlanGpu& plan,
     throw_if_cuda_error(cudaMemcpy(&status, status_flag, sizeof(std::int32_t), cudaMemcpyDeviceToHost),
                         "cudaMemcpy structural status validate_outer");
     if (profile) {
-      std::cerr << ">>> [absolute_value_epigraph C++] validate_outer status=" << status << "\n";
+      std::cerr << ">>> [piecewise_linear_reformulation_absolute_value C++] validate_outer status=" << status << "\n";
     }
     if (status != 0) {
       (void)try_apply_graph_l1(plan, lp, source_A, eq_row, zero_lower_two_nnz,
@@ -2661,7 +2661,7 @@ void apply_rule_absolute_value_epigraph_reduction(PresolvePlanGpu& plan,
     throw_if_cuda_error(cudaGetLastError(), "_kernel_structural_outer_block_apply");
     throw_if_cuda_error(cudaDeviceSynchronize(), "structural outer apply synchronize");
     if (profile) {
-      std::cerr << ">>> [absolute_value_epigraph C++] apply complete\n";
+      std::cerr << ">>> [piecewise_linear_reformulation_absolute_value C++] apply complete\n";
     }
 
     plan.new_A = rewritten_A;
@@ -2679,7 +2679,7 @@ void apply_rule_absolute_value_epigraph_reduction(PresolvePlanGpu& plan,
       const std::vector<std::int32_t> free_h =
           copy_device_vector(free_cols, pair_count, "cudaMemcpy structural outer free_cols recovery");
       for (std::int32_t i = 0; i < pair_count; ++i) {
-        plan.absolute_value_epigraph_recovery.outer_pairs.push_back(
+        plan.piecewise_linear_reformulation_absolute_value_recovery.outer_pairs.push_back(
             {bound_h[static_cast<std::size_t>(i)], free_h[static_cast<std::size_t>(i)]});
       }
       const std::vector<std::int32_t> s_h =
@@ -2689,13 +2689,13 @@ void apply_rule_absolute_value_epigraph_reduction(PresolvePlanGpu& plan,
       const std::vector<double> alpha_h =
           copy_device_vector(alphas, block_count, "cudaMemcpy structural outer alphas recovery");
       for (std::int32_t i = 0; i < block_count; ++i) {
-        plan.absolute_value_epigraph_recovery.linked_slacks.push_back(
+        plan.piecewise_linear_reformulation_absolute_value_recovery.linked_slacks.push_back(
             {s_h[static_cast<std::size_t>(i)], q_h[static_cast<std::size_t>(i)],
              alpha_h[static_cast<std::size_t>(i)]});
       }
     }
     if (profile) {
-      std::cerr << ">>> [absolute_value_epigraph C++] changed=1 new_A_nnz=" << plan.new_A.nnz << "\n";
+      std::cerr << ">>> [piecewise_linear_reformulation_absolute_value C++] changed=1 new_A_nnz=" << plan.new_A.nnz << "\n";
     }
   }
 

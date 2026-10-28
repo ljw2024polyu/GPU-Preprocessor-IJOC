@@ -151,7 +151,7 @@ int main() {
   apply(r, true, 0, 0);
   apply(r, false, 1, 4);
   assert(r.tape.types.empty() && r.row_red2org.empty() && r.col_red2org.empty());
-  assert(r.absolute_value_epigraph_recoveries[0].splits.empty());
+  assert(r.piecewise_linear_reformulation_absolute_value_recoveries[0].splits.empty());
   assert(r.device->segments.size() == 2 && r.device->records == 2 &&
          r.device->host_staged_bytes == 0);
   auto x = device(std::vector<double>{1, 2}), y = device(std::vector<double>{0, 0}),
@@ -165,8 +165,8 @@ int main() {
   assert((r.tape.index_starts == std::vector<NnzOffset>{0, 4, 8}));
   assert(r.primal_recovery_timeline.size() == 1 &&
          r.primal_recovery_timeline[0].tape_position == 1);
-  assert(r.absolute_value_epigraph_recoveries[0].splits[0].t_col == 2 &&
-         r.absolute_value_epigraph_recoveries[0].splits[0].e_col == 3);
+  assert(r.piecewise_linear_reformulation_absolute_value_recoveries[0].splits[0].t_col == 2 &&
+         r.piecewise_linear_reformulation_absolute_value_recoveries[0].splits[0].e_col == 3);
   auto retained = r.device;
   r.device.reset();
   auto legacy = postsolve_gpu(x, y, z, r);

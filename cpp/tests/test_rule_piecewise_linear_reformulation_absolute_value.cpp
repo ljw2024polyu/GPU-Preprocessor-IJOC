@@ -2,7 +2,7 @@
 #include "gpu_presolver/offset.hpp"
 #include "gpu_presolver/presolve/gpu_postsolve.hpp"
 #include "gpu_presolver/presolve/gpu_presolve.hpp"
-#include "gpu_presolver/presolve/rules/rule_absolute_value_epigraph_reduction.hpp"
+#include "gpu_presolver/presolve/rules/rule_piecewise_linear_reformulation_absolute_value.hpp"
 
 #include <cuda_runtime.h>
 
@@ -20,7 +20,7 @@
 namespace runtime = gpu_presolver::runtime;
 
 #ifdef NDEBUG
-#error "test_rule_absolute_value_epigraph_reduction requires active assert() checks"
+#error "test_rule_piecewise_linear_reformulation_absolute_value requires active assert() checks"
 #endif
 
 namespace {
@@ -582,17 +582,17 @@ void apply_l1_split_fixture(
     L1SplitFixture& fixture,
     const gpu_presolver::presolve::PresolveParams& params) {
   gpu_presolver::presolve::PresolveStatsGpu stats;
-  gpu_presolver::presolve::apply_rule_absolute_value_epigraph_reduction(
+  gpu_presolver::presolve::apply_rule_piecewise_linear_reformulation_absolute_value(
       fixture.plan, fixture.lp, stats, params);
 }
 
 void assert_l1_split_recovery(const L1SplitFixture& fixture) {
-  assert(fixture.plan.has_absolute_value_epigraph_recovery);
-  assert(fixture.plan.absolute_value_epigraph_recovery.pattern == "l1_split_3row");
-  assert(fixture.plan.absolute_value_epigraph_recovery.splits.size() == 1);
-  assert(fixture.plan.absolute_value_epigraph_recovery.splits[0].t_col == 0);
-  assert(fixture.plan.absolute_value_epigraph_recovery.splits[0].e_col == 1);
-  assert(std::fabs(fixture.plan.absolute_value_epigraph_recovery.splits[0].rho - 1.0) <
+  assert(fixture.plan.has_piecewise_linear_reformulation_absolute_value_recovery);
+  assert(fixture.plan.piecewise_linear_reformulation_absolute_value_recovery.pattern == "l1_split_3row");
+  assert(fixture.plan.piecewise_linear_reformulation_absolute_value_recovery.splits.size() == 1);
+  assert(fixture.plan.piecewise_linear_reformulation_absolute_value_recovery.splits[0].t_col == 0);
+  assert(fixture.plan.piecewise_linear_reformulation_absolute_value_recovery.splits[0].e_col == 1);
+  assert(std::fabs(fixture.plan.piecewise_linear_reformulation_absolute_value_recovery.splits[0].rho - 1.0) <
          1.0e-12);
 }
 
@@ -637,7 +637,7 @@ void assert_l1_match_fails_closed(const L1SplitFixture& fixture) {
   assert(!fixture.plan.has_row_action);
   assert(!fixture.plan.has_col_action);
   assert(!fixture.plan.has_new_A);
-  assert(!fixture.plan.has_absolute_value_epigraph_recovery);
+  assert(!fixture.plan.has_piecewise_linear_reformulation_absolute_value_recovery);
   assert((copy_to_host(fixture.plan.keep_row_mask, fixture.row_lower.size()) ==
           std::vector<std::uint8_t>(fixture.row_lower.size(), std::uint8_t{1})));
   assert((copy_to_host(fixture.plan.keep_col_mask, fixture.cost.size()) ==
@@ -654,7 +654,7 @@ void assert_two_graph_block_match_fails_closed(const TwoGraphBlockFixture& fixtu
   assert(!fixture.plan.has_row_action);
   assert(!fixture.plan.has_col_action);
   assert(!fixture.plan.has_new_A);
-  assert(!fixture.plan.has_absolute_value_epigraph_recovery);
+  assert(!fixture.plan.has_piecewise_linear_reformulation_absolute_value_recovery);
   assert((copy_to_host(fixture.plan.keep_row_mask, fixture.row_lower.size()) ==
           std::vector<std::uint8_t>(fixture.row_lower.size(), std::uint8_t{1})));
   assert((copy_to_host(fixture.plan.keep_col_mask, fixture.cost.size()) ==
@@ -707,10 +707,10 @@ void test_l1_split_default_preserves_finite_residual_bounds_exactly() {
   // losing the finite residual-box semantics retained by p-n in row 1.
   double* x_org = copy_to_device<double>({3.0, 1.0, 2.5});
   double* original_l = copy_to_device(fixture.lower);
-  gpu_presolver::presolve::postsolve_restore_absolute_value_epigraph_gpu(
+  gpu_presolver::presolve::postsolve_restore_piecewise_linear_reformulation_absolute_value_gpu(
       x_org,
-      std::vector<gpu_presolver::presolve::AbsoluteValueEpigraphPrimalRecoveryStep>{
-          fixture.plan.absolute_value_epigraph_recovery},
+      std::vector<gpu_presolver::presolve::PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep>{
+          fixture.plan.piecewise_linear_reformulation_absolute_value_recovery},
       original_l);
   const std::vector<double> restored = copy_to_host(x_org, 3);
   assert((restored == std::vector<double>{4.0, 2.0, 2.5}));
@@ -762,12 +762,12 @@ void test_l1_split_default_preserves_one_sided_residual_bound_exactly() {
 
 void test_l1_split_strict_free_only_rejects_finite_bounds_without_mutation() {
   using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::AbsoluteValueEpigraphResidualBoundMode;
+  using gpu_presolver::presolve::PiecewiseLinearReformulationAbsoluteValueResidualBoundMode;
 
   L1SplitFixture fixture(L1SplitFixtureVariant::kValid, -2.0, 2.0);
   PresolveParams params;
-  params.absolute_value_epigraph_residual_bound_mode =
-      AbsoluteValueEpigraphResidualBoundMode::StrictFreeOnly;
+  params.piecewise_linear_reformulation_absolute_value_residual_bound_mode =
+      PiecewiseLinearReformulationAbsoluteValueResidualBoundMode::StrictFreeOnly;
   apply_l1_split_fixture(fixture, params);
 
   assert_l1_match_fails_closed(fixture);
@@ -775,13 +775,13 @@ void test_l1_split_strict_free_only_rejects_finite_bounds_without_mutation() {
 
 void test_l1_split_legacy_wide_mode_retains_old_three_to_one_behavior() {
   using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::AbsoluteValueEpigraphResidualBoundMode;
+  using gpu_presolver::presolve::PiecewiseLinearReformulationAbsoluteValueResidualBoundMode;
 
   L1SplitFixture fixture(L1SplitFixtureVariant::kValid, -1.0e9, 1.0e9);
   PresolveParams params;
-  params.absolute_value_epigraph_residual_bound_mode =
-      AbsoluteValueEpigraphResidualBoundMode::LegacyWideAsFree;
-  params.absolute_value_epigraph_residual_bound_as_free_min = 1.0e8;
+  params.piecewise_linear_reformulation_absolute_value_residual_bound_mode =
+      PiecewiseLinearReformulationAbsoluteValueResidualBoundMode::LegacyWideAsFree;
+  params.piecewise_linear_reformulation_absolute_value_residual_bound_as_free_min = 1.0e8;
   apply_l1_split_fixture(fixture, params);
 
   assert(fixture.plan.has_change);
@@ -915,13 +915,13 @@ void test_l1_split_preserves_nonzero_fixed_residual_exactly() {
 
 void test_l1_split_strict_free_only_accepts_true_free_residual() {
   using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::AbsoluteValueEpigraphResidualBoundMode;
+  using gpu_presolver::presolve::PiecewiseLinearReformulationAbsoluteValueResidualBoundMode;
 
   const double inf = std::numeric_limits<double>::infinity();
   L1SplitFixture fixture(L1SplitFixtureVariant::kValid, -inf, inf);
   PresolveParams params;
-  params.absolute_value_epigraph_residual_bound_mode =
-      AbsoluteValueEpigraphResidualBoundMode::StrictFreeOnly;
+  params.piecewise_linear_reformulation_absolute_value_residual_bound_mode =
+      PiecewiseLinearReformulationAbsoluteValueResidualBoundMode::StrictFreeOnly;
   apply_l1_split_fixture(fixture, params);
 
   assert(fixture.plan.has_change);
@@ -934,13 +934,13 @@ void test_l1_split_strict_free_only_accepts_true_free_residual() {
 
 void test_l1_split_invalid_residual_bound_mode_fails_closed() {
   using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::AbsoluteValueEpigraphResidualBoundMode;
+  using gpu_presolver::presolve::PiecewiseLinearReformulationAbsoluteValueResidualBoundMode;
 
   const double inf = std::numeric_limits<double>::infinity();
   L1SplitFixture fixture(L1SplitFixtureVariant::kValid, -inf, inf);
   PresolveParams params;
-  params.absolute_value_epigraph_residual_bound_mode =
-      static_cast<AbsoluteValueEpigraphResidualBoundMode>(255);
+  params.piecewise_linear_reformulation_absolute_value_residual_bound_mode =
+      static_cast<PiecewiseLinearReformulationAbsoluteValueResidualBoundMode>(255);
   apply_l1_split_fixture(fixture, params);
 
   assert_l1_match_fails_closed(fixture);
@@ -956,11 +956,11 @@ void test_l1_split_reverse_role_order_emits_strictly_sorted_csr() {
 
   assert(fixture.plan.has_change);
   assert(fixture.plan.has_new_A);
-  assert(fixture.plan.has_absolute_value_epigraph_recovery);
-  assert(fixture.plan.absolute_value_epigraph_recovery.pattern == "l1_split_3row");
-  assert(fixture.plan.absolute_value_epigraph_recovery.splits.size() == 1);
-  assert(fixture.plan.absolute_value_epigraph_recovery.splits[0].t_col == 2);
-  assert(fixture.plan.absolute_value_epigraph_recovery.splits[0].e_col == 0);
+  assert(fixture.plan.has_piecewise_linear_reformulation_absolute_value_recovery);
+  assert(fixture.plan.piecewise_linear_reformulation_absolute_value_recovery.pattern == "l1_split_3row");
+  assert(fixture.plan.piecewise_linear_reformulation_absolute_value_recovery.splits.size() == 1);
+  assert(fixture.plan.piecewise_linear_reformulation_absolute_value_recovery.splits[0].t_col == 2);
+  assert(fixture.plan.piecewise_linear_reformulation_absolute_value_recovery.splits[0].e_col == 0);
   assert((copy_to_host(fixture.plan.keep_row_mask, 3) ==
           std::vector<std::uint8_t>{1, 1, 0}));
   assert((copy_to_host(fixture.plan.keep_col_mask, 3) ==
@@ -1001,7 +1001,7 @@ void test_graph_l1_mixed_validity_fails_closed_before_any_block_commit() {
   TwoGraphBlockFixture fixture;
   PresolveStatsGpu stats;
   PresolveParams params;
-  gpu_presolver::presolve::apply_rule_absolute_value_epigraph_reduction(
+  gpu_presolver::presolve::apply_rule_piecewise_linear_reformulation_absolute_value(
       fixture.plan, fixture.lp, stats, params);
 
   assert_two_graph_block_match_fails_closed(fixture);
@@ -1044,14 +1044,14 @@ void test_graph_l1_forged_at_missing_required_r3_fails_closed() {
 
   PresolveStatsGpu stats;
   PresolveParams params;
-  gpu_presolver::presolve::apply_rule_absolute_value_epigraph_reduction(
+  gpu_presolver::presolve::apply_rule_piecewise_linear_reformulation_absolute_value(
       plan, lp, stats, params);
 
   assert(!plan.has_change);
   assert(!plan.has_row_action);
   assert(!plan.has_col_action);
   assert(!plan.has_new_A);
-  assert(!plan.has_absolute_value_epigraph_recovery);
+  assert(!plan.has_piecewise_linear_reformulation_absolute_value_recovery);
   assert((copy_to_host(plan.keep_row_mask, 4) ==
           std::vector<std::uint8_t>{1, 1, 1, 1}));
   assert((copy_to_host(plan.keep_col_mask, 3) ==
@@ -1103,7 +1103,7 @@ void test_graph_l1_rewrites_four_row_block_and_records_postsolve() {
 
   PresolveStatsGpu stats;
   PresolveParams params;
-  gpu_presolver::presolve::apply_rule_absolute_value_epigraph_reduction(plan, lp, stats, params);
+  gpu_presolver::presolve::apply_rule_piecewise_linear_reformulation_absolute_value(plan, lp, stats, params);
 
   assert(plan.has_change);
   assert(plan.has_row_action);
@@ -1135,16 +1135,16 @@ void test_graph_l1_rewrites_four_row_block_and_records_postsolve() {
   assert(std::fabs(nz_val[0] - 3.0) < 1.0e-12);
   assert(std::fabs(nz_val[1] - (-3.0)) < 1.0e-12);
 
-  assert(plan.has_absolute_value_epigraph_recovery);
-  assert(plan.absolute_value_epigraph_recovery.pattern == "graph_l1_substitution");
-  assert(plan.absolute_value_epigraph_recovery.splits.size() == 1);
-  assert(plan.absolute_value_epigraph_recovery.max_slacks.size() == 1);
-  assert(plan.absolute_value_epigraph_recovery.max_slacks[0].slack_col == 2);
+  assert(plan.has_piecewise_linear_reformulation_absolute_value_recovery);
+  assert(plan.piecewise_linear_reformulation_absolute_value_recovery.pattern == "graph_l1_substitution");
+  assert(plan.piecewise_linear_reformulation_absolute_value_recovery.splits.size() == 1);
+  assert(plan.piecewise_linear_reformulation_absolute_value_recovery.max_slacks.size() == 1);
+  assert(plan.piecewise_linear_reformulation_absolute_value_recovery.max_slacks[0].slack_col == 2);
 
   double* x_org = copy_to_device<double>({4.0, 1.0, 0.0});
   double* original_l = copy_to_device<double>({0.0, -inf, 0.0});
-  gpu_presolver::presolve::postsolve_restore_absolute_value_epigraph_gpu(
-      x_org, std::vector<gpu_presolver::presolve::AbsoluteValueEpigraphPrimalRecoveryStep>{plan.absolute_value_epigraph_recovery},
+  gpu_presolver::presolve::postsolve_restore_piecewise_linear_reformulation_absolute_value_gpu(
+      x_org, std::vector<gpu_presolver::presolve::PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep>{plan.piecewise_linear_reformulation_absolute_value_recovery},
       original_l);
   const std::vector<double> x = copy_to_host(x_org, 3);
   assert(std::fabs(x[0] - 5.0) < 1.0e-12);
@@ -1221,7 +1221,7 @@ void test_graph_l1_shared_auxiliary_uses_targeted_dual_fix() {
 
     PresolveStatsGpu stats;
     PresolveParams params;
-    gpu_presolver::presolve::apply_rule_absolute_value_epigraph_reduction(
+    gpu_presolver::presolve::apply_rule_piecewise_linear_reformulation_absolute_value(
         plan, lp, stats, params);
     if (invalid != 0) {
       assert(!plan.has_change);
@@ -1245,16 +1245,16 @@ void test_graph_l1_shared_auxiliary_uses_targeted_dual_fix() {
               std::vector<double>{3.0, -3.0, 4.0, -4.0}));
       assert((copy_to_host(plan.new_c, 5) ==
               std::vector<double>{2.5, -1.5, 2.0, -0.5, 0.0}));
-      assert(plan.absolute_value_epigraph_recovery.pattern == "graph_l1_substitution");
-      assert(plan.absolute_value_epigraph_recovery.max_slacks.size() == 1);
-      const auto& recovery = plan.absolute_value_epigraph_recovery.max_slacks[0];
+      assert(plan.piecewise_linear_reformulation_absolute_value_recovery.pattern == "graph_l1_substitution");
+      assert(plan.piecewise_linear_reformulation_absolute_value_recovery.max_slacks.size() == 1);
+      const auto& recovery = plan.piecewise_linear_reformulation_absolute_value_recovery.max_slacks[0];
       assert(recovery.slack_col == 4);
       assert((recovery.t_cols == std::vector<std::int32_t>{0, 2}));
       assert((recovery.factors == std::vector<double>{2.0, 3.0}));
       double* x = copy_to_device<double>({4.0, 1.0, 2.0, 1.0, 0.0});
       double* original_l = copy_to_device<double>({0.0, -inf, 0.0, -inf, 0.0});
-      gpu_presolver::presolve::postsolve_restore_absolute_value_epigraph_gpu(
-          x, {plan.absolute_value_epigraph_recovery}, original_l);
+      gpu_presolver::presolve::postsolve_restore_piecewise_linear_reformulation_absolute_value_gpu(
+          x, {plan.piecewise_linear_reformulation_absolute_value_recovery}, original_l);
       assert((copy_to_host(x, 5) ==
               std::vector<double>{5.0, 3.0, 3.0, 1.0, 10.0}));
       cudaFree(x);
@@ -1281,18 +1281,18 @@ void test_outer_shared_bound_accumulates_objective_and_restores_primal() {
   OuterFixture fixture(OuterFixtureVariant::kSharedBound);
   PresolveStatsGpu stats;
   PresolveParams params;
-  gpu_presolver::presolve::apply_rule_absolute_value_epigraph_reduction(
+  gpu_presolver::presolve::apply_rule_piecewise_linear_reformulation_absolute_value(
       fixture.plan, fixture.lp, stats, params);
 
   assert(fixture.plan.has_change);
   assert(fixture.plan.has_new_A);
-  assert(fixture.plan.has_absolute_value_epigraph_recovery);
-  assert(fixture.plan.absolute_value_epigraph_recovery.pattern == "outer_pair_linked_l1");
-  assert(fixture.plan.absolute_value_epigraph_recovery.outer_pairs.size() == 2);
-  assert(fixture.plan.absolute_value_epigraph_recovery.outer_pairs[0].bound_col == 0);
-  assert(fixture.plan.absolute_value_epigraph_recovery.outer_pairs[0].free_col == 1);
-  assert(fixture.plan.absolute_value_epigraph_recovery.outer_pairs[1].bound_col == 0);
-  assert(fixture.plan.absolute_value_epigraph_recovery.outer_pairs[1].free_col == 2);
+  assert(fixture.plan.has_piecewise_linear_reformulation_absolute_value_recovery);
+  assert(fixture.plan.piecewise_linear_reformulation_absolute_value_recovery.pattern == "outer_pair_linked_l1");
+  assert(fixture.plan.piecewise_linear_reformulation_absolute_value_recovery.outer_pairs.size() == 2);
+  assert(fixture.plan.piecewise_linear_reformulation_absolute_value_recovery.outer_pairs[0].bound_col == 0);
+  assert(fixture.plan.piecewise_linear_reformulation_absolute_value_recovery.outer_pairs[0].free_col == 1);
+  assert(fixture.plan.piecewise_linear_reformulation_absolute_value_recovery.outer_pairs[1].bound_col == 0);
+  assert(fixture.plan.piecewise_linear_reformulation_absolute_value_recovery.outer_pairs[1].free_col == 2);
 
   const std::vector<double> reduced_cost = copy_to_host(fixture.plan.new_c, fixture.cost.size());
   const std::vector<std::uint8_t> keep_col = copy_to_host(fixture.plan.keep_col_mask, 10);
@@ -1329,10 +1329,10 @@ void test_outer_shared_bound_accumulates_objective_and_restores_primal() {
   reduced_primal[0] = a_value;
   double* x_org = copy_to_device(reduced_primal);
   double* original_l = copy_to_device(fixture.lower);
-  gpu_presolver::presolve::postsolve_restore_absolute_value_epigraph_gpu(
+  gpu_presolver::presolve::postsolve_restore_piecewise_linear_reformulation_absolute_value_gpu(
       x_org,
-      std::vector<gpu_presolver::presolve::AbsoluteValueEpigraphPrimalRecoveryStep>{
-          fixture.plan.absolute_value_epigraph_recovery},
+      std::vector<gpu_presolver::presolve::PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep>{
+          fixture.plan.piecewise_linear_reformulation_absolute_value_recovery},
       original_l);
   const std::vector<double> restored = copy_to_host(x_org, reduced_primal.size());
   assert(std::fabs(restored[0] - a_value) < 1.0e-12);
@@ -1349,22 +1349,22 @@ void test_outer_mapped_dense_row_is_sorted_with_exact_coefficients() {
   OuterMappedDenseSortFixture fixture;
   PresolveStatsGpu stats;
   PresolveParams params;
-  gpu_presolver::presolve::apply_rule_absolute_value_epigraph_reduction(
+  gpu_presolver::presolve::apply_rule_piecewise_linear_reformulation_absolute_value(
       fixture.plan, fixture.lp, stats, params);
 
   assert(fixture.plan.has_change);
   assert(fixture.plan.has_row_action);
   assert(fixture.plan.has_col_action);
   assert(fixture.plan.has_new_A);
-  assert(fixture.plan.has_absolute_value_epigraph_recovery);
-  assert(fixture.plan.absolute_value_epigraph_recovery.pattern ==
+  assert(fixture.plan.has_piecewise_linear_reformulation_absolute_value_recovery);
+  assert(fixture.plan.piecewise_linear_reformulation_absolute_value_recovery.pattern ==
          "outer_pair_linked_l1");
-  assert(fixture.plan.absolute_value_epigraph_recovery.outer_pairs.size() == 1);
-  assert(fixture.plan.absolute_value_epigraph_recovery.outer_pairs[0].bound_col == 0);
-  assert(fixture.plan.absolute_value_epigraph_recovery.outer_pairs[0].free_col == 9);
-  assert(fixture.plan.absolute_value_epigraph_recovery.splits.size() == 1);
-  assert(fixture.plan.absolute_value_epigraph_recovery.splits[0].t_col == 2);
-  assert(fixture.plan.absolute_value_epigraph_recovery.splits[0].e_col == 1);
+  assert(fixture.plan.piecewise_linear_reformulation_absolute_value_recovery.outer_pairs.size() == 1);
+  assert(fixture.plan.piecewise_linear_reformulation_absolute_value_recovery.outer_pairs[0].bound_col == 0);
+  assert(fixture.plan.piecewise_linear_reformulation_absolute_value_recovery.outer_pairs[0].free_col == 9);
+  assert(fixture.plan.piecewise_linear_reformulation_absolute_value_recovery.splits.size() == 1);
+  assert(fixture.plan.piecewise_linear_reformulation_absolute_value_recovery.splits[0].t_col == 2);
+  assert(fixture.plan.piecewise_linear_reformulation_absolute_value_recovery.splits[0].e_col == 1);
 
   assert((copy_to_host(fixture.plan.keep_row_mask, 11) ==
           std::vector<std::uint8_t>{0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1}));
@@ -1403,14 +1403,14 @@ void test_outer_two_block_control_is_accepted() {
   OuterFixture fixture(OuterFixtureVariant::kTwoBlockValid);
   PresolveStatsGpu stats;
   PresolveParams params;
-  gpu_presolver::presolve::apply_rule_absolute_value_epigraph_reduction(
+  gpu_presolver::presolve::apply_rule_piecewise_linear_reformulation_absolute_value(
       fixture.plan, fixture.lp, stats, params);
 
   assert(fixture.plan.has_change);
   assert(fixture.plan.has_new_A);
-  assert(fixture.plan.has_absolute_value_epigraph_recovery);
-  assert(fixture.plan.absolute_value_epigraph_recovery.splits.size() == 2);
-  assert(fixture.plan.absolute_value_epigraph_recovery.linked_slacks.size() == 2);
+  assert(fixture.plan.has_piecewise_linear_reformulation_absolute_value_recovery);
+  assert(fixture.plan.piecewise_linear_reformulation_absolute_value_recovery.splits.size() == 2);
+  assert(fixture.plan.piecewise_linear_reformulation_absolute_value_recovery.linked_slacks.size() == 2);
 }
 
 void assert_outer_match_fails_closed(OuterFixtureVariant variant) {
@@ -1420,14 +1420,14 @@ void assert_outer_match_fails_closed(OuterFixtureVariant variant) {
   OuterFixture fixture(variant);
   PresolveStatsGpu stats;
   PresolveParams params;
-  gpu_presolver::presolve::apply_rule_absolute_value_epigraph_reduction(
+  gpu_presolver::presolve::apply_rule_piecewise_linear_reformulation_absolute_value(
       fixture.plan, fixture.lp, stats, params);
 
   assert(!fixture.plan.has_change);
   assert(!fixture.plan.has_row_action);
   assert(!fixture.plan.has_col_action);
   assert(!fixture.plan.has_new_A);
-  assert(!fixture.plan.has_absolute_value_epigraph_recovery);
+  assert(!fixture.plan.has_piecewise_linear_reformulation_absolute_value_recovery);
   assert((copy_to_host(fixture.plan.keep_row_mask, fixture.lp.A.rows) ==
           std::vector<std::uint8_t>(static_cast<std::size_t>(fixture.lp.A.rows),
                                     std::uint8_t{1})));
@@ -1482,9 +1482,9 @@ void test_absolute_value_schedule(bool needs_cleanup, int max_iters,
   params.enable_doubleton_equations = false;
   params.enable_parallel_rows = false;
   params.enable_column_domination = false;
-  params.enable_variable_pair_aggregation = false;
+  params.enable_piecewise_linear_reformulation_variable_pair = false;
   params.enable_two_row_variable_elimination = false;
-  params.enable_mccormick_variable_elimination = false;
+  params.enable_zero_cost_product_variables = false;
   params.enable_singleton_columns = false;
   params.enable_parallel_columns = false;
 
@@ -1499,10 +1499,10 @@ void test_absolute_value_schedule(bool needs_cleanup, int max_iters,
   assert(!result.has_infeasible && !result.has_unbounded);
   const std::string log = trace.str();
   assert(log.find("phase=startup_rows") == std::string::npos);
-  const auto startup = log.find("phase=startup_absolute_value_epigraph changed=true");
+  const auto startup = log.find("phase=startup_piecewise_linear_reformulation_absolute_value changed=true");
   if (enable_startup && !needs_cleanup) {
     assert(startup != std::string::npos);
-    assert(!result.record.absolute_value_epigraph_recoveries.empty());
+    assert(!result.record.piecewise_linear_reformulation_absolute_value_recoveries.empty());
     const auto propagation = log.find("phase=propagation");
     const auto parallel = log.find("phase=parallel");
     assert((propagation == std::string::npos || startup < propagation) &&
@@ -1513,8 +1513,8 @@ void test_absolute_value_schedule(bool needs_cleanup, int max_iters,
     }
   } else {
     assert(startup == std::string::npos);
-    assert(result.record.absolute_value_epigraph_recoveries.empty());
-    assert(log.find("absolute_value_epigraph_retry") == std::string::npos);
+    assert(result.record.piecewise_linear_reformulation_absolute_value_recoveries.empty());
+    assert(log.find("piecewise_linear_reformulation_absolute_value_retry") == std::string::npos);
     if (max_iters == 1) {
       assert(log.find("[schedule-phase] phase=cleanup") != std::string::npos);
       assert(result.iterations == 1);
@@ -1530,13 +1530,13 @@ void test_absolute_value_startup_schedule() {
   fixture.lp.u = fixture.plan.new_u;
   fixture.lp.AL = fixture.plan.new_AL;
   fixture.lp.AU = fixture.plan.new_AU;
-  assert(absolute_value_epigraph_prefix_screen_passes(fixture.lp));
+  assert(piecewise_linear_reformulation_absolute_value_prefix_screen_passes(fixture.lp));
   PresolveParams params;
   params.max_iters = 1;
   params.enable_column_domination = false;
-  params.enable_variable_pair_aggregation = false;
+  params.enable_piecewise_linear_reformulation_variable_pair = false;
   params.enable_two_row_variable_elimination = false;
-  params.enable_mccormick_variable_elimination = false;
+  params.enable_zero_cost_product_variables = false;
 
   const auto saved = runtime::options().profile_rules;
 
@@ -1548,8 +1548,8 @@ void test_absolute_value_startup_schedule() {
   runtime::options().profile_rules = saved;
   assert(!result.has_infeasible && !result.has_unbounded);
   assert(result.iterations == 1);
-  assert(!result.record.absolute_value_epigraph_recoveries.empty());
-  assert(trace.str().find("phase=startup_absolute_value_epigraph changed=true") !=
+  assert(!result.record.piecewise_linear_reformulation_absolute_value_recoveries.empty());
+  assert(trace.str().find("phase=startup_piecewise_linear_reformulation_absolute_value changed=true") !=
          std::string::npos);
   assert(trace.str().find("phase=parallel") == std::string::npos);
 }
@@ -1588,6 +1588,6 @@ int main() {
   test_outer_two_block_control_is_accepted();
   test_outer_shared_bound_dense_mapping_duplicate_fails_closed();
   test_outer_invalid_variable_ownership_fails_closed();
-  std::cout << "test_rule_absolute_value_epigraph_reduction passed\n";
+  std::cout << "test_rule_piecewise_linear_reformulation_absolute_value passed\n";
   return 0;
 }

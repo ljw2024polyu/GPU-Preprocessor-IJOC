@@ -1,10 +1,10 @@
-#include "gpu_presolver/presolve/rules/rule_variable_pair_aggregation.hpp"
+#include "gpu_presolver/presolve/rules/rule_piecewise_linear_reformulation_variable_pair.hpp"
 #include "../src/presolve/plan_storage.hpp"
 #include "gpu_presolver/offset.hpp"
 #include "gpu_presolver/presolve/device_recovery.hpp"
 #include "gpu_presolver/presolve/gpu_postsolve.hpp"
 #include "gpu_presolver/presolve/gpu_presolve.hpp"
-#include "../src/presolve/rules/variable_pair_aggregation/epigraph.hpp"
+#include "../src/presolve/rules/piecewise_linear_reformulation_variable_pair/epigraph.hpp"
 
 #include <cuda_runtime.h>
 
@@ -65,7 +65,7 @@ void free_lp(gpu_presolver::presolve::LPInfoGpu& lp) {
   lp = gpu_presolver::presolve::LPInfoGpu{};
 }
 
-gpu_presolver::presolve::LPInfoGpu make_variable_pair_epigraph_lp(bool wrong_tail,
+gpu_presolver::presolve::LPInfoGpu make_piecewise_linear_reformulation_variable_pair_epigraph_lp(bool wrong_tail,
                                                 bool wrong_coefficient,
                                                 bool normalization_row = false) {
   using gpu_presolver::presolve::LPInfoGpu;
@@ -167,7 +167,7 @@ gpu_presolver::presolve::PresolveParams test_params() {
   params.enable_startup = true;
   params.enable_column_domination = false;
   params.enable_two_row_variable_elimination = false;
-  params.enable_mccormick_variable_elimination = false;
+  params.enable_zero_cost_product_variables = false;
   params.enable_infeasible_and_fixed_variables = false;
   params.enable_empty_rows = false;
   params.enable_singleton_rows = false;
@@ -178,15 +178,15 @@ gpu_presolver::presolve::PresolveParams test_params() {
   params.enable_singleton_columns = false;
 
   params.enable_doubleton_equations = false;
-  params.enable_absolute_value_epigraph_reduction = false;
+  params.enable_piecewise_linear_reformulation_absolute_value = false;
   params.enable_dual_fix = false;
   params.enable_parallel_columns = false;
 
-  params.variable_pair_epigraph_min_pairs = 1;
-  params.variable_pair_epigraph_probe_pairs = 3;
-  params.variable_pair_epigraph_min_potential_gain = 0.20;
-  params.variable_pair_epigraph_min_actual_gain = 0.20;
-  params.variable_pair_epigraph_max_quotient_terms_per_row = 5;
+  params.piecewise_linear_reformulation_variable_pair_epigraph_min_pairs = 1;
+  params.piecewise_linear_reformulation_variable_pair_epigraph_probe_pairs = 3;
+  params.piecewise_linear_reformulation_variable_pair_epigraph_min_potential_gain = 0.20;
+  params.piecewise_linear_reformulation_variable_pair_epigraph_min_actual_gain = 0.20;
+  params.piecewise_linear_reformulation_variable_pair_epigraph_max_quotient_terms_per_row = 5;
   return params;
 }
 
@@ -196,7 +196,7 @@ void assert_near(double actual, double expected) {
 
 void test_contraction_bounds_and_primal_recovery() {
   using namespace gpu_presolver::presolve;
-  LPInfoGpu lp = make_variable_pair_epigraph_lp(false, false);
+  LPInfoGpu lp = make_piecewise_linear_reformulation_variable_pair_epigraph_lp(false, false);
   PresolveParams params = test_params();
   GpuPresolveSummary summary = run_gpu_presolve_with_reduced_lp(lp, params);
   gpu_presolver::presolve::export_recovery_record(summary.record);
@@ -207,8 +207,8 @@ void test_contraction_bounds_and_primal_recovery() {
   assert(summary.reduced_cols == 5);
   assert(summary.reduced_nnz == 10);
   assert_near(summary.obj_constant_delta, 0.0);
-  assert(summary.record.has_primal_only_variable_pair_aggregation_reduction);
-  assert(summary.record.variable_pair_aggregation_recoveries.size() == 1);
+  assert(summary.record.has_primal_only_piecewise_linear_reformulation_variable_pair_reduction);
+  assert(summary.record.piecewise_linear_reformulation_variable_pair_recoveries.size() == 1);
 
   const LPInfoGpu& reduced = summary.reduced_lp;
   assert((copy_to_host(reduced.A.rowPtr, 4) ==
@@ -273,32 +273,32 @@ void test_contraction_bounds_and_primal_recovery() {
 
 void test_unified_entry() {
   using namespace gpu_presolver::presolve;
-  LPInfoGpu lp = make_variable_pair_epigraph_lp(false, false);
+  LPInfoGpu lp = make_piecewise_linear_reformulation_variable_pair_epigraph_lp(false, false);
   PresolveParams params = test_params();
   PresolvePlanGpu plan;
-  const auto selected = build_variable_pair_aggregation_plan(plan, lp, params);
-  assert(selected == VariablePairAggregationCase::Epigraph);
+  const auto selected = build_piecewise_linear_reformulation_variable_pair_plan(plan, lp, params);
+  assert(selected == PiecewiseLinearReformulationVariablePairCase::Epigraph);
   assert(plan.has_change && !plan.has_infeasible && !plan.has_unbounded);
-  assert(plan.has_variable_pair_aggregation_recovery);
+  assert(plan.has_piecewise_linear_reformulation_variable_pair_recovery);
   detail::free_plan(plan);
   plan = {};
-  params.enable_variable_pair_aggregation = false;
-  assert(build_variable_pair_aggregation_plan(plan, lp, params) == VariablePairAggregationCase::None);
+  params.enable_piecewise_linear_reformulation_variable_pair = false;
+  assert(build_piecewise_linear_reformulation_variable_pair_plan(plan, lp, params) == PiecewiseLinearReformulationVariablePairCase::None);
   assert(!plan.has_change && !plan.contiguous_storage);
-  params.enable_variable_pair_aggregation = true;
+  params.enable_piecewise_linear_reformulation_variable_pair = true;
   params.enable_structure_specific_rules = false;
-  assert(build_variable_pair_aggregation_plan(plan, lp, params) == VariablePairAggregationCase::None);
+  assert(build_piecewise_linear_reformulation_variable_pair_plan(plan, lp, params) == PiecewiseLinearReformulationVariablePairCase::None);
   assert(!plan.has_change && !plan.contiguous_storage);
   params.enable_structure_specific_rules = true;
-  assert(build_variable_pair_aggregation_plan(plan, lp, params, [] { return true; }) ==
-         VariablePairAggregationCase::None);
+  assert(build_piecewise_linear_reformulation_variable_pair_plan(plan, lp, params, [] { return true; }) ==
+         PiecewiseLinearReformulationVariablePairCase::None);
   assert(!plan.has_change && !plan.contiguous_storage);
   free_lp(lp);
 }
 
 void test_rule_is_owned_by_startup() {
   using namespace gpu_presolver::presolve;
-  LPInfoGpu lp = make_variable_pair_epigraph_lp(false, false);
+  LPInfoGpu lp = make_piecewise_linear_reformulation_variable_pair_epigraph_lp(false, false);
   PresolveParams params = test_params();
   params.enable_startup = false;
   GpuPresolveSummary summary = run_gpu_presolve_with_reduced_lp(lp, params);
@@ -306,14 +306,14 @@ void test_rule_is_owned_by_startup() {
   assert(summary.reduced_rows == 5);
   assert(summary.reduced_cols == 7);
   assert(summary.reduced_nnz == 19);
-  assert(!summary.record.has_primal_only_variable_pair_aggregation_reduction);
+  assert(!summary.record.has_primal_only_piecewise_linear_reformulation_variable_pair_reduction);
   free_gpu_presolve_reduced_lp(summary);
   free_lp(lp);
 }
 
 void test_retained_equality_is_canonically_normalized() {
   using namespace gpu_presolver::presolve;
-  LPInfoGpu lp = make_variable_pair_epigraph_lp(false, false, true);
+  LPInfoGpu lp = make_piecewise_linear_reformulation_variable_pair_epigraph_lp(false, false, true);
   PresolveParams params = test_params();
   GpuPresolveSummary summary = run_gpu_presolve_with_reduced_lp(lp, params);
   gpu_presolver::presolve::export_recovery_record(summary.record);
@@ -336,15 +336,15 @@ void test_retained_equality_is_canonically_normalized() {
 void test_component_metadata_mismatch_is_fail_closed(bool wrong_tail,
                                                      bool wrong_coefficient) {
   using namespace gpu_presolver::presolve;
-  LPInfoGpu lp = make_variable_pair_epigraph_lp(wrong_tail, wrong_coefficient);
+  LPInfoGpu lp = make_piecewise_linear_reformulation_variable_pair_epigraph_lp(wrong_tail, wrong_coefficient);
   PresolveParams params = test_params();
-  assert(quick_probe_variable_pair_epigraph(lp, params));
-  VariablePairEpigraphAnalysisGpu analysis = analyze_variable_pair_epigraph(lp, params);
+  assert(quick_probe_piecewise_linear_reformulation_variable_pair_epigraph(lp, params));
+  PiecewiseLinearReformulationVariablePairEpigraphAnalysisGpu analysis = analyze_piecewise_linear_reformulation_variable_pair_epigraph(lp, params);
   assert(!analysis.applicable);
   assert(analysis.parent == nullptr);
   assert(analysis.edge_by_row == nullptr);
   assert(analysis.pair_g_row == nullptr);
-  free_variable_pair_epigraph_analysis(analysis);
+  free_piecewise_linear_reformulation_variable_pair_epigraph_analysis(analysis);
   free_lp(lp);
 }
 
@@ -357,6 +357,6 @@ int main() {
   test_retained_equality_is_canonically_normalized();
   test_component_metadata_mismatch_is_fail_closed(true, false);
   test_component_metadata_mismatch_is_fail_closed(false, true);
-  std::cout << "test_rule_variable_pair_epigraph passed\n";
+  std::cout << "test_rule_piecewise_linear_reformulation_variable_pair_epigraph passed\n";
   return 0;
 }

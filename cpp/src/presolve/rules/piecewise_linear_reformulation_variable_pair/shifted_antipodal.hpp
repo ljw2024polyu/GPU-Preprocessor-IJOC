@@ -9,7 +9,7 @@ namespace gpu_presolver::presolve::detail {
 // Device-owned analysis retained between the full detector and the CSR plan
 // builder.  Keeping it explicit avoids rerunning the union-find or copying a
 // million-entry component map through the host.
-struct VariablePairShiftedAntipodalAnalysisGpu {
+struct PiecewiseLinearReformulationVariablePairShiftedAntipodalAnalysisGpu {
   bool applicable = false;
   std::int32_t pair_count = 0;
   std::int32_t edge_count = 0;
@@ -28,18 +28,18 @@ struct VariablePairShiftedAntipodalAnalysisGpu {
 // Cheap sampled column-degree/pair checks plus a uniformly sampled merge-row
 // density gate.  This is a rejection filter only: true means the full detector
 // should run, never that the transformation is already proven.
-bool quick_probe_variable_pair_shifted_antipodal(const LPInfoGpu& lp,
+bool quick_probe_piecewise_linear_reformulation_variable_pair_shifted_antipodal(const LPInfoGpu& lp,
                                       const PresolveParams& params);
 
-VariablePairShiftedAntipodalAnalysisGpu analyze_variable_pair_shifted_antipodal(
+PiecewiseLinearReformulationVariablePairShiftedAntipodalAnalysisGpu analyze_piecewise_linear_reformulation_variable_pair_shifted_antipodal(
     const LPInfoGpu& lp,
     const PresolveParams& params);
 
-void build_variable_pair_shifted_antipodal_plan(PresolvePlanGpu& plan,
+void build_piecewise_linear_reformulation_variable_pair_shifted_antipodal_plan(PresolvePlanGpu& plan,
                                     const LPInfoGpu& lp,
-                                    VariablePairShiftedAntipodalAnalysisGpu& analysis,
+                                    PiecewiseLinearReformulationVariablePairShiftedAntipodalAnalysisGpu& analysis,
                                     const PresolveParams& params);
 
-void free_variable_pair_shifted_antipodal_analysis(VariablePairShiftedAntipodalAnalysisGpu& analysis);
+void free_piecewise_linear_reformulation_variable_pair_shifted_antipodal_analysis(PiecewiseLinearReformulationVariablePairShiftedAntipodalAnalysisGpu& analysis);
 
 }  // namespace gpu_presolver::presolve::detail

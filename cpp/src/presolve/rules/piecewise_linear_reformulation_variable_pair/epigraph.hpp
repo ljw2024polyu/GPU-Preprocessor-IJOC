@@ -14,7 +14,7 @@ namespace gpu_presolver::presolve::detail {
 // where the short objective suffix contains only the T columns.  Each pair
 // has one three-entry epigraph row; all remaining rows use p_i/n_i with
 // exactly opposite coefficients.
-struct VariablePairEpigraphAnalysisGpu {
+struct PiecewiseLinearReformulationVariablePairEpigraphAnalysisGpu {
   bool applicable = false;
   std::int32_t pair_count = 0;
   std::int32_t tail_count = 0;
@@ -44,18 +44,18 @@ struct VariablePairEpigraphAnalysisGpu {
 // path.  Only a plausible candidate inspects a suffix of at most nine entries,
 // at most 256 pairs, and at most 1024 rows.  A true result only authorizes the
 // full fail-closed detector; it never proves that the transform is safe.
-bool quick_probe_variable_pair_epigraph(const LPInfoGpu& lp,
+bool quick_probe_piecewise_linear_reformulation_variable_pair_epigraph(const LPInfoGpu& lp,
                                  const PresolveParams& params);
 
-VariablePairEpigraphAnalysisGpu analyze_variable_pair_epigraph(
+PiecewiseLinearReformulationVariablePairEpigraphAnalysisGpu analyze_piecewise_linear_reformulation_variable_pair_epigraph(
     const LPInfoGpu& lp,
     const PresolveParams& params);
 
-void build_variable_pair_epigraph_plan(PresolvePlanGpu& plan,
+void build_piecewise_linear_reformulation_variable_pair_epigraph_plan(PresolvePlanGpu& plan,
                                const LPInfoGpu& lp,
-                               VariablePairEpigraphAnalysisGpu& analysis,
+                               PiecewiseLinearReformulationVariablePairEpigraphAnalysisGpu& analysis,
                                const PresolveParams& params);
 
-void free_variable_pair_epigraph_analysis(VariablePairEpigraphAnalysisGpu& analysis);
+void free_piecewise_linear_reformulation_variable_pair_epigraph_analysis(PiecewiseLinearReformulationVariablePairEpigraphAnalysisGpu& analysis);
 
 }  // namespace gpu_presolver::presolve::detail

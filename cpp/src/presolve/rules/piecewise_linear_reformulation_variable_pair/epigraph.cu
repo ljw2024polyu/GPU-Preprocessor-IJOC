@@ -37,10 +37,10 @@ void throw_if_cuda_error(cudaError_t status, const char* context) {
 }
 
 bool profile_enabled(const PresolveParams& params) {
-  return params.verbose || runtime::options().profile_variable_pair_epigraph;
+  return params.verbose || runtime::options().profile_piecewise_linear_reformulation_variable_pair_epigraph;
 }
 
-struct VariablePairEpigraphLayout {
+struct PiecewiseLinearReformulationVariablePairEpigraphLayout {
   std::int32_t pair_count = 0;
   std::int32_t tail_count = 0;
 };
@@ -49,14 +49,14 @@ struct VariablePairEpigraphLayout {
 // precedes every allocation and kernel launch.  A candidate must end in a
 // short, contiguous, strictly-positive objective suffix and have zero
 // objective immediately before it.  Full validation later checks every pair.
-bool infer_variable_pair_epigraph_layout(const LPInfoGpu& lp,
+bool infer_piecewise_linear_reformulation_variable_pair_epigraph_layout(const LPInfoGpu& lp,
                        const PresolveParams& params,
-                       VariablePairEpigraphLayout* layout) {
-  if (layout == nullptr || !params.enable_variable_pair_aggregation || lp.A.cols <= 2 ||
+                       PiecewiseLinearReformulationVariablePairEpigraphLayout* layout) {
+  if (layout == nullptr || !params.enable_piecewise_linear_reformulation_variable_pair || lp.A.cols <= 2 ||
       lp.c == nullptr) {
     return false;
   }
-  const std::int32_t min_pairs = std::max(1, params.variable_pair_epigraph_min_pairs);
+  const std::int32_t min_pairs = std::max(1, params.piecewise_linear_reformulation_variable_pair_epigraph_min_pairs);
   const long long min_cols = 2LL * min_pairs + 1;
   const long long min_rows = 2LL * min_pairs;
   const long long min_nnz = 7LL * min_pairs;
@@ -64,7 +64,7 @@ bool infer_variable_pair_epigraph_layout(const LPInfoGpu& lp,
     return false;
   }
   const std::int32_t max_tail =
-      std::max(1, std::min(params.variable_pair_epigraph_max_tail_cols, 8));
+      std::max(1, std::min(params.piecewise_linear_reformulation_variable_pair_epigraph_max_tail_cols, 8));
   double last = 0.0;
   throw_if_cuda_error(
       cudaMemcpy(&last, lp.c + (lp.A.cols - 1), sizeof(double),
@@ -122,7 +122,7 @@ __device__ bool valid_row_bounds(double lower, double upper) {
          lower != INFINITY && upper != -INFINITY;
 }
 
-__global__ void kernel_quick_variable_pair_epigraph_pair_probe(
+__global__ void kernel_quick_piecewise_linear_reformulation_variable_pair_epigraph_pair_probe(
     std::int32_t* failed,
     const NnzOffset* at_row_ptr,
     const std::int32_t* at_col_val,
@@ -190,7 +190,7 @@ __global__ void kernel_quick_variable_pair_epigraph_pair_probe(
   }
 }
 
-__global__ void kernel_quick_variable_pair_epigraph_edge_probe(
+__global__ void kernel_quick_piecewise_linear_reformulation_variable_pair_epigraph_edge_probe(
     std::int32_t* merge_count,
     const NnzOffset* row_ptr,
     const std::int32_t* col_val,
@@ -228,7 +228,7 @@ __global__ void kernel_quick_variable_pair_epigraph_edge_probe(
   }
 }
 
-__global__ void kernel_validate_variable_pair_epigraph_columns(
+__global__ void kernel_validate_piecewise_linear_reformulation_variable_pair_epigraph_columns(
     std::int32_t* failed,
     double* pair_shift,
     double* pair_lower_sum,
@@ -270,7 +270,7 @@ __global__ void kernel_validate_variable_pair_epigraph_columns(
   }
 }
 
-__global__ void kernel_classify_variable_pair_epigraph_rows(
+__global__ void kernel_classify_piecewise_linear_reformulation_variable_pair_epigraph_rows(
     std::int32_t* failed,
     std::int32_t* edge_count,
     std::int32_t* g_count,
@@ -385,7 +385,7 @@ __global__ void kernel_classify_variable_pair_epigraph_rows(
   }
 }
 
-__global__ void kernel_init_variable_pair_epigraph(std::int32_t* parent,
+__global__ void kernel_init_piecewise_linear_reformulation_variable_pair_epigraph(std::int32_t* parent,
                                             std::int32_t* component_size,
                                             double* plus_upper,
                                             double* minus_upper,
@@ -417,7 +417,7 @@ __device__ std::int32_t find_root_compress(std::int32_t* parent,
   }
 }
 
-__global__ void kernel_union_variable_pair_epigraph_edges(
+__global__ void kernel_union_piecewise_linear_reformulation_variable_pair_epigraph_edges(
     std::int32_t* parent,
     const unsigned long long* edge_by_row,
     std::int32_t rows) {
@@ -444,7 +444,7 @@ __global__ void kernel_union_variable_pair_epigraph_edges(
   }
 }
 
-__global__ void kernel_compress_variable_pair_epigraph(std::int32_t* parent,
+__global__ void kernel_compress_piecewise_linear_reformulation_variable_pair_epigraph(std::int32_t* parent,
                                                 std::int32_t pair_count) {
   const std::int32_t pair =
       static_cast<std::int32_t>(NnzOffset(blockIdx.x) * blockDim.x + threadIdx.x);
@@ -453,7 +453,7 @@ __global__ void kernel_compress_variable_pair_epigraph(std::int32_t* parent,
   }
 }
 
-__global__ void kernel_count_variable_pair_epigraph_roots(std::int32_t* root_count,
+__global__ void kernel_count_piecewise_linear_reformulation_variable_pair_epigraph_roots(std::int32_t* root_count,
                                         const std::int32_t* parent,
                                         std::int32_t pair_count) {
   using BlockReduce = cub::BlockReduce<int, GPU_PRESOLVE_THREADS>;
@@ -481,7 +481,7 @@ __device__ void atomic_min_double(double* address, double value) {
   }
 }
 
-__global__ void kernel_aggregate_variable_pair_epigraph_uppers(
+__global__ void kernel_aggregate_piecewise_linear_reformulation_variable_pair_epigraph_uppers(
     double* plus_upper,
     double* minus_upper,
     std::int32_t* component_size,
@@ -500,7 +500,7 @@ __global__ void kernel_aggregate_variable_pair_epigraph_uppers(
   atomic_min_double(minus_upper + root, u[pair + pair_count]);
 }
 
-__global__ void kernel_validate_variable_pair_epigraph(
+__global__ void kernel_validate_piecewise_linear_reformulation_variable_pair_epigraph(
     std::int32_t* failed,
     const std::int32_t* parent,
     const std::int32_t* pair_g_row,
@@ -543,7 +543,7 @@ __global__ void kernel_validate_variable_pair_epigraph(
   }
 }
 
-__device__ std::int32_t collect_variable_pair_epigraph_quotient_row(
+__device__ std::int32_t collect_piecewise_linear_reformulation_variable_pair_epigraph_quotient_row(
     std::int32_t* roots,
     double* coefficients,
     double* shift,
@@ -605,7 +605,7 @@ __device__ std::int32_t collect_variable_pair_epigraph_quotient_row(
   return active;
 }
 
-__global__ void kernel_prepare_variable_pair_epigraph_columns(
+__global__ void kernel_prepare_piecewise_linear_reformulation_variable_pair_epigraph_columns(
     std::uint8_t* keep_col,
     double* new_c,
     double* new_l,
@@ -637,7 +637,7 @@ __global__ void kernel_prepare_variable_pair_epigraph_columns(
   }
 }
 
-__global__ void kernel_count_variable_pair_epigraph_rewritten_rows(
+__global__ void kernel_count_piecewise_linear_reformulation_variable_pair_epigraph_rewritten_rows(
     std::int32_t* status,
     std::int32_t* removed_count,
     NnzOffset* row_counts,
@@ -706,7 +706,7 @@ __global__ void kernel_count_variable_pair_epigraph_rewritten_rows(
       std::int32_t roots[MAX_QUOTIENT_TERMS];
       double coefficients[MAX_QUOTIENT_TERMS];
       double shift = 0.0;
-      const std::int32_t active = collect_variable_pair_epigraph_quotient_row(
+      const std::int32_t active = collect_piecewise_linear_reformulation_variable_pair_epigraph_quotient_row(
           roots, coefficients, &shift, parent, pair_shift, row_ptr, col_val,
           nz_val, row);
       if (active < 0) {
@@ -766,7 +766,7 @@ __global__ void kernel_count_variable_pair_epigraph_rewritten_rows(
   }
 }
 
-__global__ void kernel_fill_variable_pair_epigraph_rewritten_rows(
+__global__ void kernel_fill_piecewise_linear_reformulation_variable_pair_epigraph_rewritten_rows(
     std::int32_t* out_col,
     double* out_val,
     const NnzOffset* out_row_ptr,
@@ -808,7 +808,7 @@ __global__ void kernel_fill_variable_pair_epigraph_rewritten_rows(
   std::int32_t roots[MAX_QUOTIENT_TERMS];
   double coefficients[MAX_QUOTIENT_TERMS];
   double ignored_shift = 0.0;
-  const std::int32_t active = collect_variable_pair_epigraph_quotient_row(
+  const std::int32_t active = collect_piecewise_linear_reformulation_variable_pair_epigraph_quotient_row(
       roots, coefficients, &ignored_shift, parent, pair_shift, row_ptr,
       col_val, nz_val, row);
   if (active <= 0) {
@@ -853,23 +853,23 @@ void inclusive_scan_i32(const T* input, T* output,
 
 }  // namespace
 
-static bool quick_probe_variable_pair_epigraph_impl(const LPInfoGpu& lp,
+static bool quick_probe_piecewise_linear_reformulation_variable_pair_epigraph_impl(const LPInfoGpu& lp,
                                              const PresolveParams& params,
-                                             VariablePairEpigraphLayout* accepted_layout) {
+                                             PiecewiseLinearReformulationVariablePairEpigraphLayout* accepted_layout) {
   const auto start = std::chrono::steady_clock::now();
-  VariablePairEpigraphLayout layout;
+  PiecewiseLinearReformulationVariablePairEpigraphLayout layout;
   bool accepted = false;
   const bool structurally_valid =
-      params.enable_variable_pair_aggregation && lp.A.rows > 0 && lp.A.cols > 0 &&
+      params.enable_piecewise_linear_reformulation_variable_pair && lp.A.rows > 0 && lp.A.cols > 0 &&
       lp.AT.rows == lp.A.cols && lp.AT.cols == lp.A.rows &&
       lp.AT.nnz == lp.A.nnz && lp.A.rowPtr != nullptr &&
       lp.A.colVal != nullptr && lp.A.nzVal != nullptr &&
       lp.AT.rowPtr != nullptr && lp.AT.colVal != nullptr &&
       lp.AT.nzVal != nullptr && lp.c != nullptr && lp.AL != nullptr &&
       lp.AU != nullptr && lp.l != nullptr && lp.u != nullptr;
-  if (structurally_valid && infer_variable_pair_epigraph_layout(lp, params, &layout)) {
+  if (structurally_valid && infer_piecewise_linear_reformulation_variable_pair_epigraph_layout(lp, params, &layout)) {
     const std::int32_t probes = std::max(
-        1, std::min(layout.pair_count, params.variable_pair_epigraph_probe_pairs));
+        1, std::min(layout.pair_count, params.piecewise_linear_reformulation_variable_pair_epigraph_probe_pairs));
     const std::int32_t row_probes = std::min(lp.A.rows, MAX_PROBE_ROWS);
     std::int32_t* state = nullptr;
     try {
@@ -879,19 +879,19 @@ static bool quick_probe_variable_pair_epigraph_impl(const LPInfoGpu& lp,
                           "cudaMemset variable-pair epigraph quick state");
       const int pair_blocks =
           (probes + GPU_PRESOLVE_THREADS - 1) / GPU_PRESOLVE_THREADS;
-      kernel_quick_variable_pair_epigraph_pair_probe<<<pair_blocks, GPU_PRESOLVE_THREADS>>>(
+      kernel_quick_piecewise_linear_reformulation_variable_pair_epigraph_pair_probe<<<pair_blocks, GPU_PRESOLVE_THREADS>>>(
           state, lp.AT.rowPtr, lp.AT.colVal, lp.AT.nzVal, lp.A.rowPtr,
           lp.A.colVal, lp.A.nzVal, lp.AL, lp.AU, lp.c, lp.l, lp.u,
           layout.pair_count, lp.A.cols, probes);
       throw_if_cuda_error(cudaGetLastError(),
-                          "kernel_quick_variable_pair_epigraph_pair_probe");
+                          "kernel_quick_piecewise_linear_reformulation_variable_pair_epigraph_pair_probe");
       const int row_blocks =
           (row_probes + GPU_PRESOLVE_THREADS - 1) / GPU_PRESOLVE_THREADS;
-      kernel_quick_variable_pair_epigraph_edge_probe<<<row_blocks, GPU_PRESOLVE_THREADS>>>(
+      kernel_quick_piecewise_linear_reformulation_variable_pair_epigraph_edge_probe<<<row_blocks, GPU_PRESOLVE_THREADS>>>(
           state + 1, lp.A.rowPtr, lp.A.colVal, lp.A.nzVal, lp.AL, lp.AU,
           lp.A.rows, layout.pair_count, row_probes);
       throw_if_cuda_error(cudaGetLastError(),
-                          "kernel_quick_variable_pair_epigraph_edge_probe");
+                          "kernel_quick_piecewise_linear_reformulation_variable_pair_epigraph_edge_probe");
       std::int32_t host[2] = {0, 0};
       throw_if_cuda_error(
           cudaMemcpy(host, state, 2 * sizeof(std::int32_t),
@@ -908,7 +908,7 @@ static bool quick_probe_variable_pair_epigraph_impl(const LPInfoGpu& lp,
   if (profile_enabled(params)) {
     const std::chrono::duration<double> elapsed =
         std::chrono::steady_clock::now() - start;
-    std::cerr << ">>> [variable_pair_aggregation] case=epigraph stage=probe accepted="
+    std::cerr << ">>> [piecewise_linear_reformulation_variable_pair] case=epigraph stage=probe accepted="
               << (accepted ? "true" : "false")
               << " pairs=" << layout.pair_count
               << " tails=" << layout.tail_count
@@ -920,12 +920,12 @@ static bool quick_probe_variable_pair_epigraph_impl(const LPInfoGpu& lp,
   return accepted;
 }
 
-bool quick_probe_variable_pair_epigraph(const LPInfoGpu& lp,
+bool quick_probe_piecewise_linear_reformulation_variable_pair_epigraph(const LPInfoGpu& lp,
                                  const PresolveParams& params) {
-  return quick_probe_variable_pair_epigraph_impl(lp, params, nullptr);
+  return quick_probe_piecewise_linear_reformulation_variable_pair_epigraph_impl(lp, params, nullptr);
 }
 
-void free_variable_pair_epigraph_analysis(VariablePairEpigraphAnalysisGpu& analysis) {
+void free_piecewise_linear_reformulation_variable_pair_epigraph_analysis(PiecewiseLinearReformulationVariablePairEpigraphAnalysisGpu& analysis) {
   cudaFree(analysis.edge_by_row);
   cudaFree(analysis.g_pair_by_row);
   cudaFree(analysis.pair_g_row);
@@ -937,16 +937,16 @@ void free_variable_pair_epigraph_analysis(VariablePairEpigraphAnalysisGpu& analy
   cudaFree(analysis.component_size);
   cudaFree(analysis.component_plus_upper);
   cudaFree(analysis.component_minus_upper);
-  analysis = VariablePairEpigraphAnalysisGpu{};
+  analysis = PiecewiseLinearReformulationVariablePairEpigraphAnalysisGpu{};
 }
 
-VariablePairEpigraphAnalysisGpu analyze_variable_pair_epigraph(
+PiecewiseLinearReformulationVariablePairEpigraphAnalysisGpu analyze_piecewise_linear_reformulation_variable_pair_epigraph(
     const LPInfoGpu& lp,
     const PresolveParams& params) {
-  VariablePairEpigraphAnalysisGpu analysis;
+  PiecewiseLinearReformulationVariablePairEpigraphAnalysisGpu analysis;
   const auto start = std::chrono::steady_clock::now();
-  VariablePairEpigraphLayout layout;
-  if (!quick_probe_variable_pair_epigraph_impl(lp, params, &layout)) {
+  PiecewiseLinearReformulationVariablePairEpigraphLayout layout;
+  if (!quick_probe_piecewise_linear_reformulation_variable_pair_epigraph_impl(lp, params, &layout)) {
     return analysis;
   }
   const std::int32_t rows = lp.A.rows;
@@ -960,12 +960,12 @@ VariablePairEpigraphAnalysisGpu analyze_variable_pair_epigraph(
     if (profile_enabled(params)) {
       const std::chrono::duration<double> elapsed =
           std::chrono::steady_clock::now() - start;
-      std::cerr << ">>> [variable_pair_aggregation] case=epigraph stage=full accepted=false reason="
+      std::cerr << ">>> [piecewise_linear_reformulation_variable_pair] case=epigraph stage=full accepted=false reason="
                 << reason << " seconds=" << elapsed.count() << "\n";
     }
     cudaFree(state);
     state = nullptr;
-    free_variable_pair_epigraph_analysis(analysis);
+    free_piecewise_linear_reformulation_variable_pair_epigraph_analysis(analysis);
   };
   try {
     analysis.pair_count = pairs;
@@ -1017,21 +1017,21 @@ VariablePairEpigraphAnalysisGpu analyze_variable_pair_epigraph(
                    sizeof(std::int32_t) * static_cast<std::size_t>(pairs)),
         "cudaMemset variable-pair epigraph pair G rows");
 
-    kernel_validate_variable_pair_epigraph_columns<<<pair_blocks, GPU_PRESOLVE_THREADS>>>(
+    kernel_validate_piecewise_linear_reformulation_variable_pair_epigraph_columns<<<pair_blocks, GPU_PRESOLVE_THREADS>>>(
         state, analysis.pair_shift, analysis.pair_g_lower, lp.c, lp.l, lp.u,
         pairs, lp.A.cols);
     throw_if_cuda_error(cudaGetLastError(),
-                        "kernel_validate_variable_pair_epigraph_columns");
+                        "kernel_validate_piecewise_linear_reformulation_variable_pair_epigraph_columns");
     const std::int32_t max_terms = std::max(
         1, std::min(MAX_QUOTIENT_TERMS,
-                    params.variable_pair_epigraph_max_quotient_terms_per_row));
-    kernel_classify_variable_pair_epigraph_rows<<<row_blocks, GPU_PRESOLVE_THREADS>>>(
+                    params.piecewise_linear_reformulation_variable_pair_epigraph_max_quotient_terms_per_row));
+    kernel_classify_piecewise_linear_reformulation_variable_pair_epigraph_rows<<<row_blocks, GPU_PRESOLVE_THREADS>>>(
         state, state + 1, state + 2, state + 3, analysis.edge_by_row,
         analysis.g_pair_by_row, analysis.pair_g_row,
         analysis.pair_tail_col, analysis.pair_g_coefficient,
         analysis.pair_shift, lp.A.rowPtr, lp.A.colVal, lp.A.nzVal, lp.AL,
         lp.AU, rows, lp.A.cols, pairs, max_terms);
-    throw_if_cuda_error(cudaGetLastError(), "kernel_classify_variable_pair_epigraph_rows");
+    throw_if_cuda_error(cudaGetLastError(), "kernel_classify_piecewise_linear_reformulation_variable_pair_epigraph_rows");
     std::int32_t host[4] = {0, 0, 0, 0};
     throw_if_cuda_error(
         cudaMemcpy(host, state, 4 * sizeof(std::int32_t),
@@ -1040,22 +1040,22 @@ VariablePairEpigraphAnalysisGpu analyze_variable_pair_epigraph(
     analysis.edge_count = host[1];
     if (host[0] != 0 || host[2] != pairs) {
       if (profile_enabled(params)) {
-        std::cerr << ">>> [variable_pair_aggregation] case=epigraph census_status=" << host[0]
+        std::cerr << ">>> [piecewise_linear_reformulation_variable_pair] case=epigraph census_status=" << host[0]
                   << " edge_count=" << host[1]
                   << " g_count=" << host[2]
                   << " expected_g=" << pairs
                   << " first_bad_row=" << host[3] << "\n";
       }
       reject("row_or_pair_validation");
-      return VariablePairEpigraphAnalysisGpu{};
+      return PiecewiseLinearReformulationVariablePairEpigraphAnalysisGpu{};
     }
     const double potential_gain =
         static_cast<double>(std::min(analysis.edge_count, pairs - 1)) /
         static_cast<double>(pairs);
-    if (analysis.edge_count < std::max(1, params.variable_pair_epigraph_min_pairs) ||
-        potential_gain < params.variable_pair_epigraph_min_potential_gain) {
+    if (analysis.edge_count < std::max(1, params.piecewise_linear_reformulation_variable_pair_epigraph_min_pairs) ||
+        potential_gain < params.piecewise_linear_reformulation_variable_pair_epigraph_min_potential_gain) {
       reject("potential_gain");
-      return VariablePairEpigraphAnalysisGpu{};
+      return PiecewiseLinearReformulationVariablePairEpigraphAnalysisGpu{};
     }
 
     throw_if_cuda_error(
@@ -1074,60 +1074,60 @@ VariablePairEpigraphAnalysisGpu analyze_variable_pair_epigraph(
         cudaMalloc(&analysis.component_minus_upper,
                    sizeof(double) * static_cast<std::size_t>(pairs)),
         "cudaMalloc variable-pair epigraph minus uppers");
-    kernel_init_variable_pair_epigraph<<<pair_blocks, GPU_PRESOLVE_THREADS>>>(
+    kernel_init_piecewise_linear_reformulation_variable_pair_epigraph<<<pair_blocks, GPU_PRESOLVE_THREADS>>>(
         analysis.parent, analysis.component_size,
         analysis.component_plus_upper, analysis.component_minus_upper,
         pairs);
     throw_if_cuda_error(cudaGetLastError(),
-                        "kernel_init_variable_pair_epigraph");
-    kernel_union_variable_pair_epigraph_edges<<<row_blocks, GPU_PRESOLVE_THREADS>>>(
+                        "kernel_init_piecewise_linear_reformulation_variable_pair_epigraph");
+    kernel_union_piecewise_linear_reformulation_variable_pair_epigraph_edges<<<row_blocks, GPU_PRESOLVE_THREADS>>>(
         analysis.parent, analysis.edge_by_row, rows);
-    throw_if_cuda_error(cudaGetLastError(), "kernel_union_variable_pair_epigraph_edges");
-    kernel_compress_variable_pair_epigraph<<<pair_blocks, GPU_PRESOLVE_THREADS>>>(
+    throw_if_cuda_error(cudaGetLastError(), "kernel_union_piecewise_linear_reformulation_variable_pair_epigraph_edges");
+    kernel_compress_piecewise_linear_reformulation_variable_pair_epigraph<<<pair_blocks, GPU_PRESOLVE_THREADS>>>(
         analysis.parent, pairs);
     throw_if_cuda_error(cudaGetLastError(),
-                        "kernel_compress_variable_pair_epigraph");
+                        "kernel_compress_piecewise_linear_reformulation_variable_pair_epigraph");
     throw_if_cuda_error(cudaMemset(state + 3, 0, sizeof(std::int32_t)),
                         "cudaMemset variable-pair epigraph root count");
-    kernel_count_variable_pair_epigraph_roots<<<pair_blocks, GPU_PRESOLVE_THREADS>>>(
+    kernel_count_piecewise_linear_reformulation_variable_pair_epigraph_roots<<<pair_blocks, GPU_PRESOLVE_THREADS>>>(
         state + 3, analysis.parent, pairs);
-    throw_if_cuda_error(cudaGetLastError(), "kernel_count_variable_pair_epigraph_roots");
+    throw_if_cuda_error(cudaGetLastError(), "kernel_count_piecewise_linear_reformulation_variable_pair_epigraph_roots");
     throw_if_cuda_error(
         cudaMemcpy(&analysis.component_count, state + 3,
                    sizeof(std::int32_t), cudaMemcpyDeviceToHost),
         "cudaMemcpy variable-pair epigraph root count");
     if (analysis.component_count <= 0) {
       reject("component_count");
-      return VariablePairEpigraphAnalysisGpu{};
+      return PiecewiseLinearReformulationVariablePairEpigraphAnalysisGpu{};
     }
     const double actual_gain =
         1.0 - static_cast<double>(analysis.component_count) /
                   static_cast<double>(pairs);
-    if (actual_gain < params.variable_pair_epigraph_min_actual_gain) {
+    if (actual_gain < params.piecewise_linear_reformulation_variable_pair_epigraph_min_actual_gain) {
       reject("actual_gain");
-      return VariablePairEpigraphAnalysisGpu{};
+      return PiecewiseLinearReformulationVariablePairEpigraphAnalysisGpu{};
     }
 
-    kernel_aggregate_variable_pair_epigraph_uppers<<<pair_blocks, GPU_PRESOLVE_THREADS>>>(
+    kernel_aggregate_piecewise_linear_reformulation_variable_pair_epigraph_uppers<<<pair_blocks, GPU_PRESOLVE_THREADS>>>(
         analysis.component_plus_upper, analysis.component_minus_upper,
         analysis.component_size, analysis.parent, lp.l, lp.u, pairs);
     throw_if_cuda_error(cudaGetLastError(),
-                        "kernel_aggregate_variable_pair_epigraph_uppers");
-    kernel_validate_variable_pair_epigraph<<<pair_blocks, GPU_PRESOLVE_THREADS>>>(
+                        "kernel_aggregate_piecewise_linear_reformulation_variable_pair_epigraph_uppers");
+    kernel_validate_piecewise_linear_reformulation_variable_pair_epigraph<<<pair_blocks, GPU_PRESOLVE_THREADS>>>(
         state, analysis.parent, analysis.pair_g_row,
         analysis.pair_tail_col, analysis.pair_g_coefficient,
         analysis.pair_shift, analysis.pair_g_lower,
         analysis.component_plus_upper, analysis.component_minus_upper,
         lp.l, lp.A.rowPtr, lp.A.nzVal, lp.AL, lp.AU, pairs);
     throw_if_cuda_error(cudaGetLastError(),
-                        "kernel_validate_variable_pair_epigraph");
+                        "kernel_validate_piecewise_linear_reformulation_variable_pair_epigraph");
     throw_if_cuda_error(
         cudaMemcpy(host, state, sizeof(std::int32_t),
                    cudaMemcpyDeviceToHost),
         "cudaMemcpy variable-pair epigraph component status");
     if (host[0] != 0) {
       reject("component_metadata");
-      return VariablePairEpigraphAnalysisGpu{};
+      return PiecewiseLinearReformulationVariablePairEpigraphAnalysisGpu{};
     }
     analysis.applicable = true;
     cudaFree(state);
@@ -1135,7 +1135,7 @@ VariablePairEpigraphAnalysisGpu analyze_variable_pair_epigraph(
     if (profile_enabled(params)) {
       const std::chrono::duration<double> elapsed =
           std::chrono::steady_clock::now() - start;
-      std::cerr << ">>> [variable_pair_aggregation] case=epigraph stage=full accepted=true pairs="
+      std::cerr << ">>> [piecewise_linear_reformulation_variable_pair] case=epigraph stage=full accepted=true pairs="
                 << pairs << " tails=" << analysis.tail_count
                 << " edges=" << analysis.edge_count
                 << " components=" << analysis.component_count
@@ -1149,9 +1149,9 @@ VariablePairEpigraphAnalysisGpu analyze_variable_pair_epigraph(
   }
 }
 
-void build_variable_pair_epigraph_plan(PresolvePlanGpu& plan,
+void build_piecewise_linear_reformulation_variable_pair_epigraph_plan(PresolvePlanGpu& plan,
                                const LPInfoGpu& lp,
-                               VariablePairEpigraphAnalysisGpu& analysis,
+                               PiecewiseLinearReformulationVariablePairEpigraphAnalysisGpu& analysis,
                                const PresolveParams& params) {
   if (!analysis.applicable || analysis.pair_count <= 0) {
     return;
@@ -1174,12 +1174,12 @@ void build_variable_pair_epigraph_plan(PresolvePlanGpu& plan,
                         "cudaMalloc variable-pair epigraph build state");
     throw_if_cuda_error(cudaMemset(state, 0, 2 * sizeof(std::int32_t)),
                         "cudaMemset variable-pair epigraph build state");
-    kernel_prepare_variable_pair_epigraph_columns<<<pair_blocks, GPU_PRESOLVE_THREADS>>>(
+    kernel_prepare_piecewise_linear_reformulation_variable_pair_epigraph_columns<<<pair_blocks, GPU_PRESOLVE_THREADS>>>(
         plan.keep_col_mask, plan.new_c, plan.new_l, plan.new_u,
         analysis.parent, analysis.component_plus_upper,
         analysis.component_minus_upper, lp.l, pairs);
-    throw_if_cuda_error(cudaGetLastError(), "kernel_prepare_variable_pair_epigraph_columns");
-    kernel_count_variable_pair_epigraph_rewritten_rows<<<row_blocks, GPU_PRESOLVE_THREADS>>>(
+    throw_if_cuda_error(cudaGetLastError(), "kernel_prepare_piecewise_linear_reformulation_variable_pair_epigraph_columns");
+    kernel_count_piecewise_linear_reformulation_variable_pair_epigraph_rewritten_rows<<<row_blocks, GPU_PRESOLVE_THREADS>>>(
         state, state + 1, row_counts, plan.keep_row_mask, plan.new_AL,
         plan.new_AU, analysis.parent, analysis.component_size,
         analysis.pair_shift,
@@ -1187,7 +1187,7 @@ void build_variable_pair_epigraph_plan(PresolvePlanGpu& plan,
         analysis.edge_by_row, analysis.g_pair_by_row, lp.A.rowPtr,
         lp.A.colVal, lp.A.nzVal, lp.AL, lp.AU, params.feasibility_tol, rows);
     throw_if_cuda_error(cudaGetLastError(),
-                        "kernel_count_variable_pair_epigraph_rewritten_rows");
+                        "kernel_count_piecewise_linear_reformulation_variable_pair_epigraph_rewritten_rows");
 
     plan.has_new_A = true;
     plan.new_A.rows = rows;
@@ -1233,14 +1233,14 @@ void build_variable_pair_epigraph_plan(PresolvePlanGpu& plan,
                      sizeof(double) *
                          static_cast<std::size_t>(plan.new_A.nnz)),
           "cudaMalloc variable-pair epigraph rewritten values");
-      kernel_fill_variable_pair_epigraph_rewritten_rows<<<row_blocks, GPU_PRESOLVE_THREADS>>>(
+      kernel_fill_piecewise_linear_reformulation_variable_pair_epigraph_rewritten_rows<<<row_blocks, GPU_PRESOLVE_THREADS>>>(
           plan.new_A.colVal, plan.new_A.nzVal, plan.new_A.rowPtr,
           analysis.parent, analysis.component_size, analysis.pair_shift,
           analysis.pair_tail_col, analysis.edge_by_row,
           analysis.g_pair_by_row, lp.A.rowPtr, lp.A.colVal, lp.A.nzVal,
           lp.AL, lp.AU, rows, pairs);
       throw_if_cuda_error(cudaGetLastError(),
-                          "kernel_fill_variable_pair_epigraph_rewritten_rows");
+                          "kernel_fill_piecewise_linear_reformulation_variable_pair_epigraph_rewritten_rows");
     }
 
     if (plan.tape.resident) {
@@ -1254,7 +1254,7 @@ void build_variable_pair_epigraph_plan(PresolvePlanGpu& plan,
                      sizeof(std::int32_t) * static_cast<std::size_t>(pairs),
                      cudaMemcpyDeviceToHost),
           "cudaMemcpy variable-pair epigraph recovery parents");
-      VariablePairAggregationRecoveryStep recovery;
+      PiecewiseLinearReformulationVariablePairRecoveryStep recovery;
       recovery.plus_cols.resize(static_cast<std::size_t>(pairs));
       recovery.minus_cols.resize(static_cast<std::size_t>(pairs));
       recovery.root_plus_cols.resize(static_cast<std::size_t>(pairs));
@@ -1269,9 +1269,9 @@ void build_variable_pair_epigraph_plan(PresolvePlanGpu& plan,
         recovery.root_minus_cols[static_cast<std::size_t>(pair)] =
             host_parent[static_cast<std::size_t>(pair)] + pairs;
       }
-      plan.variable_pair_aggregation_recovery = std::move(recovery);
+      plan.piecewise_linear_reformulation_variable_pair_recovery = std::move(recovery);
     }
-    plan.has_variable_pair_aggregation_recovery = true;
+    plan.has_piecewise_linear_reformulation_variable_pair_recovery = true;
     plan.has_change = true;
     plan.has_row_action = analysis.removed_rows > 0;
     plan.has_col_action = analysis.component_count < pairs;
@@ -1285,7 +1285,7 @@ void build_variable_pair_epigraph_plan(PresolvePlanGpu& plan,
     if (profile_enabled(params)) {
       const std::chrono::duration<double> elapsed =
           std::chrono::steady_clock::now() - start;
-      std::cerr << ">>> [variable_pair_aggregation] case=epigraph stage=build applied=true pairs="
+      std::cerr << ">>> [piecewise_linear_reformulation_variable_pair] case=epigraph stage=build applied=true pairs="
                 << pairs << " components=" << analysis.component_count
                 << " removed_rows=" << analysis.removed_rows
                 << " explicit_nnz=" << plan.new_A.nnz

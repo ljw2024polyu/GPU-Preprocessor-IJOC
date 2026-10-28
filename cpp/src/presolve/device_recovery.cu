@@ -618,8 +618,8 @@ __global__ void pack_max_slack(int* slack_id, int* t_ids, double* factors, const
     factors[i] = row_factor[r];
   }
 }
-AbsoluteValueEpigraphPrimalRecoveryStep download_absolute_value_epigraph(const DeviceAbsoluteValueEpigraphStep &s) {
-  AbsoluteValueEpigraphPrimalRecoveryStep p;
+PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep download_piecewise_linear_reformulation_absolute_value(const DevicePiecewiseLinearReformulationAbsoluteValueStep &s) {
+  PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep p;
   p.pattern = s.pattern;
   auto ids = [](const auto &g, int i) { return download(g.ids[i].data, g.ids[i].count); };
   auto vals = [](const auto &g, int i) { return download(g.values[i].data, g.values[i].count); };
@@ -661,12 +661,12 @@ void capture_variable_pair_recovery_device(PresolvePlanGpu& plan, const int* par
     g->values.push_back(std::move(values));
   }
   check(cudaGetLastError());
-  plan.variable_pair_aggregation_device = std::move(g);
-  plan.has_variable_pair_aggregation_recovery = true;
+  plan.piecewise_linear_reformulation_variable_pair_device = std::move(g);
+  plan.has_piecewise_linear_reformulation_variable_pair_recovery = true;
 }
 void capture_absolute_value_splits_device(PresolvePlanGpu& plan, const int* t, const int* e,
                                          const double* rho, int count, const char* pattern) {
-  auto s = std::make_shared<DeviceAbsoluteValueEpigraphStep>();
+  auto s = std::make_shared<DevicePiecewiseLinearReformulationAbsoluteValueStep>();
   s->pattern = pattern;
   s->splits.ids.push_back(copy_array(t, count));
   s->splits.ids.push_back(copy_array(e, count));
@@ -676,15 +676,15 @@ void capture_absolute_value_splits_device(PresolvePlanGpu& plan, const int* t, c
   s->pairs.ids.resize(2);
   s->linked.ids.resize(2); s->linked.values.resize(1);
   check(cudaGetLastError());
-  plan.absolute_value_epigraph_recovery = {};
-  plan.absolute_value_epigraph_recovery.pattern = pattern;
-  plan.absolute_value_epigraph_device = std::move(s);
-  plan.has_absolute_value_epigraph_recovery = true;
+  plan.piecewise_linear_reformulation_absolute_value_recovery = {};
+  plan.piecewise_linear_reformulation_absolute_value_recovery.pattern = pattern;
+  plan.piecewise_linear_reformulation_absolute_value_device = std::move(s);
+  plan.has_piecewise_linear_reformulation_absolute_value_recovery = true;
 }
 void capture_absolute_value_outer_device(PresolvePlanGpu& plan, const int* bound, const int* free,
                                         int pairs, const int* slack, const int* t,
                                         const double* factor, int blocks) {
-  auto& s = *plan.absolute_value_epigraph_device;
+  auto& s = *plan.piecewise_linear_reformulation_absolute_value_device;
   s.pairs.ids[0] = copy_array(bound, pairs);
   s.pairs.ids[1] = copy_array(free, pairs);
   s.linked.ids[0] = copy_array(slack, blocks);
@@ -725,7 +725,7 @@ void capture_absolute_value_max_slacks_device(PresolvePlanGpu& plan, const int* 
   check(cudaGetLastError());
   // Allocation metadata only: no column IDs, coefficients or shifts leave GPU.
   const auto starts = download(offsets.data, groups + 1);
-  auto& result = plan.absolute_value_epigraph_device->max_slacks;
+  auto& result = plan.piecewise_linear_reformulation_absolute_value_device->max_slacks;
   result.reserve(groups);
   for (int i = 0; i < groups; ++i) {
     const int count = starts[i+1] - starts[i];
@@ -890,9 +890,9 @@ void update_device_recovery(PresolveRecordGpu &r, PresolvePlanGpu &plan, const L
   d.host_staged_bytes +=
       13 * plan.tape.types.size() + 4 * plan.tape.indices.size() + 8 * plan.tape.vals.size();
   flush_host_recovery_segment(plan.tape);
-  if ((plan.has_absolute_value_epigraph_recovery || plan.has_variable_pair_aggregation_recovery) &&
+  if ((plan.has_piecewise_linear_reformulation_absolute_value_recovery || plan.has_piecewise_linear_reformulation_variable_pair_recovery) &&
       !plan.tape.segments.empty())
-    throw std::runtime_error("mixed absolute_value_epigraph/tape recovery plan");
+    throw std::runtime_error("mixed piecewise_linear_reformulation_absolute_value/tape recovery plan");
   for (auto &s : plan.tape.segments) {
     auto records = checked_nnz_offset(std::int64_t(d.records) + s.record_count);
     auto indices = checked_nnz_offset(std::int64_t(d.indices) + s.index_count);
@@ -904,35 +904,35 @@ void update_device_recovery(PresolveRecordGpu &r, PresolvePlanGpu &plan, const L
     d.values = values;
   }
   plan.tape.segments.clear();
-  if (plan.has_absolute_value_epigraph_recovery) {
-    if (!plan.absolute_value_epigraph_device)
+  if (plan.has_piecewise_linear_reformulation_absolute_value_recovery) {
+    if (!plan.piecewise_linear_reformulation_absolute_value_device)
       throw std::logic_error("host-built absolute-value payload in GPU resident recovery");
-    auto payload = std::move(*plan.absolute_value_epigraph_device);
-    plan.absolute_value_epigraph_device.reset();
+    auto payload = std::move(*plan.piecewise_linear_reformulation_absolute_value_device);
+    plan.piecewise_linear_reformulation_absolute_value_device.reset();
     globalize_group(payload.splits, d.cols);
     globalize_group(payload.pairs, d.cols);
     globalize_group(payload.linked, d.cols);
     for (auto& group : payload.max_slacks) globalize_group(group, d.cols);
-    d.absolute_value_epigraph.push_back(std::move(payload));
-    r.primal_recovery_timeline.push_back({PrimalRecoveryKind::AbsoluteValueEpigraph,
-                                          checked_nnz_offset(r.absolute_value_epigraph_recoveries.size()),
+    d.piecewise_linear_reformulation_absolute_value.push_back(std::move(payload));
+    r.primal_recovery_timeline.push_back({PrimalRecoveryKind::PiecewiseLinearReformulationAbsoluteValue,
+                                          checked_nnz_offset(r.piecewise_linear_reformulation_absolute_value_recoveries.size()),
                                           d.records});
-    AbsoluteValueEpigraphPrimalRecoveryStep descriptor;
-    descriptor.pattern = plan.absolute_value_epigraph_recovery.pattern;
-    r.absolute_value_epigraph_recoveries.push_back(std::move(descriptor));
+    PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep descriptor;
+    descriptor.pattern = plan.piecewise_linear_reformulation_absolute_value_recovery.pattern;
+    r.piecewise_linear_reformulation_absolute_value_recoveries.push_back(std::move(descriptor));
   }
-  if (plan.has_variable_pair_aggregation_recovery) {
-    if (!plan.variable_pair_aggregation_device)
+  if (plan.has_piecewise_linear_reformulation_variable_pair_recovery) {
+    if (!plan.piecewise_linear_reformulation_variable_pair_device)
       throw std::logic_error("host-built variable-pair payload in GPU resident recovery");
-    auto payload = std::move(*plan.variable_pair_aggregation_device);
-    plan.variable_pair_aggregation_device.reset();
+    auto payload = std::move(*plan.piecewise_linear_reformulation_variable_pair_device);
+    plan.piecewise_linear_reformulation_variable_pair_device.reset();
     globalize_group(payload, d.cols);
-    d.variable_pair_aggregation.push_back(std::move(payload));
+    d.piecewise_linear_reformulation_variable_pair.push_back(std::move(payload));
     r.primal_recovery_timeline.push_back(
-        {PrimalRecoveryKind::VariablePairAggregation,
-         checked_nnz_offset(r.variable_pair_aggregation_recoveries.size()), d.records});
-    r.variable_pair_aggregation_recoveries.emplace_back();
-    r.has_primal_only_variable_pair_aggregation_reduction = true;
+        {PrimalRecoveryKind::PiecewiseLinearReformulationVariablePair,
+         checked_nnz_offset(r.piecewise_linear_reformulation_variable_pair_recoveries.size()), d.records});
+    r.piecewise_linear_reformulation_variable_pair_recoveries.emplace_back();
+    r.has_primal_only_piecewise_linear_reformulation_variable_pair_reduction = true;
   }
   r.has_primal_only_column_domination_reduction |= plan.has_column_domination_reduction;
   r.has_primal_only_projected_auxiliary_reduction |= plan.has_projected_auxiliary_reduction;
@@ -1052,19 +1052,19 @@ void export_recovery_record(PresolveRecordGpu &r) {
     r.fixed_idx.insert(r.fixed_idx.end(), i.begin(), i.end());
     r.fixed_val.insert(r.fixed_val.end(), v.begin(), v.end());
   }
-  r.absolute_value_epigraph_recoveries.clear();
-  for (const auto &s : d.absolute_value_epigraph)
-    r.absolute_value_epigraph_recoveries.push_back(download_absolute_value_epigraph(s));
-  r.variable_pair_aggregation_recoveries.clear();
-  for (const auto &g : d.variable_pair_aggregation) {
-    VariablePairAggregationRecoveryStep p;
+  r.piecewise_linear_reformulation_absolute_value_recoveries.clear();
+  for (const auto &s : d.piecewise_linear_reformulation_absolute_value)
+    r.piecewise_linear_reformulation_absolute_value_recoveries.push_back(download_piecewise_linear_reformulation_absolute_value(s));
+  r.piecewise_linear_reformulation_variable_pair_recoveries.clear();
+  for (const auto &g : d.piecewise_linear_reformulation_variable_pair) {
+    PiecewiseLinearReformulationVariablePairRecoveryStep p;
     p.plus_cols = download(g.ids[0].data, g.ids[0].count);
     p.minus_cols = download(g.ids[1].data, g.ids[1].count);
     p.root_plus_cols = download(g.ids[2].data, g.ids[2].count);
     p.root_minus_cols = download(g.ids[3].data, g.ids[3].count);
     p.plus_shift = download(g.values[0].data, g.values[0].count);
     p.minus_shift = download(g.values[1].data, g.values[1].count);
-    r.variable_pair_aggregation_recoveries.push_back(std::move(p));
+    r.piecewise_linear_reformulation_variable_pair_recoveries.push_back(std::move(p));
   }
   clear_host(r.tape);
   for (const auto &s : d.segments)
@@ -1075,8 +1075,8 @@ void validate_device_recovery(const PresolveRecordGpu &r) {
     return;
   const auto &d = *r.device;
   if (d.rows.count != r.m1 || d.cols.count != r.n1 ||
-      d.absolute_value_epigraph.size() != r.absolute_value_epigraph_recoveries.size() ||
-      d.variable_pair_aggregation.size() != r.variable_pair_aggregation_recoveries.size())
+      d.piecewise_linear_reformulation_absolute_value.size() != r.piecewise_linear_reformulation_absolute_value_recoveries.size() ||
+      d.piecewise_linear_reformulation_variable_pair.size() != r.piecewise_linear_reformulation_variable_pair_recoveries.size())
     throw std::runtime_error("device recovery dimensions/checkpoints mismatch");
   std::int64_t nr = 0, ni = 0, nv = 0;
   auto error = array<int>(1);

@@ -157,7 +157,7 @@ void test_postsolve_and_unfold_restores_original_dimensions() {
   params.enable_doubleton_equations = false;
   params.enable_dual_fix = false;
   params.enable_parallel_columns = false;
-  params.enable_absolute_value_epigraph_reduction = false;
+  params.enable_piecewise_linear_reformulation_absolute_value = false;
 
   params.enable_folding = true;
 

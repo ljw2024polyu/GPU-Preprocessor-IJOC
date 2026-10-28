@@ -30,14 +30,14 @@ struct DeviceRecoveryGroup {
   std::vector<RecoveryArray<std::int32_t>> ids;
   std::vector<RecoveryArray<double>> values;
 };
-struct DeviceAbsoluteValueEpigraphStep {
+struct DevicePiecewiseLinearReformulationAbsoluteValueStep {
   std::string pattern;
   DeviceRecoveryGroup splits, pairs, linked;
   std::vector<DeviceRecoveryGroup> max_slacks;
 };
 struct DeviceRecoveryState {
-  std::vector<DeviceAbsoluteValueEpigraphStep> absolute_value_epigraph;
-  std::vector<DeviceRecoveryGroup> variable_pair_aggregation;
+  std::vector<DevicePiecewiseLinearReformulationAbsoluteValueStep> piecewise_linear_reformulation_absolute_value;
+  std::vector<DeviceRecoveryGroup> piecewise_linear_reformulation_variable_pair;
   RecoveryArray<std::int32_t> rows, cols;
   std::vector<PostsolveTapeGpu> segments;
   std::vector<DeviceFixedSegment> fixed;

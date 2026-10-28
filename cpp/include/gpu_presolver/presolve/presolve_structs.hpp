@@ -9,7 +9,7 @@
 
 namespace gpu_presolver::presolve {
 
-enum class AbsoluteValueEpigraphResidualBoundMode : std::uint8_t {
+enum class PiecewiseLinearReformulationAbsoluteValueResidualBoundMode : std::uint8_t {
   // Preserve every finite side of the original residual-variable box by
   // adding the exact ranged row l_e <= p - n <= u_e after the split.
   PreserveFinite = 0,
@@ -85,9 +85,9 @@ struct PresolveParams {
   // changing isolated or large aggregation groups.
   int parallel_columns_scale_guard_max_group_size = 4;
   int parallel_columns_scale_guard_min_groups = 128;
-  // Master switch for the five structure-specific rules: column domination,
-  // two-row variable elimination, McCormick variable elimination, variable-pair
-  // aggregation, and absolute-value epigraph reduction.
+  // Master switch for column domination, two-row variable elimination,
+  // zero-cost product variables, and both piecewise-linear reformulation
+  // branches.
   bool enable_structure_specific_rules = true;
   // Strict, no-fill projection for a zero-cost finite-bounded column that
   // occurs in exactly two short one-sided rows.  The two row envelopes and
@@ -98,29 +98,30 @@ struct PresolveParams {
   double two_row_variable_elimination_safety_tol = 1.0e-8;
   int two_row_variable_elimination_min_candidates = 128;
   double two_row_variable_elimination_min_candidate_ratio = 0.01;
-  // Strict Fortet/McCormick auxiliary detector.  It accepts only the exact
-  // binary-box convex envelope z >= x+y-1, z <= x, z <= y with c_z = 0.
-  bool enable_mccormick_variable_elimination = true;
-  int mccormick_variable_elimination_min_candidates = 128;
-  double mccormick_variable_elimination_min_candidate_ratio = 0.01;
-  // Variable-pair aggregation: epigraph case, with the strict layout
+  // Zero-cost product variables: accept only the exact Fortet/McCormick
+  // binary-box envelope z >= x+y-1, z <= x, z <= y with c_z = 0.
+  bool enable_zero_cost_product_variables = true;
+  int zero_cost_product_variables_min_candidates = 128;
+  double zero_cost_product_variables_min_candidate_ratio = 0.01;
+  // Piecewise-linear reformulation, variable-pair branch: epigraph case with
+  // the strict layout
   // [p_0...p_{k-1}, n_0...n_{k-1}, T_0...T_{g-1}].  Accepted models are
   // fully verified before equality-connected p_i-n_i components are merged.
-  bool enable_variable_pair_aggregation = true;
-  int variable_pair_epigraph_probe_pairs = 256;
-  int variable_pair_epigraph_min_pairs = 4096;
-  double variable_pair_epigraph_min_potential_gain = 0.20;
-  double variable_pair_epigraph_min_actual_gain = 0.20;
-  int variable_pair_epigraph_max_tail_cols = 8;
-  int variable_pair_epigraph_max_quotient_terms_per_row = 5;
+  bool enable_piecewise_linear_reformulation_variable_pair = true;
+  int piecewise_linear_reformulation_variable_pair_epigraph_probe_pairs = 256;
+  int piecewise_linear_reformulation_variable_pair_epigraph_min_pairs = 4096;
+  double piecewise_linear_reformulation_variable_pair_epigraph_min_potential_gain = 0.20;
+  double piecewise_linear_reformulation_variable_pair_epigraph_min_actual_gain = 0.20;
+  int piecewise_linear_reformulation_variable_pair_epigraph_max_tail_cols = 8;
+  int piecewise_linear_reformulation_variable_pair_epigraph_max_quotient_terms_per_row = 5;
   // Detect strict half-offset (+/-) column pairs, collapse equality-connected
   // pair components, and rebuild the LP in shifted quotient coordinates. The
   // sampled probe only rejects; accepted models are fully verified on GPU.
-  int variable_pair_shifted_antipodal_probe_pairs = 256;
-  int variable_pair_shifted_antipodal_min_pairs = 4096;
-  double variable_pair_shifted_antipodal_min_potential_gain = 0.20;
-  double variable_pair_shifted_antipodal_min_actual_gain = 0.20;
-  int variable_pair_shifted_antipodal_max_quotient_terms_per_row = 6;
+  int piecewise_linear_reformulation_variable_pair_shifted_antipodal_probe_pairs = 256;
+  int piecewise_linear_reformulation_variable_pair_shifted_antipodal_min_pairs = 4096;
+  double piecewise_linear_reformulation_variable_pair_shifted_antipodal_min_potential_gain = 0.20;
+  double piecewise_linear_reformulation_variable_pair_shifted_antipodal_min_actual_gain = 0.20;
+  int piecewise_linear_reformulation_variable_pair_shifted_antipodal_max_quotient_terms_per_row = 6;
   // Strict unit set-covering detector.  A model is changed only after a full
   // GPU certificate proves rows Ax>=1, A in {0,1}, x in [0,1], positive
   // integer costs, and a cost-one witness for every row.  Columns with
@@ -131,11 +132,13 @@ struct PresolveParams {
   int column_domination_probe_nnz = 256;
   int column_domination_min_fixed_cols = 4096;
   double column_domination_min_candidate_ratio = 0.20;
-  bool enable_absolute_value_epigraph_reduction = true;
-  AbsoluteValueEpigraphResidualBoundMode absolute_value_epigraph_residual_bound_mode =
-      AbsoluteValueEpigraphResidualBoundMode::PreserveFinite;
-  // Used only when absolute_value_epigraph_residual_bound_mode is LegacyWideAsFree.
-  double absolute_value_epigraph_residual_bound_as_free_min = 1.0e8;
+  // The absolute-value branch remains independently configurable from the
+  // variable-pair branch above.
+  bool enable_piecewise_linear_reformulation_absolute_value = true;
+  PiecewiseLinearReformulationAbsoluteValueResidualBoundMode piecewise_linear_reformulation_absolute_value_residual_bound_mode =
+      PiecewiseLinearReformulationAbsoluteValueResidualBoundMode::PreserveFinite;
+  // Used only when piecewise_linear_reformulation_absolute_value_residual_bound_mode is LegacyWideAsFree.
+  double piecewise_linear_reformulation_absolute_value_residual_bound_as_free_min = 1.0e8;
   // Mode for explicit apply_rule_redundant_variable_bounds calls. This rule is not
   // part of the production schedule: false removes redundant zero-cost boxes;
   // true also considers redundant one-sided bounds.
@@ -192,13 +195,13 @@ struct PresolveStatsGpu {
 
   bool row_nnz_valid = false;
   bool col_nnz_valid = false;
-  std::int32_t* absolute_value_epigraph_screen_counts = nullptr;
-  std::uint8_t* absolute_value_epigraph_screen_flag = nullptr;
-  std::int32_t absolute_value_epigraph_screen_pattern_code = -1;
-  bool absolute_value_epigraph_screen_valid = false;
+  std::int32_t* piecewise_linear_reformulation_absolute_value_screen_counts = nullptr;
+  std::uint8_t* piecewise_linear_reformulation_absolute_value_screen_flag = nullptr;
+  std::int32_t piecewise_linear_reformulation_absolute_value_screen_pattern_code = -1;
+  bool piecewise_linear_reformulation_absolute_value_screen_valid = false;
 };
 
-struct AbsoluteValueEpigraphSplitRecovery {
+struct PiecewiseLinearReformulationAbsoluteValueSplitRecovery {
   std::int32_t t_col = -1;
   std::int32_t e_col = -1;
   double rho = 1.0;
@@ -221,20 +224,20 @@ struct AbsoluteValueMaxSlackRecovery {
   std::vector<double> factors;
 };
 
-struct AbsoluteValueEpigraphPrimalRecoveryStep {
+struct PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep {
   std::string pattern;
-  std::vector<AbsoluteValueEpigraphSplitRecovery> splits;
+  std::vector<PiecewiseLinearReformulationAbsoluteValueSplitRecovery> splits;
   std::vector<AbsoluteValueOuterPairRecovery> outer_pairs;
   std::vector<AbsoluteValueLinkedSlackRecovery> linked_slacks;
   std::vector<AbsoluteValueMaxSlackRecovery> max_slacks;
 };
 
-// Primal recovery for both variable-pair aggregation cases. Root slots hold
+// Primal recovery for both variable-pair reformulation cases. Root slots hold
 // P_C/N_C; recover p_i = P_C + s_p_i and n_i = N_C + s_n_i. Shifts are zero
 // for the epigraph case and original lower bounds for shifted antipodal pairs.
 // Deleted equality-row duals
 // are intentionally not advertised as recoverable.
-struct VariablePairAggregationRecoveryStep {
+struct PiecewiseLinearReformulationVariablePairRecoveryStep {
   std::vector<std::int32_t> plus_cols;
   std::vector<std::int32_t> minus_cols;
   std::vector<std::int32_t> root_plus_cols;
@@ -249,12 +252,12 @@ struct VariablePairAggregationRecoveryStep {
 // that preceded it.  Postsolve walks these checkpoints backwards, replaying
 // each intervening tape range before expanding the corresponding payload.
 enum class PrimalRecoveryKind : std::uint8_t {
-  AbsoluteValueEpigraph = 0,
-  VariablePairAggregation = 1,
+  PiecewiseLinearReformulationAbsoluteValue = 0,
+  PiecewiseLinearReformulationVariablePair = 1,
 };
 
 struct PrimalRecoveryCheckpoint {
-  PrimalRecoveryKind kind = PrimalRecoveryKind::AbsoluteValueEpigraph;
+  PrimalRecoveryKind kind = PrimalRecoveryKind::PiecewiseLinearReformulationAbsoluteValue;
   NnzOffset payload_index = -1;
   NnzOffset tape_position = 0;
 };
@@ -329,7 +332,7 @@ struct PostsolveTape {
 
 struct DeviceRecoveryState;
 struct DeviceRecoveryGroup;
-struct DeviceAbsoluteValueEpigraphStep;
+struct DevicePiecewiseLinearReformulationAbsoluteValueStep;
 
 struct PresolveRecordGpu {
   std::shared_ptr<DeviceRecoveryState> device;
@@ -353,10 +356,10 @@ struct PresolveRecordGpu {
   double obj_constant_old = 0.0;
   double obj_constant_new = 0.0;
 
-  std::vector<AbsoluteValueEpigraphPrimalRecoveryStep> absolute_value_epigraph_recoveries;
-  std::vector<VariablePairAggregationRecoveryStep> variable_pair_aggregation_recoveries;
+  std::vector<PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep> piecewise_linear_reformulation_absolute_value_recoveries;
+  std::vector<PiecewiseLinearReformulationVariablePairRecoveryStep> piecewise_linear_reformulation_variable_pair_recoveries;
   std::vector<PrimalRecoveryCheckpoint> primal_recovery_timeline;
-  bool has_primal_only_variable_pair_aggregation_reduction = false;
+  bool has_primal_only_piecewise_linear_reformulation_variable_pair_reduction = false;
   bool has_primal_only_column_domination_reduction = false;
   bool has_primal_only_projected_auxiliary_reduction = false;
   PostsolveTape tape;
@@ -420,12 +423,12 @@ struct PresolvePlanGpu {
   bool has_infeasible = false;
   bool has_unbounded = false;
 
-  bool has_absolute_value_epigraph_recovery = false;
-  AbsoluteValueEpigraphPrimalRecoveryStep absolute_value_epigraph_recovery;
-  std::shared_ptr<DeviceAbsoluteValueEpigraphStep> absolute_value_epigraph_device;
-  bool has_variable_pair_aggregation_recovery = false;
-  VariablePairAggregationRecoveryStep variable_pair_aggregation_recovery;
-  std::shared_ptr<DeviceRecoveryGroup> variable_pair_aggregation_device;
+  bool has_piecewise_linear_reformulation_absolute_value_recovery = false;
+  PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep piecewise_linear_reformulation_absolute_value_recovery;
+  std::shared_ptr<DevicePiecewiseLinearReformulationAbsoluteValueStep> piecewise_linear_reformulation_absolute_value_device;
+  bool has_piecewise_linear_reformulation_variable_pair_recovery = false;
+  PiecewiseLinearReformulationVariablePairRecoveryStep piecewise_linear_reformulation_variable_pair_recovery;
+  std::shared_ptr<DeviceRecoveryGroup> piecewise_linear_reformulation_variable_pair_device;
   bool has_column_domination_reduction = false;
   bool has_projected_auxiliary_reduction = false;
   // Legacy transient mirror. GPU-resident rules append to tape.segments.

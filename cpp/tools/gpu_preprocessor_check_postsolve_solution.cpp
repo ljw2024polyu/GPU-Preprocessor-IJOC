@@ -80,16 +80,16 @@ std::uint64_t record_hash(const gpu_presolver::presolve::PresolveRecordGpu& reco
   hash.add_scalar(record.obj_constant_old);
   hash.add_scalar(record.obj_constant_new);
   hash.add_scalar(static_cast<std::uint8_t>(
-      record.has_primal_only_variable_pair_aggregation_reduction));
+      record.has_primal_only_piecewise_linear_reformulation_variable_pair_reduction));
   hash.add_scalar(static_cast<std::uint8_t>(
       record.has_primal_only_column_domination_reduction));
   hash.add_scalar(static_cast<std::uint8_t>(
       record.has_primal_only_projected_auxiliary_reduction));
 
   const std::uint64_t recovery_count =
-      static_cast<std::uint64_t>(record.absolute_value_epigraph_recoveries.size());
+      static_cast<std::uint64_t>(record.piecewise_linear_reformulation_absolute_value_recoveries.size());
   hash.add_scalar(recovery_count);
-  for (const auto& recovery : record.absolute_value_epigraph_recoveries) {
+  for (const auto& recovery : record.piecewise_linear_reformulation_absolute_value_recoveries) {
     hash.add_string(recovery.pattern);
     const std::uint64_t split_count = static_cast<std::uint64_t>(recovery.splits.size());
     hash.add_scalar(split_count);
@@ -121,11 +121,11 @@ std::uint64_t record_hash(const gpu_presolver::presolve::PresolveRecordGpu& reco
     }
   }
 
-  const std::uint64_t variable_pair_shifted_antipodal_recovery_count =
+  const std::uint64_t piecewise_linear_reformulation_variable_pair_shifted_antipodal_recovery_count =
       static_cast<std::uint64_t>(
-          record.variable_pair_aggregation_recoveries.size());
-  hash.add_scalar(variable_pair_shifted_antipodal_recovery_count);
-  for (const auto& recovery : record.variable_pair_aggregation_recoveries) {
+          record.piecewise_linear_reformulation_variable_pair_recoveries.size());
+  hash.add_scalar(piecewise_linear_reformulation_variable_pair_shifted_antipodal_recovery_count);
+  for (const auto& recovery : record.piecewise_linear_reformulation_variable_pair_recoveries) {
     hash.add_vector(recovery.plus_cols);
     hash.add_vector(recovery.minus_cols);
     hash.add_vector(recovery.root_plus_cols);

@@ -102,7 +102,7 @@ gpu_presolver::presolve::LPInfoGpu make_covering_lp(Variant variant) {
 gpu_presolver::presolve::PresolveParams test_params() {
   gpu_presolver::presolve::PresolveParams params;
   params.max_iters = 1;
-  params.enable_variable_pair_aggregation = false;
+  params.enable_piecewise_linear_reformulation_variable_pair = false;
   params.enable_infeasible_and_fixed_variables = false;
   params.enable_empty_rows = false;
   params.enable_singleton_rows = false;
@@ -113,7 +113,7 @@ gpu_presolver::presolve::PresolveParams test_params() {
   params.enable_singleton_columns = false;
 
   params.enable_doubleton_equations = false;
-  params.enable_absolute_value_epigraph_reduction = false;
+  params.enable_piecewise_linear_reformulation_absolute_value = false;
   params.enable_dual_fix = false;
   params.enable_parallel_columns = false;
 

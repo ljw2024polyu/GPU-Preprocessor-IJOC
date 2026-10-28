@@ -112,7 +112,7 @@ void test_compact_long_rows_oracle() {
   params.enable_empty_columns=false;params.enable_singleton_columns=false;
   params.enable_doubleton_equations=false;
   params.enable_dual_fix=false;params.enable_parallel_columns=false;
-  params.enable_absolute_value_epigraph_reduction=false;
+  params.enable_piecewise_linear_reformulation_absolute_value=false;
   const auto old = runtime::options().long_row_compaction;
   const auto saved = old;
   const auto saved_warp = runtime::options().warp_compaction;
@@ -166,7 +166,7 @@ void test_fixed_record_direct_equivalence() {
   params.enable_parallel_rows=false;params.enable_empty_columns=false;
   params.enable_singleton_columns=false;
   params.enable_doubleton_equations=false;params.enable_dual_fix=false;params.enable_parallel_columns=false;
-  params.enable_absolute_value_epigraph_reduction=false;
+  params.enable_piecewise_linear_reformulation_absolute_value=false;
   const auto saved = runtime::options().direct_fixed_values;
   std::vector<int> indices;std::vector<double> values;
   for (bool flag : {false,true}) {
@@ -226,7 +226,7 @@ void test_large_apply_record_equivalence() {
   params.enable_doubleton_equations = false;
   params.enable_dual_fix = false;
   params.enable_parallel_columns = false;
-  params.enable_absolute_value_epigraph_reduction = false;
+  params.enable_piecewise_linear_reformulation_absolute_value = false;
 
   const auto saved_chunks = runtime::options().chunked_tape;
   const auto saved_headroom = runtime::options().reserve_tape_headroom;
@@ -301,7 +301,7 @@ void test_post_propagation_activity_closure(bool record_activity_tape) {
   params.enable_doubleton_equations = false;
   params.enable_dual_fix = false;
   params.enable_parallel_columns = false;
-  params.enable_absolute_value_epigraph_reduction = false;
+  params.enable_piecewise_linear_reformulation_absolute_value = false;
 
   GpuPresolveSummary summary = gpu_presolver::presolve::run_gpu_presolve_with_record(lp, params);
   gpu_presolver::presolve::export_recovery_record(summary.record);
@@ -399,7 +399,7 @@ void test_bound_strengthening_defers_dependency_chain() {
   params.enable_doubleton_equations = false;
   params.enable_dual_fix = false;
   params.enable_parallel_columns = false;
-  params.enable_absolute_value_epigraph_reduction = false;
+  params.enable_piecewise_linear_reformulation_absolute_value = false;
 
   // One phase fixes x1, leaving the dependent x2 for a later outer phase.
   params.bound_strengthening_bound_only_nnz_round_budget = 1;
@@ -471,7 +471,7 @@ std::vector<double> run_pure_bound_dependency_chain(std::int64_t nnz_round_budge
   params.enable_doubleton_equations = false;
   params.enable_dual_fix = false;
   params.enable_parallel_columns = false;
-  params.enable_absolute_value_epigraph_reduction = false;
+  params.enable_piecewise_linear_reformulation_absolute_value = false;
 
   params.bound_strengthening_bound_only_nnz_round_budget = nnz_round_budget;
 
@@ -608,7 +608,7 @@ int main() {
 
   doubleton_only_params.enable_dual_fix = false;
   doubleton_only_params.enable_parallel_columns = false;
-  doubleton_only_params.enable_absolute_value_epigraph_reduction = false;
+  doubleton_only_params.enable_piecewise_linear_reformulation_absolute_value = false;
 
   gpu_presolver::presolve::GpuPresolveSummary doubleton_only_summary =
       gpu_presolver::presolve::run_gpu_presolve_with_record(doubleton_only_lp,

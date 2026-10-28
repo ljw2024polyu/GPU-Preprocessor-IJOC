@@ -157,7 +157,7 @@ __global__ void _kernel_cache_variable_pair_root_values(
   }
 }
 
-__global__ void _kernel_restore_variable_pair_aggregation_members(
+__global__ void _kernel_restore_piecewise_linear_reformulation_variable_pair_members(
     double* x_org,
     const std::int32_t* plus_cols,
     const std::int32_t* minus_cols,
@@ -1079,7 +1079,7 @@ __global__ void _kernel_replay_postsolve_tape(double* x_org,
   }
 }
 
-void restore_splits(double* x_org, const std::vector<AbsoluteValueEpigraphSplitRecovery>& splits) {
+void restore_splits(double* x_org, const std::vector<PiecewiseLinearReformulationAbsoluteValueSplitRecovery>& splits) {
   if (splits.empty()) {
     return;
   }
@@ -1089,14 +1089,14 @@ void restore_splits(double* x_org, const std::vector<AbsoluteValueEpigraphSplitR
   t_cols.reserve(splits.size());
   e_cols.reserve(splits.size());
   rhos.reserve(splits.size());
-  for (const AbsoluteValueEpigraphSplitRecovery& split : splits) {
+  for (const PiecewiseLinearReformulationAbsoluteValueSplitRecovery& split : splits) {
     t_cols.push_back(split.t_col);
     e_cols.push_back(split.e_col);
     rhos.push_back(split.rho);
   }
-  std::int32_t* t_d = copy_vector_to_device(t_cols, "cudaMalloc/copy absolute_value_epigraph split t_cols");
-  std::int32_t* e_d = copy_vector_to_device(e_cols, "cudaMalloc/copy absolute_value_epigraph split e_cols");
-  double* rho_d = copy_vector_to_device(rhos, "cudaMalloc/copy absolute_value_epigraph split rhos");
+  std::int32_t* t_d = copy_vector_to_device(t_cols, "cudaMalloc/copy piecewise_linear_reformulation_absolute_value split t_cols");
+  std::int32_t* e_d = copy_vector_to_device(e_cols, "cudaMalloc/copy piecewise_linear_reformulation_absolute_value split e_cols");
+  double* rho_d = copy_vector_to_device(rhos, "cudaMalloc/copy piecewise_linear_reformulation_absolute_value split rhos");
   const std::int32_t k = static_cast<std::int32_t>(splits.size());
   const int blocks = (k + GPU_PRESOLVE_THREADS - 1) / GPU_PRESOLVE_THREADS;
   _kernel_structural_restore_splits<<<blocks, GPU_PRESOLVE_THREADS>>>(x_org, t_d, e_d, rho_d, k);
@@ -1118,8 +1118,8 @@ void restore_outer_pairs(double* x_org, const std::vector<AbsoluteValueOuterPair
     bound_cols.push_back(pair.bound_col);
     free_cols.push_back(pair.free_col);
   }
-  std::int32_t* bound_d = copy_vector_to_device(bound_cols, "cudaMalloc/copy absolute_value_epigraph outer bound_cols");
-  std::int32_t* free_d = copy_vector_to_device(free_cols, "cudaMalloc/copy absolute_value_epigraph outer free_cols");
+  std::int32_t* bound_d = copy_vector_to_device(bound_cols, "cudaMalloc/copy piecewise_linear_reformulation_absolute_value outer bound_cols");
+  std::int32_t* free_d = copy_vector_to_device(free_cols, "cudaMalloc/copy piecewise_linear_reformulation_absolute_value outer free_cols");
   const std::int32_t k = static_cast<std::int32_t>(pairs.size());
   const int blocks = (k + GPU_PRESOLVE_THREADS - 1) / GPU_PRESOLVE_THREADS;
   _kernel_structural_restore_outer_pairs<<<blocks, GPU_PRESOLVE_THREADS>>>(x_org, bound_d, free_d, k);
@@ -1143,9 +1143,9 @@ void restore_linked_slacks(double* x_org, const std::vector<AbsoluteValueLinkedS
     t_cols.push_back(slack.t_col);
     factors.push_back(slack.factor);
   }
-  std::int32_t* slack_d = copy_vector_to_device(slack_cols, "cudaMalloc/copy absolute_value_epigraph linked slack_cols");
-  std::int32_t* t_d = copy_vector_to_device(t_cols, "cudaMalloc/copy absolute_value_epigraph linked t_cols");
-  double* factor_d = copy_vector_to_device(factors, "cudaMalloc/copy absolute_value_epigraph linked factors");
+  std::int32_t* slack_d = copy_vector_to_device(slack_cols, "cudaMalloc/copy piecewise_linear_reformulation_absolute_value linked slack_cols");
+  std::int32_t* t_d = copy_vector_to_device(t_cols, "cudaMalloc/copy piecewise_linear_reformulation_absolute_value linked t_cols");
+  double* factor_d = copy_vector_to_device(factors, "cudaMalloc/copy piecewise_linear_reformulation_absolute_value linked factors");
   const std::int32_t k = static_cast<std::int32_t>(slacks.size());
   const int blocks = (k + GPU_PRESOLVE_THREADS - 1) / GPU_PRESOLVE_THREADS;
   _kernel_structural_restore_linked_slacks<<<blocks, GPU_PRESOLVE_THREADS>>>(x_org, slack_d, t_d, factor_d, k);
@@ -1166,13 +1166,13 @@ void restore_max_slacks(double* x_org,
     if (original_l != nullptr) {
       throw_if_cuda_error(cudaMemcpy(&lower_bound, original_l + slack.slack_col, sizeof(double),
                                      cudaMemcpyDeviceToHost),
-                          "cudaMemcpy absolute_value_epigraph max slack lower bound");
+                          "cudaMemcpy piecewise_linear_reformulation_absolute_value max slack lower bound");
       if (!isfinite(lower_bound)) {
         lower_bound = 0.0;
       }
     }
-    std::int32_t* t_d = copy_vector_to_device(slack.t_cols, "cudaMalloc/copy absolute_value_epigraph max t_cols");
-    double* factor_d = copy_vector_to_device(slack.factors, "cudaMalloc/copy absolute_value_epigraph max factors");
+    std::int32_t* t_d = copy_vector_to_device(slack.t_cols, "cudaMalloc/copy piecewise_linear_reformulation_absolute_value max t_cols");
+    double* factor_d = copy_vector_to_device(slack.factors, "cudaMalloc/copy piecewise_linear_reformulation_absolute_value max factors");
     _kernel_structural_restore_max_slack<<<1, GPU_PRESOLVE_THREADS>>>(
         x_org, slack.slack_col, t_d, factor_d, static_cast<std::int32_t>(slack.t_cols.size()), lower_bound);
     throw_if_cuda_error(cudaGetLastError(), "_kernel_structural_restore_max_slack");
@@ -1181,9 +1181,9 @@ void restore_max_slacks(double* x_org,
   }
 }
 
-void restore_absolute_value_epigraph_step(
+void restore_piecewise_linear_reformulation_absolute_value_step(
     double* x_org,
-    const AbsoluteValueEpigraphPrimalRecoveryStep& recovery,
+    const PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep& recovery,
     const double* original_l) {
   restore_splits(x_org, recovery.splits);
   restore_outer_pairs(x_org, recovery.outer_pairs);
@@ -1191,9 +1191,9 @@ void restore_absolute_value_epigraph_step(
   restore_max_slacks(x_org, recovery.max_slacks, original_l);
 }
 
-void restore_variable_pair_aggregation(
+void restore_piecewise_linear_reformulation_variable_pair(
     double* x_org,
-    const VariablePairAggregationRecoveryStep& recovery) {
+    const PiecewiseLinearReformulationVariablePairRecoveryStep& recovery) {
   const std::size_t size = recovery.plus_cols.size();
   if (size == 0) {
     return;
@@ -1201,40 +1201,40 @@ void restore_variable_pair_aggregation(
   const std::int32_t count = static_cast<std::int32_t>(size);
   std::int32_t* plus_cols =
       copy_vector_to_device(recovery.plus_cols,
-                            "cudaMalloc/copy variable_pair_aggregation plus cols");
+                            "cudaMalloc/copy piecewise_linear_reformulation_variable_pair plus cols");
   std::int32_t* minus_cols =
       copy_vector_to_device(recovery.minus_cols,
-                            "cudaMalloc/copy variable_pair_aggregation minus cols");
+                            "cudaMalloc/copy piecewise_linear_reformulation_variable_pair minus cols");
   std::int32_t* root_plus_cols =
       copy_vector_to_device(recovery.root_plus_cols,
-                            "cudaMalloc/copy variable_pair_aggregation root plus cols");
+                            "cudaMalloc/copy piecewise_linear_reformulation_variable_pair root plus cols");
   std::int32_t* root_minus_cols =
       copy_vector_to_device(recovery.root_minus_cols,
-                            "cudaMalloc/copy variable_pair_aggregation root minus cols");
+                            "cudaMalloc/copy piecewise_linear_reformulation_variable_pair root minus cols");
   double* plus_shift =
       copy_vector_to_device(recovery.plus_shift,
-                            "cudaMalloc/copy variable_pair_aggregation plus lower");
+                            "cudaMalloc/copy piecewise_linear_reformulation_variable_pair plus lower");
   double* minus_shift =
       copy_vector_to_device(recovery.minus_shift,
-                            "cudaMalloc/copy variable_pair_aggregation minus lower");
+                            "cudaMalloc/copy piecewise_linear_reformulation_variable_pair minus lower");
   double* plus_cache = nullptr;
   double* minus_cache = nullptr;
   throw_if_cuda_error(cudaMalloc(&plus_cache, sizeof(double) * size),
-                      "cudaMalloc variable_pair_aggregation plus cache");
+                      "cudaMalloc piecewise_linear_reformulation_variable_pair plus cache");
   throw_if_cuda_error(cudaMalloc(&minus_cache, sizeof(double) * size),
-                      "cudaMalloc variable_pair_aggregation minus cache");
+                      "cudaMalloc piecewise_linear_reformulation_variable_pair minus cache");
   const int blocks =
       (count + GPU_PRESOLVE_THREADS - 1) / GPU_PRESOLVE_THREADS;
   _kernel_cache_variable_pair_root_values<<<blocks, GPU_PRESOLVE_THREADS>>>(
       plus_cache, minus_cache, x_org, root_plus_cols, root_minus_cols, count);
   throw_if_cuda_error(cudaGetLastError(),
                       "_kernel_cache_variable_pair_root_values");
-  _kernel_restore_variable_pair_aggregation_members<<<blocks,
+  _kernel_restore_piecewise_linear_reformulation_variable_pair_members<<<blocks,
                                                 GPU_PRESOLVE_THREADS>>>(
       x_org, plus_cols, minus_cols, plus_shift, minus_shift, plus_cache,
       minus_cache, count);
   throw_if_cuda_error(cudaGetLastError(),
-                      "_kernel_restore_variable_pair_aggregation_members");
+                      "_kernel_restore_piecewise_linear_reformulation_variable_pair_members");
   cudaFree(plus_cols);
   cudaFree(minus_cols);
   cudaFree(root_plus_cols);
@@ -1245,7 +1245,7 @@ void restore_variable_pair_aggregation(
   cudaFree(minus_cache);
 }
 
-void restore_device_structural(double *x, const DeviceAbsoluteValueEpigraphStep &s, const double *lower) {
+void restore_device_structural(double *x, const DevicePiecewiseLinearReformulationAbsoluteValueStep &s, const double *lower) {
   const auto &a = s.splits;
   int n = a.ids[0].count;
   if (n)
@@ -1265,9 +1265,9 @@ void restore_device_structural(double *x, const DeviceAbsoluteValueEpigraphStep 
     if (g.ids[1].count)
       _kernel_device_restore_max_slack<<<1, 256>>>(x, g.ids[0].data, g.ids[1].data,
                                                    g.values[0].data, g.ids[1].count, lower);
-  throw_if_cuda_error(cudaGetLastError(), "restore device absolute_value_epigraph payload");
+  throw_if_cuda_error(cudaGetLastError(), "restore device piecewise_linear_reformulation_absolute_value payload");
 }
-void restore_device_variable_pair_aggregation(double *x, const DeviceRecoveryGroup &g) {
+void restore_device_piecewise_linear_reformulation_variable_pair(double *x, const DeviceRecoveryGroup &g) {
   int n = g.ids[0].count;
   if (!n)
     return;
@@ -1276,9 +1276,9 @@ void restore_device_variable_pair_aggregation(double *x, const DeviceRecoveryGro
   throw_if_cuda_error(cudaMalloc(&minus, sizeof(double) * std::size_t(n)), "allocate minus cache");
   _kernel_cache_variable_pair_root_values<<<(n + 255) / 256, 256>>>(plus, minus, x, g.ids[2].data,
                                                                 g.ids[3].data, n);
-  _kernel_restore_variable_pair_aggregation_members<<<(n + 255) / 256, 256>>>(
+  _kernel_restore_piecewise_linear_reformulation_variable_pair_members<<<(n + 255) / 256, 256>>>(
       x, g.ids[0].data, g.ids[1].data, g.values[0].data, g.values[1].data, plus, minus, n);
-  throw_if_cuda_error(cudaGetLastError(), "restore device variable_pair_aggregation payload");
+  throw_if_cuda_error(cudaGetLastError(), "restore device piecewise_linear_reformulation_variable_pair payload");
   recovery_device_free(plus);
   recovery_device_free(minus);
 }
@@ -1579,41 +1579,41 @@ void validate_recovery_col(std::int32_t col,
   }
 }
 
-void validate_absolute_value_epigraph_recovery(
-    const AbsoluteValueEpigraphPrimalRecoveryStep& recovery,
+void validate_piecewise_linear_reformulation_absolute_value_recovery(
+    const PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep& recovery,
     std::int32_t n0) {
-  for (const AbsoluteValueEpigraphSplitRecovery& split : recovery.splits) {
-    validate_recovery_col(split.t_col, n0, "absolute_value_epigraph split recovery");
-    validate_recovery_col(split.e_col, n0, "absolute_value_epigraph split recovery");
+  for (const PiecewiseLinearReformulationAbsoluteValueSplitRecovery& split : recovery.splits) {
+    validate_recovery_col(split.t_col, n0, "piecewise_linear_reformulation_absolute_value split recovery");
+    validate_recovery_col(split.e_col, n0, "piecewise_linear_reformulation_absolute_value split recovery");
   }
   for (const AbsoluteValueOuterPairRecovery& pair : recovery.outer_pairs) {
     validate_recovery_col(pair.bound_col, n0,
-                          "absolute_value_epigraph outer-pair recovery");
+                          "piecewise_linear_reformulation_absolute_value outer-pair recovery");
     validate_recovery_col(pair.free_col, n0,
-                          "absolute_value_epigraph outer-pair recovery");
+                          "piecewise_linear_reformulation_absolute_value outer-pair recovery");
   }
   for (const AbsoluteValueLinkedSlackRecovery& slack :
        recovery.linked_slacks) {
     validate_recovery_col(slack.slack_col, n0,
-                          "absolute_value_epigraph linked-slack recovery");
+                          "piecewise_linear_reformulation_absolute_value linked-slack recovery");
     validate_recovery_col(slack.t_col, n0,
-                          "absolute_value_epigraph linked-slack recovery");
+                          "piecewise_linear_reformulation_absolute_value linked-slack recovery");
   }
   for (const AbsoluteValueMaxSlackRecovery& slack : recovery.max_slacks) {
     if (slack.t_cols.size() != slack.factors.size()) {
       throw std::runtime_error(
-          "absolute_value_epigraph max-slack recovery has mismatched payloads");
+          "piecewise_linear_reformulation_absolute_value max-slack recovery has mismatched payloads");
     }
     validate_recovery_col(slack.slack_col, n0,
-                          "absolute_value_epigraph max-slack recovery");
+                          "piecewise_linear_reformulation_absolute_value max-slack recovery");
     for (const std::int32_t col : slack.t_cols) {
-      validate_recovery_col(col, n0, "absolute_value_epigraph max-slack recovery");
+      validate_recovery_col(col, n0, "piecewise_linear_reformulation_absolute_value max-slack recovery");
     }
   }
 }
 
-void validate_variable_pair_aggregation_recovery(
-    const VariablePairAggregationRecoveryStep& recovery,
+void validate_piecewise_linear_reformulation_variable_pair_recovery(
+    const PiecewiseLinearReformulationVariablePairRecoveryStep& recovery,
     std::int32_t n0) {
   const std::size_t count = recovery.plus_cols.size();
   if (recovery.minus_cols.size() != count ||
@@ -1623,36 +1623,36 @@ void validate_variable_pair_aggregation_recovery(
       recovery.minus_shift.size() != count ||
       count > static_cast<std::size_t>(
                   std::numeric_limits<std::int32_t>::max())) {
-    throw std::runtime_error("variable_pair_aggregation recovery has mismatched payloads");
+    throw std::runtime_error("piecewise_linear_reformulation_variable_pair recovery has mismatched payloads");
   }
   for (std::size_t i = 0; i < count; ++i) {
     validate_recovery_col(recovery.plus_cols[i], n0,
-                          "variable_pair_aggregation recovery");
+                          "piecewise_linear_reformulation_variable_pair recovery");
     validate_recovery_col(recovery.minus_cols[i], n0,
-                          "variable_pair_aggregation recovery");
+                          "piecewise_linear_reformulation_variable_pair recovery");
     validate_recovery_col(recovery.root_plus_cols[i], n0,
-                          "variable_pair_aggregation recovery");
+                          "piecewise_linear_reformulation_variable_pair recovery");
     validate_recovery_col(recovery.root_minus_cols[i], n0,
-                          "variable_pair_aggregation recovery");
+                          "piecewise_linear_reformulation_variable_pair recovery");
   }
 }
 
 void validate_primal_recovery_timeline(const PresolveRecordGpu& record) {
   if (!record.device)
     validate_postsolve_tape(record.tape);
-  if (record.absolute_value_epigraph_recoveries.size() >
+  if (record.piecewise_linear_reformulation_absolute_value_recoveries.size() >
           static_cast<std::size_t>(
               std::numeric_limits<std::int32_t>::max()) ||
-      record.variable_pair_aggregation_recoveries.size() >
+      record.piecewise_linear_reformulation_variable_pair_recoveries.size() >
           static_cast<std::size_t>(
               std::numeric_limits<std::int32_t>::max())) {
     throw std::runtime_error(
         "primal recovery payload exceeds 32-bit checkpoint range");
   }
   std::vector<std::uint8_t> seen_structural(
-      record.absolute_value_epigraph_recoveries.size(), std::uint8_t{0});
+      record.piecewise_linear_reformulation_absolute_value_recoveries.size(), std::uint8_t{0});
   std::vector<std::uint8_t> seen_antipodal(
-      record.variable_pair_aggregation_recoveries.size(), std::uint8_t{0});
+      record.piecewise_linear_reformulation_variable_pair_recoveries.size(), std::uint8_t{0});
   NnzOffset previous_tape_position = 0;
   const NnzOffset tape_count =
       record.device ? record.device->records : static_cast<NnzOffset>(record.tape.types.size());
@@ -1664,35 +1664,35 @@ void validate_primal_recovery_timeline(const PresolveRecordGpu& record) {
           "primal recovery checkpoints are not chronological");
     }
     previous_tape_position = checkpoint.tape_position;
-    if (checkpoint.kind == PrimalRecoveryKind::AbsoluteValueEpigraph) {
+    if (checkpoint.kind == PrimalRecoveryKind::PiecewiseLinearReformulationAbsoluteValue) {
       if (checkpoint.payload_index < 0 ||
           checkpoint.payload_index >=
               static_cast<std::int32_t>(seen_structural.size()) ||
           seen_structural[static_cast<std::size_t>(
               checkpoint.payload_index)] != std::uint8_t{0}) {
         throw std::runtime_error(
-            "invalid or duplicate absolute_value_epigraph recovery checkpoint");
+            "invalid or duplicate piecewise_linear_reformulation_absolute_value recovery checkpoint");
       }
       seen_structural[static_cast<std::size_t>(checkpoint.payload_index)] =
           std::uint8_t{1};
-      validate_absolute_value_epigraph_recovery(
-          record.absolute_value_epigraph_recoveries[static_cast<std::size_t>(
+      validate_piecewise_linear_reformulation_absolute_value_recovery(
+          record.piecewise_linear_reformulation_absolute_value_recoveries[static_cast<std::size_t>(
               checkpoint.payload_index)],
           record.n0);
     } else if (checkpoint.kind ==
-               PrimalRecoveryKind::VariablePairAggregation) {
+               PrimalRecoveryKind::PiecewiseLinearReformulationVariablePair) {
       if (checkpoint.payload_index < 0 ||
           checkpoint.payload_index >=
               static_cast<std::int32_t>(seen_antipodal.size()) ||
           seen_antipodal[static_cast<std::size_t>(
               checkpoint.payload_index)] != std::uint8_t{0}) {
         throw std::runtime_error(
-            "invalid or duplicate variable_pair_aggregation recovery checkpoint");
+            "invalid or duplicate piecewise_linear_reformulation_variable_pair recovery checkpoint");
       }
       seen_antipodal[static_cast<std::size_t>(checkpoint.payload_index)] =
           std::uint8_t{1};
-      validate_variable_pair_aggregation_recovery(
-          record.variable_pair_aggregation_recoveries[static_cast<std::size_t>(
+      validate_piecewise_linear_reformulation_variable_pair_recovery(
+          record.piecewise_linear_reformulation_variable_pair_recoveries[static_cast<std::size_t>(
               checkpoint.payload_index)],
           record.n0);
     } else {
@@ -1702,27 +1702,27 @@ void validate_primal_recovery_timeline(const PresolveRecordGpu& record) {
   for (const std::uint8_t seen : seen_structural) {
     if (seen == std::uint8_t{0}) {
       throw std::runtime_error(
-          "absolute_value_epigraph recovery payload is missing a checkpoint");
+          "piecewise_linear_reformulation_absolute_value recovery payload is missing a checkpoint");
     }
   }
   for (const std::uint8_t seen : seen_antipodal) {
     if (seen == std::uint8_t{0}) {
       throw std::runtime_error(
-          "variable_pair_aggregation recovery payload is missing a checkpoint");
+          "piecewise_linear_reformulation_variable_pair recovery payload is missing a checkpoint");
     }
   }
 }
 
 }  // namespace
 
-void postsolve_restore_absolute_value_epigraph_gpu(
+void postsolve_restore_piecewise_linear_reformulation_absolute_value_gpu(
     double* x_org,
-    const std::vector<AbsoluteValueEpigraphPrimalRecoveryStep>& recoveries,
+    const std::vector<PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep>& recoveries,
     const double* original_l) {
   for (auto it = recoveries.rbegin(); it != recoveries.rend(); ++it) {
-    restore_absolute_value_epigraph_step(x_org, *it, original_l);
+    restore_piecewise_linear_reformulation_absolute_value_step(x_org, *it, original_l);
   }
-  throw_if_cuda_error(cudaDeviceSynchronize(), "postsolve_restore_absolute_value_epigraph_gpu synchronize");
+  throw_if_cuda_error(cudaDeviceSynchronize(), "postsolve_restore_piecewise_linear_reformulation_absolute_value_gpu synchronize");
 }
 
 GpuPostsolveResult postsolve_gpu(double* x_red,
@@ -1838,22 +1838,22 @@ GpuPostsolveResult postsolve_gpu(double* x_red,
        checkpoint_it != record.primal_recovery_timeline.rend();
        ++checkpoint_it) {
     replay_range(checkpoint_it->tape_position, range_end, true, false);
-    if (checkpoint_it->kind == PrimalRecoveryKind::AbsoluteValueEpigraph) {
+    if (checkpoint_it->kind == PrimalRecoveryKind::PiecewiseLinearReformulationAbsoluteValue) {
       if (record.device)
         restore_device_structural(
-            result.x_org, record.device->absolute_value_epigraph[checkpoint_it->payload_index], original_l);
+            result.x_org, record.device->piecewise_linear_reformulation_absolute_value[checkpoint_it->payload_index], original_l);
       else
-        restore_absolute_value_epigraph_step(result.x_org,
-                                       record.absolute_value_epigraph_recoveries[static_cast<std::size_t>(
+        restore_piecewise_linear_reformulation_absolute_value_step(result.x_org,
+                                       record.piecewise_linear_reformulation_absolute_value_recoveries[static_cast<std::size_t>(
                                            checkpoint_it->payload_index)],
                                        original_l);
     } else {
       if (record.device)
-        restore_device_variable_pair_aggregation(result.x_org,
-                                 record.device->variable_pair_aggregation[checkpoint_it->payload_index]);
+        restore_device_piecewise_linear_reformulation_variable_pair(result.x_org,
+                                 record.device->piecewise_linear_reformulation_variable_pair[checkpoint_it->payload_index]);
       else
-        restore_variable_pair_aggregation(result.x_org,
-                                    record.variable_pair_aggregation_recoveries[static_cast<std::size_t>(
+        restore_piecewise_linear_reformulation_variable_pair(result.x_org,
+                                    record.piecewise_linear_reformulation_variable_pair_recoveries[static_cast<std::size_t>(
                                         checkpoint_it->payload_index)]);
     }
     range_end = checkpoint_it->tape_position;

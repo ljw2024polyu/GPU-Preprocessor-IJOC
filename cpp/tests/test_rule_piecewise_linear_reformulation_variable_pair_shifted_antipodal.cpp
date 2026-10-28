@@ -1,10 +1,10 @@
-#include "gpu_presolver/presolve/rules/rule_variable_pair_aggregation.hpp"
+#include "gpu_presolver/presolve/rules/rule_piecewise_linear_reformulation_variable_pair.hpp"
 #include "../src/presolve/plan_storage.hpp"
 #include "gpu_presolver/offset.hpp"
 #include "gpu_presolver/presolve/device_recovery.hpp"
 #include "gpu_presolver/presolve/gpu_postsolve.hpp"
 #include "gpu_presolver/presolve/gpu_presolve.hpp"
-#include "../src/presolve/rules/variable_pair_aggregation/shifted_antipodal.hpp"
+#include "../src/presolve/rules/piecewise_linear_reformulation_variable_pair/shifted_antipodal.hpp"
 
 #include <cuda_runtime.h>
 
@@ -93,14 +93,14 @@ gpu_presolver::presolve::PresolveParams test_params() {
   params.enable_singleton_columns = false;
 
   params.enable_doubleton_equations = false;
-  params.enable_absolute_value_epigraph_reduction = false;
+  params.enable_piecewise_linear_reformulation_absolute_value = false;
   params.enable_dual_fix = false;
   params.enable_parallel_columns = false;
 
-  params.variable_pair_shifted_antipodal_min_pairs = 1;
-  params.variable_pair_shifted_antipodal_probe_pairs = 3;
-  params.variable_pair_shifted_antipodal_min_potential_gain = 0.20;
-  params.variable_pair_shifted_antipodal_min_actual_gain = 0.20;
+  params.piecewise_linear_reformulation_variable_pair_shifted_antipodal_min_pairs = 1;
+  params.piecewise_linear_reformulation_variable_pair_shifted_antipodal_probe_pairs = 3;
+  params.piecewise_linear_reformulation_variable_pair_shifted_antipodal_min_potential_gain = 0.20;
+  params.piecewise_linear_reformulation_variable_pair_shifted_antipodal_min_actual_gain = 0.20;
   return params;
 }
 
@@ -116,7 +116,7 @@ void test_exact_shifted_quotient_and_primal_recovery() {
   assert(summary.reduced_cols == 4);
   assert(summary.reduced_nnz == 4);
   assert(std::abs(summary.obj_constant_delta - 17.0) < 1.0e-12);
-  assert(summary.record.has_primal_only_variable_pair_aggregation_reduction);
+  assert(summary.record.has_primal_only_piecewise_linear_reformulation_variable_pair_reduction);
 
   // Compact column order is root P0, singleton P2, root N0, singleton N2.
   double* x_red = copy_to_device<double>({1.7, 0.5, 0.2, 0.5});
@@ -160,12 +160,12 @@ void test_component_shift_conflict_is_fail_closed() {
   using namespace gpu_presolver::presolve;
   LPInfoGpu lp = make_three_pair_lp(true);
   PresolveParams params = test_params();
-  VariablePairShiftedAntipodalAnalysisGpu analysis =
-      analyze_variable_pair_shifted_antipodal(lp, params);
+  PiecewiseLinearReformulationVariablePairShiftedAntipodalAnalysisGpu analysis =
+      analyze_piecewise_linear_reformulation_variable_pair_shifted_antipodal(lp, params);
   assert(!analysis.applicable);
   assert(analysis.parent == nullptr);
   assert(analysis.edge_by_row == nullptr);
-  free_variable_pair_shifted_antipodal_analysis(analysis);
+  free_piecewise_linear_reformulation_variable_pair_shifted_antipodal_analysis(analysis);
   free_lp(lp);
 }
 
@@ -174,26 +174,26 @@ void test_unified_entry() {
   LPInfoGpu lp = make_three_pair_lp(false);
   PresolveParams params = test_params();
   PresolvePlanGpu plan;
-  const auto selected = build_variable_pair_aggregation_plan(plan, lp, params);
-  assert(selected == VariablePairAggregationCase::ShiftedAntipodal);
+  const auto selected = build_piecewise_linear_reformulation_variable_pair_plan(plan, lp, params);
+  assert(selected == PiecewiseLinearReformulationVariablePairCase::ShiftedAntipodal);
   assert(plan.has_change && !plan.has_infeasible && !plan.has_unbounded);
-  assert(plan.has_variable_pair_aggregation_recovery);
+  assert(plan.has_piecewise_linear_reformulation_variable_pair_recovery);
   detail::free_plan(plan);
   plan = {};
-  params.enable_variable_pair_aggregation = false;
-  assert(build_variable_pair_aggregation_plan(plan, lp, params) == VariablePairAggregationCase::None);
+  params.enable_piecewise_linear_reformulation_variable_pair = false;
+  assert(build_piecewise_linear_reformulation_variable_pair_plan(plan, lp, params) == PiecewiseLinearReformulationVariablePairCase::None);
   assert(!plan.has_change && !plan.contiguous_storage);
-  params.enable_variable_pair_aggregation = true;
+  params.enable_piecewise_linear_reformulation_variable_pair = true;
   params.enable_structure_specific_rules = false;
-  assert(build_variable_pair_aggregation_plan(plan, lp, params) == VariablePairAggregationCase::None);
+  assert(build_piecewise_linear_reformulation_variable_pair_plan(plan, lp, params) == PiecewiseLinearReformulationVariablePairCase::None);
   assert(!plan.has_change && !plan.contiguous_storage);
   params.enable_structure_specific_rules = true;
-  assert(build_variable_pair_aggregation_plan(plan, lp, params, [] { return true; }) ==
-         VariablePairAggregationCase::None);
+  assert(build_piecewise_linear_reformulation_variable_pair_plan(plan, lp, params, [] { return true; }) ==
+         PiecewiseLinearReformulationVariablePairCase::None);
   assert(!plan.has_change && !plan.contiguous_storage);
   int calls = 0;
-  assert(build_variable_pair_aggregation_plan(plan, lp, params, [&] { return ++calls == 2; }) ==
-         VariablePairAggregationCase::None);
+  assert(build_piecewise_linear_reformulation_variable_pair_plan(plan, lp, params, [&] { return ++calls == 2; }) ==
+         PiecewiseLinearReformulationVariablePairCase::None);
   assert(calls == 2 && !plan.has_change && !plan.contiguous_storage);
   free_lp(lp);
 }
@@ -208,7 +208,7 @@ void test_rule_is_owned_by_startup() {
   assert(summary.reduced_rows == 2);
   assert(summary.reduced_cols == 6);
   assert(summary.reduced_nnz == 10);
-  assert(!summary.record.has_primal_only_variable_pair_aggregation_reduction);
+  assert(!summary.record.has_primal_only_piecewise_linear_reformulation_variable_pair_reduction);
   free_gpu_presolve_reduced_lp(summary);
   free_lp(lp);
 }
@@ -220,6 +220,6 @@ int main() {
   test_exact_shifted_quotient_and_primal_recovery();
   test_component_shift_conflict_is_fail_closed();
   test_rule_is_owned_by_startup();
-  std::cout << "test_rule_variable_pair_shifted_antipodal passed\n";
+  std::cout << "test_rule_piecewise_linear_reformulation_variable_pair_shifted_antipodal passed\n";
   return 0;
 }

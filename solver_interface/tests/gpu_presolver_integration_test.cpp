@@ -106,7 +106,7 @@ static void check_pipeline(bool folding, bool presolve = true, bool new_rules = 
 // Each zero-cost z is a certified McCormick auxiliary. Coupling rows keep
 // x/y in the remaining LP, so classical rules cannot erase the comparison.
 static void check_new_rule_switch() {
-    constexpr int blocks = 128;  // Production McCormick candidate threshold.
+    constexpr int blocks = 128;  // Production zero-cost product candidate threshold.
     constexpr int n = 3 * blocks;
     std::vector<int> row{0}, col;
     std::vector<double> a, al, au;
@@ -144,7 +144,7 @@ static void check_new_rule_switch() {
     auto *model = create_model_from_arrays(static_cast<int>(al.size()), n,
         static_cast<int>(a.size()), row.data(), col.data(), a.data(),
         al.data(), au.data(), lo.data(), up.data(), c.data(), false);
-    require(model != nullptr, "McCormick fixture creation failed");
+    require(model != nullptr, "Zero-cost product fixture creation failed");
     int reduced_columns[2]{};
     for (int enabled = 0; enabled <= 1; ++enabled) {
         IntegrationParameters p;
@@ -155,14 +155,14 @@ static void check_new_rule_switch() {
         void *handle = nullptr;
         double presolve_time = 0, folding_time = 0;
         require(ijoc_run_gpu_presolve(model, &p, &reduced, &handle,
-            &presolve_time, &folding_time), "McCormick presolve handoff failed");
+            &presolve_time, &folding_time), "Zero-cost product presolve handoff failed");
         require(folding_time == 0, "rule ablation unexpectedly ran folding");
         reduced_columns[enabled] = reduced.n;
         free_lp_info_cpu(&reduced);
         ijoc_free_gpu(handle);
     }
     require(reduced_columns[0] == n, "classical rules unexpectedly removed the fixture auxiliaries");
-    require(reduced_columns[1] <= 2*blocks, "new-rule switch did not enable McCormick elimination");
+    require(reduced_columns[1] <= 2*blocks, "new-rule switch did not enable zero-cost product variable elimination");
     free_model(model);
     std::cout << "New-rule switch changed reduced columns: "
               << reduced_columns[0] << " -> " << reduced_columns[1] << '\n';

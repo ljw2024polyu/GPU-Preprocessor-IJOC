@@ -510,7 +510,7 @@ void refresh_live_stats(PresolveStatsGpu& stats, const LPInfoGpu& lp,
   stats.live_masks = true;
   stats.row_nnz_valid = stats.row_nnz != nullptr;
   stats.col_nnz_valid = stats.col_nnz != nullptr;
-  stats.absolute_value_epigraph_screen_valid = false;
+  stats.piecewise_linear_reformulation_absolute_value_screen_valid = false;
 }
 
 namespace {
@@ -674,7 +674,7 @@ bool update_live_stats_from_deletions(PresolveStatsGpu& stats, const LPInfoGpu& 
   }
   stats.row_nnz_valid = true;
   stats.col_nnz_valid = true;
-  stats.absolute_value_epigraph_screen_valid = false;
+  stats.piecewise_linear_reformulation_absolute_value_screen_valid = false;
   return true;
 }
 

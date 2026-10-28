@@ -100,7 +100,7 @@ void ordinary_case(int groups, int seed, int scenario, bool tape) {
   p.enable_infeasible_and_redundant_rows=false;p.enable_bound_strengthening=false;
   p.enable_parallel_rows=false;p.enable_parallel_columns=false;
   p.enable_singleton_columns=false;
-  p.enable_doubleton_equations=false;p.enable_dual_fix=true;p.enable_absolute_value_epigraph_reduction=false;
+  p.enable_doubleton_equations=false;p.enable_dual_fix=true;p.enable_piecewise_linear_reformulation_absolute_value=false;
   runtime::options().reuse_cleanup_workspace = false;
   auto a=run_gpu_presolve_with_reduced_lp(lp,p);auto expected=snapshot(a);
   for (bool mode : {true}) {

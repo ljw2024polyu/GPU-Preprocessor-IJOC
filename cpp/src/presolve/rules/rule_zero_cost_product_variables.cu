@@ -1,6 +1,6 @@
 #include "gpu_presolver/offset.hpp"
 #include "gpu_presolver/presolve/device_recovery.hpp"
-#include "gpu_presolver/presolve/rules/rule_mccormick_variable_elimination.hpp"
+#include "gpu_presolver/presolve/rules/rule_zero_cost_product_variables.hpp"
 
 #include "projection_support.cuh"
 
@@ -279,7 +279,7 @@ __global__ void select_orphan_mccormick_candidates(
   }
 }
 
-__global__ void apply_mccormick_variable_elimination(
+__global__ void apply_zero_cost_product_variables(
     std::uint8_t* keep_row,
     std::uint8_t* keep_col,
     const std::uint8_t* selected_col,
@@ -419,13 +419,13 @@ void append_projection_tape_from_device(
 
 }  // namespace
 
-McCormickVariableEliminationAnalysisGpu analyze_mccormick_variable_elimination(
+ZeroCostProductVariablesAnalysisGpu analyze_zero_cost_product_variables(
     const LPInfoGpu& input,
     const PresolveParams& params,
     const PresolvePlanGpu* pending) {
   const auto lp = projection_view(input, pending);
-  McCormickVariableEliminationAnalysisGpu analysis;
-  if (!params.enable_mccormick_variable_elimination || lp.A.rows <= 0 ||
+  ZeroCostProductVariablesAnalysisGpu analysis;
+  if (!params.enable_zero_cost_product_variables || lp.A.rows <= 0 ||
       lp.A.cols <= 0 || lp.A.nnz <= 0 || lp.AT.rows != lp.A.cols ||
       lp.AT.cols != lp.A.rows || lp.AT.nnz != lp.A.nnz ||
       lp.A.rowPtr == nullptr || lp.A.colVal == nullptr ||
@@ -497,14 +497,14 @@ McCormickVariableEliminationAnalysisGpu analyze_mccormick_variable_elimination(
         "cudaMemcpy McCormick selected count");
     analysis.candidate_count = counts[0];
     const std::int32_t min_candidates =
-        std::max(1, params.mccormick_variable_elimination_min_candidates);
+        std::max(1, params.zero_cost_product_variables_min_candidates);
     const double candidate_ratio =
         static_cast<double>(analysis.candidate_count) /
         static_cast<double>(pending && pending->keep_col_mask ? std::max(1, counts[1]) : lp.A.cols);
     analysis.applicable =
         analysis.candidate_count >= min_candidates &&
         candidate_ratio + 1.0e-15 >=
-            params.mccormick_variable_elimination_min_candidate_ratio;
+            params.zero_cost_product_variables_min_candidate_ratio;
     if (!analysis.applicable) {
       cudaFree(analysis.incident_rows);
       analysis.incident_rows = nullptr;
@@ -527,15 +527,15 @@ McCormickVariableEliminationAnalysisGpu analyze_mccormick_variable_elimination(
     cudaFree(analysis.incident_rows);
     analysis.incident_rows = nullptr;
     cudaFree(analysis.selected_col);
-    analysis = McCormickVariableEliminationAnalysisGpu{};
+    analysis = ZeroCostProductVariablesAnalysisGpu{};
     throw;
   }
 }
 
-void build_mccormick_variable_elimination_plan(
+void build_zero_cost_product_variables_plan(
     PresolvePlanGpu& plan,
     const LPInfoGpu& lp,
-    const McCormickVariableEliminationAnalysisGpu& analysis,
+    const ZeroCostProductVariablesAnalysisGpu& analysis,
     const PresolveParams& params) {
   if (!analysis.applicable || analysis.candidate_count <= 0 ||
       analysis.selected_col == nullptr || plan.keep_row_mask == nullptr ||
@@ -548,11 +548,11 @@ void build_mccormick_variable_elimination_plan(
   }
   const int blocks =
       (lp.A.cols + GPU_PRESOLVE_THREADS - 1) / GPU_PRESOLVE_THREADS;
-  apply_mccormick_variable_elimination<<<blocks, GPU_PRESOLVE_THREADS>>>(
+  apply_zero_cost_product_variables<<<blocks, GPU_PRESOLVE_THREADS>>>(
       plan.keep_row_mask, plan.keep_col_mask, analysis.selected_col,
       analysis.incident_rows, lp.A.cols);
   throw_if_cuda_error(cudaGetLastError(),
-                      "apply_mccormick_variable_elimination");
+                      "apply_zero_cost_product_variables");
   throw_if_cuda_error(cudaDeviceSynchronize(),
                       "orphan McCormick projection synchronize");
   plan.has_change = true;
@@ -561,11 +561,11 @@ void build_mccormick_variable_elimination_plan(
   plan.has_projected_auxiliary_reduction = true;
 }
 
-void free_mccormick_variable_elimination_analysis(
-    McCormickVariableEliminationAnalysisGpu& analysis) {
+void free_zero_cost_product_variables_analysis(
+    ZeroCostProductVariablesAnalysisGpu& analysis) {
   cudaFree(analysis.incident_rows);
   cudaFree(analysis.selected_col);
-  analysis = McCormickVariableEliminationAnalysisGpu{};
+  analysis = ZeroCostProductVariablesAnalysisGpu{};
 }
 
 }  // namespace gpu_presolver::presolve

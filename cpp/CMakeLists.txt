@@ -13,7 +13,7 @@ add_library(gpu_presolver_core STATIC
   src/presolve/gpu_presolve.cu
   src/presolve/gpu_presolve_kernels.cu
   src/presolve/presolve_structs.cu
-  src/presolve/rules/variable_pair_aggregation/shifted_antipodal.cu
+  src/presolve/rules/piecewise_linear_reformulation_variable_pair/shifted_antipodal.cu
   src/presolve/rules/rule_two_row_variable_elimination.cu
   src/presolve/rules/rule_column_domination.cu
   src/presolve/rules/rule_infeasible_and_fixed_variables.cu
@@ -22,16 +22,16 @@ add_library(gpu_presolver_core STATIC
   src/presolve/rules/rule_dual_fix.cu
   src/presolve/rules/empty_rows_and_columns/columns.cu
   src/presolve/rules/empty_rows_and_columns/rows.cu
-  src/presolve/rules/rule_variable_pair_aggregation.cu
-  src/presolve/rules/variable_pair_aggregation/epigraph.cu
+  src/presolve/rules/rule_piecewise_linear_reformulation_variable_pair.cu
+  src/presolve/rules/piecewise_linear_reformulation_variable_pair/epigraph.cu
   src/presolve/rules/rule_parallel_columns.cu
   src/presolve/rules/rule_parallel_rows.cu
-  src/presolve/rules/rule_mccormick_variable_elimination.cu
+  src/presolve/rules/rule_zero_cost_product_variables.cu
   src/presolve/rules/rule_bound_strengthening.cu
   src/presolve/rules/rule_redundant_variable_bounds.cu
   src/presolve/rules/rule_singleton_columns.cu
   src/presolve/rules/rule_singleton_rows.cu
-  src/presolve/rules/rule_absolute_value_epigraph_reduction.cu
+  src/presolve/rules/rule_piecewise_linear_reformulation_absolute_value.cu
 )
 add_library(GPUPreprocessor::core ALIAS gpu_presolver_core)
 add_library(GPUPresolverC::core ALIAS gpu_presolver_core)
@@ -91,7 +91,7 @@ if(GPUPRESOLVER_BUILD_TESTS)
     test_gpu_postsolve
     test_gpu_presolve_kernels
     test_lp_problem
-    test_rule_variable_pair_shifted_antipodal
+    test_rule_piecewise_linear_reformulation_variable_pair_shifted_antipodal
     test_rule_singleton_columns
     test_rule_column_domination
     test_rule_doubleton_equations
@@ -103,11 +103,11 @@ if(GPUPRESOLVER_BUILD_TESTS)
     test_rule_bound_strengthening
     test_rule_infeasible_and_fixed_variables
     test_rule_infeasible_and_redundant_rows
-    test_rule_variable_pair_epigraph
+    test_rule_piecewise_linear_reformulation_variable_pair_epigraph
     test_rule_projected_auxiliaries
     test_rule_redundant_variable_bounds
     test_rule_singleton_rows
-    test_rule_absolute_value_epigraph_reduction
+    test_rule_piecewise_linear_reformulation_absolute_value
   )
     add_executable(${test} tests/${test}.cpp)
     target_link_libraries(${test} PRIVATE GPUPresolverC::core)

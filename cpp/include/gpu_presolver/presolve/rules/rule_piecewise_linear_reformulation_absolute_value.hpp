@@ -4,11 +4,11 @@
 
 namespace gpu_presolver::presolve {
 
-void apply_rule_absolute_value_epigraph_reduction(PresolvePlanGpu& plan,
+void apply_rule_piecewise_linear_reformulation_absolute_value(PresolvePlanGpu& plan,
                                            const LPInfoGpu& lp,
                                            const PresolveStatsGpu& stats,
                                            const PresolveParams& pparams);
 
-bool absolute_value_epigraph_prefix_screen_passes(const LPInfoGpu& lp);
+bool piecewise_linear_reformulation_absolute_value_prefix_screen_passes(const LPInfoGpu& lp);
 
 }  // namespace gpu_presolver::presolve

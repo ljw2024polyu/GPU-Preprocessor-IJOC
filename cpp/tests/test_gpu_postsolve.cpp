@@ -188,7 +188,7 @@ void test_presolve_record_drives_fixed_column_postsolve() {
   params.enable_doubleton_equations = false;
   params.enable_dual_fix = false;
   params.enable_parallel_columns = false;
-  params.enable_absolute_value_epigraph_reduction = false;
+  params.enable_piecewise_linear_reformulation_absolute_value = false;
   params.enable_startup = false;
 
   GpuPresolveSummary summary = gpu_presolver::presolve::run_gpu_presolve_with_record(lp, params);
@@ -275,8 +275,8 @@ void test_infeasible_and_fixed_variables_postsolve(double width, bool expect_fix
   params.enable_doubleton_equations = false;
   params.enable_dual_fix = false;
   params.enable_parallel_columns = false;
-  params.enable_absolute_value_epigraph_reduction = false;
-  params.enable_variable_pair_aggregation = false;
+  params.enable_piecewise_linear_reformulation_absolute_value = false;
+  params.enable_piecewise_linear_reformulation_variable_pair = false;
   params.enable_column_domination = false;
 
   assert(params.bound_tol == 1.0e-6);
@@ -359,7 +359,7 @@ void test_empty_column_fixed_value_is_recorded_for_postsolve() {
   params.enable_doubleton_equations = false;
   params.enable_dual_fix = false;
   params.enable_parallel_columns = false;
-  params.enable_absolute_value_epigraph_reduction = false;
+  params.enable_piecewise_linear_reformulation_absolute_value = false;
 
   GpuPresolveSummary summary = gpu_presolver::presolve::run_gpu_presolve_with_record(lp, params);
   gpu_presolver::presolve::export_recovery_record(summary.record);
@@ -895,7 +895,7 @@ void test_bound_change_no_row_replay_projects_unprotected_column_dual() {
   cudaFree(original.AU);
 }
 
-void test_dual_tape_replay_runs_after_absolute_value_epigraph_recovery() {
+void test_dual_tape_replay_runs_after_piecewise_linear_reformulation_absolute_value_recovery() {
   using gpu_presolver::presolve::GpuPostsolveResult;
   using gpu_presolver::presolve::LPInfoGpu;
   using gpu_presolver::presolve::PostsolveDualMode;
@@ -903,8 +903,8 @@ void test_dual_tape_replay_runs_after_absolute_value_epigraph_recovery() {
   using gpu_presolver::presolve::PrimalRecoveryCheckpoint;
   using gpu_presolver::presolve::PrimalRecoveryKind;
   using gpu_presolver::presolve::PresolveRecordGpu;
-  using gpu_presolver::presolve::AbsoluteValueEpigraphPrimalRecoveryStep;
-  using gpu_presolver::presolve::AbsoluteValueEpigraphSplitRecovery;
+  using gpu_presolver::presolve::PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep;
+  using gpu_presolver::presolve::PiecewiseLinearReformulationAbsoluteValueSplitRecovery;
 
   const double inf = std::numeric_limits<double>::infinity();
   LPInfoGpu original;
@@ -935,12 +935,12 @@ void test_dual_tape_replay_runs_after_absolute_value_epigraph_recovery() {
   record.tape.dual_modes = {static_cast<std::uint8_t>(PostsolveDualMode::Minimal)};
   record.tape.indices = {0};
 
-  AbsoluteValueEpigraphPrimalRecoveryStep step;
+  PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep step;
   step.pattern = "test_split";
-  step.splits.push_back(AbsoluteValueEpigraphSplitRecovery{0, 1, 1.0});
-  record.absolute_value_epigraph_recoveries.push_back(step);
+  step.splits.push_back(PiecewiseLinearReformulationAbsoluteValueSplitRecovery{0, 1, 1.0});
+  record.piecewise_linear_reformulation_absolute_value_recoveries.push_back(step);
   record.primal_recovery_timeline.push_back(PrimalRecoveryCheckpoint{
-      PrimalRecoveryKind::AbsoluteValueEpigraph, 0, 0});
+      PrimalRecoveryKind::PiecewiseLinearReformulationAbsoluteValue, 0, 0});
 
   double* x_red = copy_to_device<double>({3.0, 1.0});
   double* y_red = copy_to_device<double>({0.0});
@@ -978,8 +978,8 @@ void test_tape_checkpoint_replays_after_structural_primal() {
   using gpu_presolver::presolve::PrimalRecoveryCheckpoint;
   using gpu_presolver::presolve::PrimalRecoveryKind;
   using gpu_presolver::presolve::PresolveRecordGpu;
-  using gpu_presolver::presolve::AbsoluteValueEpigraphPrimalRecoveryStep;
-  using gpu_presolver::presolve::AbsoluteValueEpigraphSplitRecovery;
+  using gpu_presolver::presolve::PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep;
+  using gpu_presolver::presolve::PiecewiseLinearReformulationAbsoluteValueSplitRecovery;
 
   PresolveRecordGpu record;
   record.m0 = 0;
@@ -998,12 +998,12 @@ void test_tape_checkpoint_replays_after_structural_primal() {
   // One lower affine side: z >= x_0.
   record.tape.vals = {1.0, 1.0, 1.0, 0.0, 1.0};
 
-  AbsoluteValueEpigraphPrimalRecoveryStep step;
+  PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep step;
   step.pattern = "test_tape_checkpoint_order";
-  step.splits.push_back(AbsoluteValueEpigraphSplitRecovery{0, 1, 1.0});
-  record.absolute_value_epigraph_recoveries.push_back(step);
+  step.splits.push_back(PiecewiseLinearReformulationAbsoluteValueSplitRecovery{0, 1, 1.0});
+  record.piecewise_linear_reformulation_absolute_value_recoveries.push_back(step);
   record.primal_recovery_timeline.push_back(PrimalRecoveryCheckpoint{
-      PrimalRecoveryKind::AbsoluteValueEpigraph, 0, 1});
+      PrimalRecoveryKind::PiecewiseLinearReformulationAbsoluteValue, 0, 1});
 
   double* x_red = copy_to_device<double>({3.0, 1.0});
   double* z_red = copy_to_device<double>({0.0, 0.0});
@@ -1028,8 +1028,8 @@ void test_structural_tape_structural_timeline_replays_exact_reverse_order() {
   using gpu_presolver::presolve::PrimalRecoveryCheckpoint;
   using gpu_presolver::presolve::PrimalRecoveryKind;
   using gpu_presolver::presolve::PresolveRecordGpu;
-  using gpu_presolver::presolve::AbsoluteValueEpigraphPrimalRecoveryStep;
-  using gpu_presolver::presolve::AbsoluteValueEpigraphSplitRecovery;
+  using gpu_presolver::presolve::PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep;
+  using gpu_presolver::presolve::PiecewiseLinearReformulationAbsoluteValueSplitRecovery;
 
   PresolveRecordGpu record;
   record.m0 = 0;
@@ -1047,19 +1047,19 @@ void test_structural_tape_structural_timeline_replays_exact_reverse_order() {
   record.tape.indices = {0, 2, 1, 0};
   record.tape.vals = {1.0, 1.0, 1.0, 0.0, 1.0};
 
-  AbsoluteValueEpigraphPrimalRecoveryStep first;
+  PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep first;
   first.pattern = "timeline_s1";
-  first.splits.push_back(AbsoluteValueEpigraphSplitRecovery{0, 1, 1.0});
-  record.absolute_value_epigraph_recoveries.push_back(first);
+  first.splits.push_back(PiecewiseLinearReformulationAbsoluteValueSplitRecovery{0, 1, 1.0});
+  record.piecewise_linear_reformulation_absolute_value_recoveries.push_back(first);
   record.primal_recovery_timeline.push_back(PrimalRecoveryCheckpoint{
-      PrimalRecoveryKind::AbsoluteValueEpigraph, 0, 0});
+      PrimalRecoveryKind::PiecewiseLinearReformulationAbsoluteValue, 0, 0});
 
-  AbsoluteValueEpigraphPrimalRecoveryStep second;
+  PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep second;
   second.pattern = "timeline_s2";
-  second.splits.push_back(AbsoluteValueEpigraphSplitRecovery{0, 3, 1.0});
-  record.absolute_value_epigraph_recoveries.push_back(second);
+  second.splits.push_back(PiecewiseLinearReformulationAbsoluteValueSplitRecovery{0, 3, 1.0});
+  record.piecewise_linear_reformulation_absolute_value_recoveries.push_back(second);
   record.primal_recovery_timeline.push_back(PrimalRecoveryCheckpoint{
-      PrimalRecoveryKind::AbsoluteValueEpigraph, 1, 1});
+      PrimalRecoveryKind::PiecewiseLinearReformulationAbsoluteValue, 1, 1});
 
   double* x_red = copy_to_device<double>({2.0, 1.0, 1.0});
   double* z_red = copy_to_device<double>({0.0, 0.0, 0.0});
@@ -1079,16 +1079,16 @@ void test_postsolve_rejects_invalid_primal_recovery_checkpoint() {
   using gpu_presolver::presolve::PrimalRecoveryCheckpoint;
   using gpu_presolver::presolve::PrimalRecoveryKind;
   using gpu_presolver::presolve::PresolveRecordGpu;
-  using gpu_presolver::presolve::AbsoluteValueEpigraphPrimalRecoveryStep;
-  using gpu_presolver::presolve::AbsoluteValueEpigraphSplitRecovery;
+  using gpu_presolver::presolve::PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep;
+  using gpu_presolver::presolve::PiecewiseLinearReformulationAbsoluteValueSplitRecovery;
 
   PresolveRecordGpu record;
   record.n0 = 2;
-  AbsoluteValueEpigraphPrimalRecoveryStep step;
-  step.splits.push_back(AbsoluteValueEpigraphSplitRecovery{0, 1, 1.0});
-  record.absolute_value_epigraph_recoveries.push_back(step);
+  PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep step;
+  step.splits.push_back(PiecewiseLinearReformulationAbsoluteValueSplitRecovery{0, 1, 1.0});
+  record.piecewise_linear_reformulation_absolute_value_recoveries.push_back(step);
   record.primal_recovery_timeline.push_back(PrimalRecoveryCheckpoint{
-      PrimalRecoveryKind::AbsoluteValueEpigraph, 0, 1});
+      PrimalRecoveryKind::PiecewiseLinearReformulationAbsoluteValue, 0, 1});
 
   bool threw = false;
   try {
@@ -1137,7 +1137,7 @@ void test_parallel_columnumn_rule_records_globalized_postsolve_tape() {
   params.enable_singleton_columns = false;
   params.enable_doubleton_equations = false;
   params.enable_dual_fix = false;
-  params.enable_absolute_value_epigraph_reduction = false;
+  params.enable_piecewise_linear_reformulation_absolute_value = false;
 
   GpuPresolveSummary summary = gpu_presolver::presolve::run_gpu_presolve_with_record(lp, params);
   gpu_presolver::presolve::export_recovery_record(summary.record);
@@ -1202,7 +1202,7 @@ int main() {
   test_deleted_row_and_bound_change_replay_with_original_model();
   test_row_bound_change_replay_refines_live_row_duals_from_original_model();
   test_bound_change_no_row_replay_projects_unprotected_column_dual();
-  test_dual_tape_replay_runs_after_absolute_value_epigraph_recovery();
+  test_dual_tape_replay_runs_after_piecewise_linear_reformulation_absolute_value_recovery();
   test_tape_checkpoint_replays_after_structural_primal();
   test_structural_tape_structural_timeline_replays_exact_reverse_order();
   test_postsolve_rejects_invalid_primal_recovery_checkpoint();

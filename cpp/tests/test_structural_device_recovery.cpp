@@ -70,24 +70,24 @@ void test_pairs(bool shifted) {
   begin_measure();
   capture_variable_pair_recovery_device(p,parent,3,shifted?plus:nullptr,shifted?minus:nullptr);
   end_measure(0);
-  assert(p.variable_pair_aggregation_recovery.plus_cols.empty());
+  assert(p.piecewise_linear_reformulation_variable_pair_recovery.plus_cols.empty());
   cudaFree(parent); cudaFree(plus); cudaFree(minus);
   auto r = record(true), oracle = record(false);
   begin_measure(); commit(r,p); end_measure(0);
-  assert(!p.variable_pair_aggregation_device);
-  assert(r.variable_pair_aggregation_recoveries[0].plus_cols.empty());
-  VariablePairAggregationRecoveryStep expected;
+  assert(!p.piecewise_linear_reformulation_variable_pair_device);
+  assert(r.piecewise_linear_reformulation_variable_pair_recoveries[0].plus_cols.empty());
+  PiecewiseLinearReformulationVariablePairRecoveryStep expected;
   expected.plus_cols = {mapped(0),mapped(1),mapped(2)};
   expected.minus_cols = {mapped(3),mapped(4),mapped(5)};
   expected.root_plus_cols = {mapped(0),mapped(0),mapped(2)};
   expected.root_minus_cols = {mapped(3),mapped(3),mapped(5)};
   expected.plus_shift = shifted ? std::vector<double>{2,4,0} : std::vector<double>(3,0);
   expected.minus_shift = shifted ? std::vector<double>{1,3,0} : std::vector<double>(3,0);
-  oracle.variable_pair_aggregation_recoveries.push_back(expected);
-  oracle.primal_recovery_timeline.push_back({PrimalRecoveryKind::VariablePairAggregation,0,0});
+  oracle.piecewise_linear_reformulation_variable_pair_recoveries.push_back(expected);
+  oracle.primal_recovery_timeline.push_back({PrimalRecoveryKind::PiecewiseLinearReformulationVariablePair,0,0});
   compare_postsolve(r,oracle);
   export_recovery_record(r);
-  const auto& q = r.variable_pair_aggregation_recoveries[0];
+  const auto& q = r.piecewise_linear_reformulation_variable_pair_recoveries[0];
   assert(q.plus_cols == expected.plus_cols && q.minus_cols == expected.minus_cols);
   assert(q.root_plus_cols == expected.root_plus_cols && q.root_minus_cols == expected.root_minus_cols);
   assert(q.plus_shift == expected.plus_shift && q.minus_shift == expected.minus_shift);
@@ -110,17 +110,17 @@ void test_absolute_value() {
   begin_measure();
   capture_absolute_value_max_slacks_device(p,t,row_block,row_slack,row_factor,removable,8,12);
   end_measure(sizeof(int)*4); // One group count and three offsets; no payload.
-  assert(p.absolute_value_epigraph_recovery.splits.empty());
-  assert(p.absolute_value_epigraph_recovery.outer_pairs.empty());
-  assert(p.absolute_value_epigraph_recovery.linked_slacks.empty());
-  assert(p.absolute_value_epigraph_recovery.max_slacks.empty());
+  assert(p.piecewise_linear_reformulation_absolute_value_recovery.splits.empty());
+  assert(p.piecewise_linear_reformulation_absolute_value_recovery.outer_pairs.empty());
+  assert(p.piecewise_linear_reformulation_absolute_value_recovery.linked_slacks.empty());
+  assert(p.piecewise_linear_reformulation_absolute_value_recovery.max_slacks.empty());
   for (int* ptr : {t,e,bound,free,slack,linked_t,row_block,row_slack}) cudaFree(ptr);
   for (double* ptr : {rho,factor,row_factor}) cudaFree(ptr);
   cudaFree(removable);
   auto r=record(true), oracle=record(false);
   begin_measure(); commit(r,p); end_measure(0);
-  assert(!p.absolute_value_epigraph_device);
-  AbsoluteValueEpigraphPrimalRecoveryStep expected;
+  assert(!p.piecewise_linear_reformulation_absolute_value_device);
+  PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep expected;
   expected.pattern="device-test";
   expected.splits={{mapped(0),mapped(1),2},{mapped(2),mapped(3),4}};
   expected.outer_pairs={{mapped(4),mapped(5)}};
@@ -128,11 +128,11 @@ void test_absolute_value() {
   // First incident row orders groups 9,8; supports retain input row order.
   expected.max_slacks={{mapped(9),{mapped(2),mapped(0)},{0.5,1.5}},
                        {mapped(8),{mapped(0),mapped(2),mapped(0)},{-2,3,4}}};
-  oracle.absolute_value_epigraph_recoveries.push_back(expected);
-  oracle.primal_recovery_timeline.push_back({PrimalRecoveryKind::AbsoluteValueEpigraph,0,0});
+  oracle.piecewise_linear_reformulation_absolute_value_recoveries.push_back(expected);
+  oracle.primal_recovery_timeline.push_back({PrimalRecoveryKind::PiecewiseLinearReformulationAbsoluteValue,0,0});
   compare_postsolve(r,oracle);
   export_recovery_record(r);
-  const auto& q=r.absolute_value_epigraph_recoveries[0];
+  const auto& q=r.piecewise_linear_reformulation_absolute_value_recoveries[0];
   assert(q.pattern == expected.pattern && q.max_slacks.size()==2);
   for (int i=0;i<2;++i) {
     assert(q.splits[i].t_col==expected.splits[i].t_col && q.splits[i].e_col==expected.splits[i].e_col);

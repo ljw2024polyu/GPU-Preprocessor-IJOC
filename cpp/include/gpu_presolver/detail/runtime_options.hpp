@@ -38,9 +38,9 @@ struct Options {
   bool profile_doubleton = false;
   bool profile_parallel_columns = false;
   bool profile_parallel_rows = false;
-  bool profile_absolute_value = false;
-  bool profile_variable_pair_epigraph = false;
-  bool profile_shifted_antipodal = false;
+  bool profile_piecewise_linear_reformulation_absolute_value = false;
+  bool profile_piecewise_linear_reformulation_variable_pair_epigraph = false;
+  bool profile_piecewise_linear_reformulation_variable_pair_shifted_antipodal = false;
   bool record_removed_indices = false;
   bool recovery_stats = false;
   bool audit_row_signatures = false;

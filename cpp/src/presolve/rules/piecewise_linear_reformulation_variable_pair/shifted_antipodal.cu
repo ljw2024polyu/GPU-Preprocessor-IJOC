@@ -44,7 +44,7 @@ __device__ bool _valid_row_bounds(double lower, double upper) {
          lower != INFINITY && upper != -INFINITY;
 }
 
-__global__ void _kernel_quick_variable_pair_shifted_antipodal_probe(
+__global__ void _kernel_quick_piecewise_linear_reformulation_variable_pair_shifted_antipodal_probe(
     std::int32_t* failed,
     const NnzOffset* at_row_ptr,
     const std::int32_t* at_col_val,
@@ -172,7 +172,7 @@ __global__ void _kernel_validate_pair_metadata(
   pair_constant[pair] = constant;
 }
 
-__global__ void _kernel_classify_variable_pair_shifted_antipodal_rows(
+__global__ void _kernel_classify_piecewise_linear_reformulation_variable_pair_shifted_antipodal_rows(
     std::int32_t* failed,
     std::int32_t* edge_count,
     unsigned long long* edge_by_row,
@@ -283,7 +283,7 @@ __device__ std::int32_t _find_component_root_compress(std::int32_t* parent,
   }
 }
 
-__global__ void _kernel_union_variable_pair_shifted_antipodal_edges(
+__global__ void _kernel_union_piecewise_linear_reformulation_variable_pair_shifted_antipodal_edges(
     std::int32_t* failed,
     std::int32_t* parent,
     const unsigned long long* edge_by_row,
@@ -330,7 +330,7 @@ __global__ void _kernel_compress_components(std::int32_t* parent,
   parent[pair] = root;
 }
 
-__global__ void _kernel_verify_variable_pair_shifted_antipodal(
+__global__ void _kernel_verify_piecewise_linear_reformulation_variable_pair_shifted_antipodal(
     std::int32_t* failed,
     const std::int32_t* parent,
     const unsigned long long* edge_by_row,
@@ -513,7 +513,7 @@ __device__ std::int32_t _collect_quotient_row(
   return active;
 }
 
-__global__ void _kernel_prepare_variable_pair_shifted_antipodal_columns(
+__global__ void _kernel_prepare_piecewise_linear_reformulation_variable_pair_shifted_antipodal_columns(
     std::uint8_t* keep_col,
     double* new_c,
     double* new_l,
@@ -684,9 +684,9 @@ void inclusive_scan_i32(const T* input, T* output,
 
 }  // namespace
 
-bool quick_probe_variable_pair_shifted_antipodal(const LPInfoGpu& lp,
+bool quick_probe_piecewise_linear_reformulation_variable_pair_shifted_antipodal(const LPInfoGpu& lp,
                                       const PresolveParams& params) {
-  if (!params.enable_variable_pair_aggregation || lp.A.cols <= 0 ||
+  if (!params.enable_piecewise_linear_reformulation_variable_pair || lp.A.cols <= 0 ||
       (lp.A.cols & 1) != 0 || lp.A.rows <= 0 || lp.AT.rows != lp.A.cols ||
       lp.AT.cols != lp.A.rows || lp.AT.nnz != lp.A.nnz ||
       lp.A.rowPtr == nullptr || lp.A.colVal == nullptr ||
@@ -697,11 +697,11 @@ bool quick_probe_variable_pair_shifted_antipodal(const LPInfoGpu& lp,
     return false;
   }
   const std::int32_t pair_count = lp.A.cols / 2;
-  if (pair_count < std::max(1, params.variable_pair_shifted_antipodal_min_pairs)) {
+  if (pair_count < std::max(1, params.piecewise_linear_reformulation_variable_pair_shifted_antipodal_min_pairs)) {
     return false;
   }
   const std::int32_t probes =
-      std::max(1, std::min(pair_count, params.variable_pair_shifted_antipodal_probe_pairs));
+      std::max(1, std::min(pair_count, params.piecewise_linear_reformulation_variable_pair_shifted_antipodal_probe_pairs));
   const std::int32_t row_probes = std::min(lp.A.rows, MAX_PROBE_ROWS);
   std::int32_t* probe_state = nullptr;
   throw_if_cuda_error(cudaMalloc(&probe_state, 2 * sizeof(std::int32_t)),
@@ -710,10 +710,10 @@ bool quick_probe_variable_pair_shifted_antipodal(const LPInfoGpu& lp,
     throw_if_cuda_error(cudaMemset(probe_state, 0, 2 * sizeof(std::int32_t)),
                         "cudaMemset antipodal quick state");
     const int blocks = (probes + GPU_PRESOLVE_THREADS - 1) / GPU_PRESOLVE_THREADS;
-    _kernel_quick_variable_pair_shifted_antipodal_probe<<<blocks, GPU_PRESOLVE_THREADS>>>(
+    _kernel_quick_piecewise_linear_reformulation_variable_pair_shifted_antipodal_probe<<<blocks, GPU_PRESOLVE_THREADS>>>(
         probe_state, lp.AT.rowPtr, lp.AT.colVal, lp.AT.nzVal, lp.c, lp.l, lp.u,
         pair_count, probes);
-    throw_if_cuda_error(cudaGetLastError(), "_kernel_quick_variable_pair_shifted_antipodal_probe");
+    throw_if_cuda_error(cudaGetLastError(), "_kernel_quick_piecewise_linear_reformulation_variable_pair_shifted_antipodal_probe");
     const int row_blocks =
         (row_probes + GPU_PRESOLVE_THREADS - 1) / GPU_PRESOLVE_THREADS;
     _kernel_quick_merge_row_probe<<<row_blocks, GPU_PRESOLVE_THREADS>>>(
@@ -734,22 +734,22 @@ bool quick_probe_variable_pair_shifted_antipodal(const LPInfoGpu& lp,
   }
 }
 
-void free_variable_pair_shifted_antipodal_analysis(
-    VariablePairShiftedAntipodalAnalysisGpu& analysis) {
+void free_piecewise_linear_reformulation_variable_pair_shifted_antipodal_analysis(
+    PiecewiseLinearReformulationVariablePairShiftedAntipodalAnalysisGpu& analysis) {
   cudaFree(analysis.edge_by_row);
   cudaFree(analysis.parent);
   cudaFree(analysis.pair_shift);
   cudaFree(analysis.component_plus_cap);
   cudaFree(analysis.component_minus_cap);
   cudaFree(analysis.component_rho);
-  analysis = VariablePairShiftedAntipodalAnalysisGpu{};
+  analysis = PiecewiseLinearReformulationVariablePairShiftedAntipodalAnalysisGpu{};
 }
 
-VariablePairShiftedAntipodalAnalysisGpu analyze_variable_pair_shifted_antipodal(
+PiecewiseLinearReformulationVariablePairShiftedAntipodalAnalysisGpu analyze_piecewise_linear_reformulation_variable_pair_shifted_antipodal(
     const LPInfoGpu& lp,
     const PresolveParams& params) {
-  VariablePairShiftedAntipodalAnalysisGpu analysis;
-  if (!quick_probe_variable_pair_shifted_antipodal(lp, params)) {
+  PiecewiseLinearReformulationVariablePairShiftedAntipodalAnalysisGpu analysis;
+  if (!quick_probe_piecewise_linear_reformulation_variable_pair_shifted_antipodal(lp, params)) {
     return analysis;
   }
   const auto analysis_start = std::chrono::steady_clock::now();
@@ -772,7 +772,7 @@ VariablePairShiftedAntipodalAnalysisGpu analyze_variable_pair_shifted_antipodal(
     edge_count_d = nullptr;
     root_count_d = nullptr;
     pair_constant = nullptr;
-    free_variable_pair_shifted_antipodal_analysis(analysis);
+    free_piecewise_linear_reformulation_variable_pair_shifted_antipodal_analysis(analysis);
   };
 
   try {
@@ -804,13 +804,13 @@ VariablePairShiftedAntipodalAnalysisGpu analyze_variable_pair_shifted_antipodal(
                         "_kernel_validate_pair_metadata");
     const std::int32_t max_terms = std::max(
         1, std::min(MAX_QUOTIENT_TERMS,
-                    params.variable_pair_shifted_antipodal_max_quotient_terms_per_row));
-    _kernel_classify_variable_pair_shifted_antipodal_rows<<<row_blocks, GPU_PRESOLVE_THREADS>>>(
+                    params.piecewise_linear_reformulation_variable_pair_shifted_antipodal_max_quotient_terms_per_row));
+    _kernel_classify_piecewise_linear_reformulation_variable_pair_shifted_antipodal_rows<<<row_blocks, GPU_PRESOLVE_THREADS>>>(
         status, edge_count_d, analysis.edge_by_row, lp.A.rowPtr, lp.A.colVal,
         lp.A.nzVal, lp.AL, lp.AU, analysis.pair_shift, rows, pair_count,
         max_terms);
     throw_if_cuda_error(cudaGetLastError(),
-                        "_kernel_classify_variable_pair_shifted_antipodal_rows");
+                        "_kernel_classify_piecewise_linear_reformulation_variable_pair_shifted_antipodal_rows");
 
     std::int32_t host_status = 0;
     throw_if_cuda_error(cudaMemcpy(&host_status, status, sizeof(std::int32_t),
@@ -821,15 +821,15 @@ VariablePairShiftedAntipodalAnalysisGpu analyze_variable_pair_shifted_antipodal(
                         "cudaMemcpy antipodal edge count");
     if (host_status != 0 || analysis.edge_count < 1) {
       reject();
-      return VariablePairShiftedAntipodalAnalysisGpu{};
+      return PiecewiseLinearReformulationVariablePairShiftedAntipodalAnalysisGpu{};
     }
     const double potential_gain =
         static_cast<double>(std::min(analysis.edge_count, pair_count - 1)) /
         static_cast<double>(pair_count);
-    if (analysis.edge_count < std::max(1, params.variable_pair_shifted_antipodal_min_pairs) ||
-        potential_gain < params.variable_pair_shifted_antipodal_min_potential_gain) {
+    if (analysis.edge_count < std::max(1, params.piecewise_linear_reformulation_variable_pair_shifted_antipodal_min_pairs) ||
+        potential_gain < params.piecewise_linear_reformulation_variable_pair_shifted_antipodal_min_potential_gain) {
       reject();
-      return VariablePairShiftedAntipodalAnalysisGpu{};
+      return PiecewiseLinearReformulationVariablePairShiftedAntipodalAnalysisGpu{};
     }
 
     // The rejection path above covers common [B,-B] models that have no
@@ -857,19 +857,19 @@ VariablePairShiftedAntipodalAnalysisGpu analyze_variable_pair_shifted_antipodal(
         analysis.parent, analysis.component_plus_cap,
         analysis.component_minus_cap, analysis.component_rho, pair_count);
     throw_if_cuda_error(cudaGetLastError(), "_kernel_init_components");
-    _kernel_union_variable_pair_shifted_antipodal_edges<<<row_blocks, GPU_PRESOLVE_THREADS>>>(
+    _kernel_union_piecewise_linear_reformulation_variable_pair_shifted_antipodal_edges<<<row_blocks, GPU_PRESOLVE_THREADS>>>(
         status, analysis.parent, analysis.edge_by_row, analysis.pair_shift,
         rows);
     throw_if_cuda_error(cudaGetLastError(),
-                        "_kernel_union_variable_pair_shifted_antipodal_edges");
+                        "_kernel_union_piecewise_linear_reformulation_variable_pair_shifted_antipodal_edges");
     _kernel_compress_components<<<pair_blocks, GPU_PRESOLVE_THREADS>>>(
         analysis.parent, pair_count);
     throw_if_cuda_error(cudaGetLastError(), "_kernel_compress_components");
-    _kernel_verify_variable_pair_shifted_antipodal<<<row_blocks, GPU_PRESOLVE_THREADS>>>(
+    _kernel_verify_piecewise_linear_reformulation_variable_pair_shifted_antipodal<<<row_blocks, GPU_PRESOLVE_THREADS>>>(
         status, analysis.parent, analysis.edge_by_row, analysis.pair_shift,
         rows);
     throw_if_cuda_error(cudaGetLastError(),
-                        "_kernel_verify_variable_pair_shifted_antipodal");
+                        "_kernel_verify_piecewise_linear_reformulation_variable_pair_shifted_antipodal");
     throw_if_cuda_error(cudaMemset(root_count_d, 0, sizeof(std::int32_t)),
                         "cudaMemset antipodal root count");
     _kernel_count_component_roots<<<pair_blocks, GPU_PRESOLVE_THREADS>>>(
@@ -884,14 +884,14 @@ VariablePairShiftedAntipodalAnalysisGpu analyze_variable_pair_shifted_antipodal(
                         "cudaMemcpy antipodal component count");
     if (host_status != 0 || analysis.component_count <= 0) {
       reject();
-      return VariablePairShiftedAntipodalAnalysisGpu{};
+      return PiecewiseLinearReformulationVariablePairShiftedAntipodalAnalysisGpu{};
     }
     const double actual_gain =
         1.0 - static_cast<double>(analysis.component_count) /
                   static_cast<double>(pair_count);
-    if (actual_gain < params.variable_pair_shifted_antipodal_min_actual_gain) {
+    if (actual_gain < params.piecewise_linear_reformulation_variable_pair_shifted_antipodal_min_actual_gain) {
       reject();
-      return VariablePairShiftedAntipodalAnalysisGpu{};
+      return PiecewiseLinearReformulationVariablePairShiftedAntipodalAnalysisGpu{};
     }
 
     _kernel_aggregate_component_metadata<<<pair_blocks,
@@ -912,7 +912,7 @@ VariablePairShiftedAntipodalAnalysisGpu analyze_variable_pair_shifted_antipodal(
                         "cudaMemcpy antipodal metadata status");
     if (host_status != 0) {
       reject();
-      return VariablePairShiftedAntipodalAnalysisGpu{};
+      return PiecewiseLinearReformulationVariablePairShiftedAntipodalAnalysisGpu{};
     }
     analysis.objective_constant_delta =
         reduce_sum_double(pair_constant, pair_count);
@@ -920,7 +920,7 @@ VariablePairShiftedAntipodalAnalysisGpu analyze_variable_pair_shifted_antipodal(
         !std::isfinite(lp.obj_constant +
                        analysis.objective_constant_delta)) {
       reject();
-      return VariablePairShiftedAntipodalAnalysisGpu{};
+      return PiecewiseLinearReformulationVariablePairShiftedAntipodalAnalysisGpu{};
     }
     analysis.applicable = true;
 
@@ -932,10 +932,10 @@ VariablePairShiftedAntipodalAnalysisGpu analyze_variable_pair_shifted_antipodal(
     edge_count_d = nullptr;
     root_count_d = nullptr;
     pair_constant = nullptr;
-    if (params.verbose || runtime::options().profile_shifted_antipodal) {
+    if (params.verbose || runtime::options().profile_piecewise_linear_reformulation_variable_pair_shifted_antipodal) {
       const std::chrono::duration<double> elapsed =
           std::chrono::steady_clock::now() - analysis_start;
-      std::cerr << ">>> [variable_pair_aggregation] case=shifted_antipodal full-check=true pairs="
+      std::cerr << ">>> [piecewise_linear_reformulation_variable_pair] case=shifted_antipodal full-check=true pairs="
                 << pair_count << " merge_edges=" << analysis.edge_count
                 << " components=" << analysis.component_count
                 << " gain=" << actual_gain << " analysis="
@@ -948,9 +948,9 @@ VariablePairShiftedAntipodalAnalysisGpu analyze_variable_pair_shifted_antipodal(
   }
 }
 
-void build_variable_pair_shifted_antipodal_plan(PresolvePlanGpu& plan,
+void build_piecewise_linear_reformulation_variable_pair_shifted_antipodal_plan(PresolvePlanGpu& plan,
                                     const LPInfoGpu& lp,
-                                    VariablePairShiftedAntipodalAnalysisGpu& analysis,
+                                    PiecewiseLinearReformulationVariablePairShiftedAntipodalAnalysisGpu& analysis,
                                     const PresolveParams& params) {
   if (!analysis.applicable || analysis.pair_count <= 0) {
     return;
@@ -978,12 +978,12 @@ void build_variable_pair_shifted_antipodal_plan(PresolvePlanGpu& plan,
     throw_if_cuda_error(cudaMemset(zero_rows_d, 0, sizeof(std::int32_t)),
                         "cudaMemset antipodal zero rows");
 
-    _kernel_prepare_variable_pair_shifted_antipodal_columns<<<pair_blocks, GPU_PRESOLVE_THREADS>>>(
+    _kernel_prepare_piecewise_linear_reformulation_variable_pair_shifted_antipodal_columns<<<pair_blocks, GPU_PRESOLVE_THREADS>>>(
         plan.keep_col_mask, plan.new_c, plan.new_l, plan.new_u,
         analysis.parent, analysis.component_plus_cap,
         analysis.component_minus_cap, analysis.component_rho, pair_count);
     throw_if_cuda_error(cudaGetLastError(),
-                        "_kernel_prepare_variable_pair_shifted_antipodal_columns");
+                        "_kernel_prepare_piecewise_linear_reformulation_variable_pair_shifted_antipodal_columns");
     _kernel_count_rewritten_rows<<<row_blocks, GPU_PRESOLVE_THREADS>>>(
         status, zero_rows_d, row_counts, plan.keep_row_mask, plan.new_AL,
         plan.new_AU, analysis.parent, analysis.pair_shift,
@@ -1062,7 +1062,7 @@ void build_variable_pair_shifted_antipodal_plan(PresolvePlanGpu& plan,
                      cudaMemcpyDeviceToHost),
           "cudaMemcpy antipodal recovery minus lower");
 
-      VariablePairAggregationRecoveryStep recovery;
+      PiecewiseLinearReformulationVariablePairRecoveryStep recovery;
       recovery.plus_cols.resize(static_cast<std::size_t>(pair_count));
       recovery.minus_cols.resize(static_cast<std::size_t>(pair_count));
       recovery.root_plus_cols.resize(static_cast<std::size_t>(pair_count));
@@ -1077,9 +1077,9 @@ void build_variable_pair_shifted_antipodal_plan(PresolvePlanGpu& plan,
         recovery.root_minus_cols[static_cast<std::size_t>(pair)] =
             host_parent[static_cast<std::size_t>(pair)] + pair_count;
       }
-      plan.variable_pair_aggregation_recovery = std::move(recovery);
+      plan.piecewise_linear_reformulation_variable_pair_recovery = std::move(recovery);
     }
-    plan.has_variable_pair_aggregation_recovery = true;
+    plan.has_piecewise_linear_reformulation_variable_pair_recovery = true;
     plan.obj_constant_delta += analysis.objective_constant_delta;
     plan.has_change = true;
     plan.has_row_action = analysis.zero_rows > 0;

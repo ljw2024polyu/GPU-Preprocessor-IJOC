@@ -75,7 +75,7 @@ static void print_usage(const char* prog) {
               << "      --presolver <pslp|pslp0011|gpu|gurobi|none>  Select backend; pslp/pslp0011 use 0.0.11 (default: gpu)\n"
               << "      --gpu-folding <true/false>  Enable/disable GPU presolver folding (default: true)\n"
               << "      --gpu-presolve <true/false>  Enable GPU presolve after optional folding (default: true)\n"
-              << "      --gpu-new-rules <true/false>  Enable the five structure-specific GPU rule families (default: true)\n"
+              << "      --gpu-new-rules <true/false>  Enable the structure-specific GPU presolve rules (default: true)\n"
               << "      --reduced-matrix <true/false>  Enable adaptive row/column reduction in manual mode (default: true)\n"
               << "      --auto-memory-policy <true/false>  Couple reduced/compression from presolved dimensions (default: false)\n"
               << "  -h, --help                 Show this help and exit\n"

@@ -3,7 +3,7 @@
 #include "gpu_presolver/presolve/gpu_postsolve.hpp"
 #include "gpu_presolver/presolve/gpu_presolve.hpp"
 #include "gpu_presolver/presolve/rules/rule_two_row_variable_elimination.hpp"
-#include "gpu_presolver/presolve/rules/rule_mccormick_variable_elimination.hpp"
+#include "gpu_presolver/presolve/rules/rule_zero_cost_product_variables.hpp"
 
 #include <cuda_runtime.h>
 
@@ -177,8 +177,8 @@ gpu_presolver::presolve::PresolveParams projected_only_params() {
   PresolveParams params;
   params.max_iters = 1;
   params.enable_column_domination = false;
-  params.enable_variable_pair_aggregation = false;
-  params.enable_absolute_value_epigraph_reduction = false;
+  params.enable_piecewise_linear_reformulation_variable_pair = false;
+  params.enable_piecewise_linear_reformulation_absolute_value = false;
   params.enable_infeasible_and_fixed_variables = false;
   params.enable_empty_rows = false;
   params.enable_singleton_rows = false;
@@ -195,8 +195,8 @@ gpu_presolver::presolve::PresolveParams projected_only_params() {
 
   params.two_row_variable_elimination_min_candidates = 1;
   params.two_row_variable_elimination_min_candidate_ratio = 0.0;
-  params.mccormick_variable_elimination_min_candidates = 1;
-  params.mccormick_variable_elimination_min_candidate_ratio = 0.0;
+  params.zero_cost_product_variables_min_candidates = 1;
+  params.zero_cost_product_variables_min_candidate_ratio = 0.0;
   return params;
 }
 
@@ -264,23 +264,23 @@ void test_mccormick_detector_is_exact_and_fail_closed() {
   PresolveParams params = projected_only_params();
 
   LPInfoGpu exact = make_mccormick_lp(false, false);
-  McCormickVariableEliminationAnalysisGpu analysis =
-      analyze_mccormick_variable_elimination(exact, params);
+  ZeroCostProductVariablesAnalysisGpu analysis =
+      analyze_zero_cost_product_variables(exact, params);
   assert(analysis.applicable);
   assert(analysis.candidate_count == 1);
-  free_mccormick_variable_elimination_analysis(analysis);
+  free_zero_cost_product_variables_analysis(analysis);
   free_lp(exact);
 
   LPInfoGpu corrupted = make_mccormick_lp(true, false);
-  analysis = analyze_mccormick_variable_elimination(corrupted, params);
+  analysis = analyze_zero_cost_product_variables(corrupted, params);
   assert(!analysis.applicable);
-  free_mccormick_variable_elimination_analysis(analysis);
+  free_zero_cost_product_variables_analysis(analysis);
   free_lp(corrupted);
 
   LPInfoGpu nonunit = make_mccormick_lp(false, true);
-  analysis = analyze_mccormick_variable_elimination(nonunit, params);
+  analysis = analyze_zero_cost_product_variables(nonunit, params);
   assert(!analysis.applicable);
-  free_mccormick_variable_elimination_analysis(analysis);
+  free_zero_cost_product_variables_analysis(analysis);
   free_lp(nonunit);
 }
 
@@ -306,10 +306,10 @@ void test_batch_matches_separate_applies() {
   auto lp = make_pair_block_lp();
   auto params = projected_only_params();
   // The second rule sees 5 live columns: 1/5 passes, whereas 1/6 would fail.
-  params.mccormick_variable_elimination_min_candidate_ratio = 0.19;
+  params.zero_cost_product_variables_min_candidate_ratio = 0.19;
   auto batch = run_gpu_presolve_with_reduced_lp(lp, params);
   auto first_params = params;
-  first_params.enable_mccormick_variable_elimination = false;
+  first_params.enable_zero_cost_product_variables = false;
   auto first = run_gpu_presolve_with_reduced_lp(lp, first_params);
   auto second_params = params;
   second_params.enable_two_row_variable_elimination = false;
@@ -370,11 +370,11 @@ void test_pending_masks_and_gpu_tape() {
     assert(two.applicable && two.candidate_count == 1);
     build_two_row_variable_elimination_plan(plan, lp, two, params);
     free_two_row_variable_elimination_analysis(two);
-    params.mccormick_variable_elimination_min_candidate_ratio = .19;
-    auto mc = analyze_mccormick_variable_elimination(lp, params, &plan);
+    params.zero_cost_product_variables_min_candidate_ratio = .19;
+    auto mc = analyze_zero_cost_product_variables(lp, params, &plan);
     assert(mc.applicable && mc.candidate_count == 1);
-    build_mccormick_variable_elimination_plan(plan, lp, mc, params);
-    free_mccormick_variable_elimination_analysis(mc);
+    build_zero_cost_product_variables_plan(plan, lp, mc, params);
+    free_zero_cost_product_variables_analysis(mc);
     export_local_recovery_tape(plan.tape);
     // Only row IDs differ from the compact reference (extra deleted row 0).
     auto indices = plan.tape.indices;

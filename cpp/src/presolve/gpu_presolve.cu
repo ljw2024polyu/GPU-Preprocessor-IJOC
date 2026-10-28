@@ -9,7 +9,7 @@
 #include "gpu_presolver/presolve/stable_mapping.hpp"
 #include "gpu_presolver/presolve/transpose64.hpp"
 
-#include "gpu_presolver/presolve/rules/rule_variable_pair_aggregation.hpp"
+#include "gpu_presolver/presolve/rules/rule_piecewise_linear_reformulation_variable_pair.hpp"
 #include "plan_storage.hpp"
 #include "gpu_presolver/presolve/rules/rule_two_row_variable_elimination.hpp"
 #include "gpu_presolver/presolve/rules/rule_column_domination.hpp"
@@ -20,11 +20,11 @@
 #include "gpu_presolver/presolve/rules/rule_empty_rows_and_columns.hpp"
 #include "gpu_presolver/presolve/rules/rule_parallel_columns.hpp"
 #include "gpu_presolver/presolve/rules/rule_parallel_rows.hpp"
-#include "gpu_presolver/presolve/rules/rule_mccormick_variable_elimination.hpp"
+#include "gpu_presolver/presolve/rules/rule_zero_cost_product_variables.hpp"
 #include "gpu_presolver/presolve/rules/rule_bound_strengthening.hpp"
 #include "gpu_presolver/presolve/rules/rule_singleton_columns.hpp"
 #include "gpu_presolver/presolve/rules/rule_singleton_rows.hpp"
-#include "gpu_presolver/presolve/rules/rule_absolute_value_epigraph_reduction.hpp"
+#include "gpu_presolver/presolve/rules/rule_piecewise_linear_reformulation_absolute_value.hpp"
 
 #include <cub/cub.cuh>
 #include <cuda_runtime.h>
@@ -674,8 +674,8 @@ void allocate_plan(PresolvePlanGpu& plan,
 }
 
 void free_plan(PresolvePlanGpu& plan) {
-  plan.absolute_value_epigraph_device.reset();
-  plan.variable_pair_aggregation_device.reset();
+  plan.piecewise_linear_reformulation_absolute_value_device.reset();
+  plan.piecewise_linear_reformulation_variable_pair_device.reset();
   const bool profile_alloc = runtime::options().profile_allocations;
   const auto free_start = std::chrono::steady_clock::now();
   if (plan.contiguous_storage != nullptr) {
@@ -1143,11 +1143,11 @@ void rebuild_org2red(std::vector<std::int32_t>& org2red,
   }
 }
 
-AbsoluteValueEpigraphPrimalRecoveryStep globalize_absolute_value_epigraph_recovery(
-    const AbsoluteValueEpigraphPrimalRecoveryStep& local,
+PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep globalize_piecewise_linear_reformulation_absolute_value_recovery(
+    const PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep& local,
     const std::vector<std::int32_t>& col_red2org) {
-  AbsoluteValueEpigraphPrimalRecoveryStep global = local;
-  for (AbsoluteValueEpigraphSplitRecovery& split : global.splits) {
+  PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep global = local;
+  for (PiecewiseLinearReformulationAbsoluteValueSplitRecovery& split : global.splits) {
     split.t_col = col_red2org[static_cast<std::size_t>(split.t_col)];
     split.e_col = col_red2org[static_cast<std::size_t>(split.e_col)];
   }
@@ -1168,10 +1168,10 @@ AbsoluteValueEpigraphPrimalRecoveryStep globalize_absolute_value_epigraph_recove
   return global;
 }
 
-VariablePairAggregationRecoveryStep globalize_variable_pair_aggregation_recovery(
-    const VariablePairAggregationRecoveryStep& local,
+PiecewiseLinearReformulationVariablePairRecoveryStep globalize_piecewise_linear_reformulation_variable_pair_recovery(
+    const PiecewiseLinearReformulationVariablePairRecoveryStep& local,
     const std::vector<std::int32_t>& col_red2org) {
-  VariablePairAggregationRecoveryStep global = local;
+  PiecewiseLinearReformulationVariablePairRecoveryStep global = local;
   const std::size_t count = global.plus_cols.size();
   for (std::size_t i = 0; i < count; ++i) {
     global.plus_cols[i] =
@@ -1687,10 +1687,10 @@ void update_record_from_plan(PresolveRecordGpu &record, PresolvePlanGpu &plan,
   const auto after_removed_mapping = std::chrono::steady_clock::now();
 
   const bool has_primal_recovery =
-      plan.has_absolute_value_epigraph_recovery ||
-      plan.has_variable_pair_aggregation_recovery;
-  if (plan.has_absolute_value_epigraph_recovery &&
-      plan.has_variable_pair_aggregation_recovery) {
+      plan.has_piecewise_linear_reformulation_absolute_value_recovery ||
+      plan.has_piecewise_linear_reformulation_variable_pair_recovery;
+  if (plan.has_piecewise_linear_reformulation_absolute_value_recovery &&
+      plan.has_piecewise_linear_reformulation_variable_pair_recovery) {
     throw std::runtime_error(
         "a presolve plan cannot commit structural and antipodal primal "
         "recoveries at the same chronological position");
@@ -1706,35 +1706,35 @@ void update_record_from_plan(PresolveRecordGpu &record, PresolvePlanGpu &plan,
   }
   const NnzOffset tape_position =
       static_cast<NnzOffset>(tape_size);
-  if (plan.has_absolute_value_epigraph_recovery) {
-    if (record.absolute_value_epigraph_recoveries.size() >=
+  if (plan.has_piecewise_linear_reformulation_absolute_value_recovery) {
+    if (record.piecewise_linear_reformulation_absolute_value_recoveries.size() >=
         static_cast<std::size_t>(INT64_MAX)) {
       throw std::runtime_error(
           "structural recovery payload exceeds 32-bit checkpoint range");
     }
     const NnzOffset payload_index = static_cast<NnzOffset>(
-        record.absolute_value_epigraph_recoveries.size());
-    record.absolute_value_epigraph_recoveries.push_back(
-        globalize_absolute_value_epigraph_recovery(plan.absolute_value_epigraph_recovery,
+        record.piecewise_linear_reformulation_absolute_value_recoveries.size());
+    record.piecewise_linear_reformulation_absolute_value_recoveries.push_back(
+        globalize_piecewise_linear_reformulation_absolute_value_recovery(plan.piecewise_linear_reformulation_absolute_value_recovery,
                                       old_col_red2org));
     record.primal_recovery_timeline.push_back(PrimalRecoveryCheckpoint{
-        PrimalRecoveryKind::AbsoluteValueEpigraph, payload_index, tape_position});
+        PrimalRecoveryKind::PiecewiseLinearReformulationAbsoluteValue, payload_index, tape_position});
   }
-  if (plan.has_variable_pair_aggregation_recovery) {
-    if (record.variable_pair_aggregation_recoveries.size() >=
+  if (plan.has_piecewise_linear_reformulation_variable_pair_recovery) {
+    if (record.piecewise_linear_reformulation_variable_pair_recoveries.size() >=
         static_cast<std::size_t>(INT64_MAX)) {
       throw std::runtime_error(
           "antipodal recovery payload exceeds 32-bit checkpoint range");
     }
     const NnzOffset payload_index = static_cast<NnzOffset>(
-        record.variable_pair_aggregation_recoveries.size());
-    record.variable_pair_aggregation_recoveries.push_back(
-        globalize_variable_pair_aggregation_recovery(plan.variable_pair_aggregation_recovery,
+        record.piecewise_linear_reformulation_variable_pair_recoveries.size());
+    record.piecewise_linear_reformulation_variable_pair_recoveries.push_back(
+        globalize_piecewise_linear_reformulation_variable_pair_recovery(plan.piecewise_linear_reformulation_variable_pair_recovery,
                                      old_col_red2org));
     record.primal_recovery_timeline.push_back(PrimalRecoveryCheckpoint{
-        PrimalRecoveryKind::VariablePairAggregation, payload_index,
+        PrimalRecoveryKind::PiecewiseLinearReformulationVariablePair, payload_index,
         tape_position});
-    record.has_primal_only_variable_pair_aggregation_reduction = true;
+    record.has_primal_only_piecewise_linear_reformulation_variable_pair_reduction = true;
   }
   if (plan.has_column_domination_reduction) {
     record.has_primal_only_column_domination_reduction = true;
@@ -2087,10 +2087,10 @@ GpuPresolveSummary run_gpu_presolve_impl(const LPInfoGpu& lp,
   PresolveParams effective_params = input_params;
   if (!effective_params.enable_structure_specific_rules) {
     effective_params.enable_column_domination = false;
-    effective_params.enable_variable_pair_aggregation = false;
+    effective_params.enable_piecewise_linear_reformulation_variable_pair = false;
     effective_params.enable_two_row_variable_elimination = false;
-    effective_params.enable_mccormick_variable_elimination = false;
-    effective_params.enable_absolute_value_epigraph_reduction = false;
+    effective_params.enable_zero_cost_product_variables = false;
+    effective_params.enable_piecewise_linear_reformulation_absolute_value = false;
   }
   const PresolveParams& params = effective_params;
 
@@ -2155,7 +2155,7 @@ GpuPresolveSummary run_gpu_presolve_impl(const LPInfoGpu& lp,
       const bool changed = !terminal && plan.has_change;
       if (changed) {
         apply_plan_to_working_lp(current, plan, &summary.record, tape_chunks);
-        if (std::string(name) == "startup_absolute_value_epigraph")
+        if (std::string(name) == "startup_piecewise_linear_reformulation_absolute_value")
           write_diagnostic_snapshot(name, current.lp);
         if (profile_rules) std::cerr << ">>> [schedule-apply] boundary=" << name << '\n';
       }
@@ -2398,10 +2398,10 @@ GpuPresolveSummary run_gpu_presolve_impl(const LPInfoGpu& lp,
           [&]() { return analyze_two_row_variable_elimination(
               current.lp, params, batch_allocated ? &batch : nullptr); },
           build_two_row_variable_elimination_plan, free_two_row_variable_elimination_analysis);
-      batch_rule(params.enable_mccormick_variable_elimination, "mccormick_variable_elimination",
-          [&]() { return analyze_mccormick_variable_elimination(
+      batch_rule(params.enable_zero_cost_product_variables, "zero_cost_product_variables",
+          [&]() { return analyze_zero_cost_product_variables(
               current.lp, params, batch_allocated ? &batch : nullptr); },
-          build_mccormick_variable_elimination_plan, free_mccormick_variable_elimination_analysis);
+          build_zero_cost_product_variables_plan, free_zero_cost_product_variables_analysis);
       // Commit accepted reductions even if the time limit expired between rules.
       if (batch.has_change) {
         apply_plan_to_working_lp(current, batch, &summary.record, tape_chunks);
@@ -2413,13 +2413,13 @@ GpuPresolveSummary run_gpu_presolve_impl(const LPInfoGpu& lp,
       throw;
     }
 
-    if (!terminal && !time_exceeded() && params.enable_variable_pair_aggregation) {
+    if (!terminal && !time_exceeded() && params.enable_piecewise_linear_reformulation_variable_pair) {
       const auto phase_start = std::chrono::steady_clock::now();
       const auto m_before = current.lp.A.rows;
       const auto n_before = current.lp.A.cols;
       const auto nnz_before = current.lp.A.nnz;
       PresolvePlanGpu plan;
-      const auto selected = build_variable_pair_aggregation_plan(
+      const auto selected = build_piecewise_linear_reformulation_variable_pair_plan(
           plan, current.lp, params, time_exceeded);
       summary.has_infeasible = plan.has_infeasible;
       summary.has_unbounded = plan.has_unbounded;
@@ -2427,14 +2427,14 @@ GpuPresolveSummary run_gpu_presolve_impl(const LPInfoGpu& lp,
       const bool changed = !terminal && plan.has_change;
       if (changed) {
         apply_plan_to_working_lp(current, plan, &summary.record, tape_chunks);
-        if (profile_rules) std::cerr << ">>> [schedule-apply] boundary=startup_variable_pair_aggregation\n";
+        if (profile_rules) std::cerr << ">>> [schedule-apply] boundary=startup_piecewise_linear_reformulation_variable_pair\n";
       }
       free_plan(plan);
       if (profile_rules) {
-        throw_if_cuda_error(cudaDeviceSynchronize(), "profile variable-pair aggregation");
-        const char* name = selected == VariablePairAggregationCase::Epigraph ? "epigraph" :
-            selected == VariablePairAggregationCase::ShiftedAntipodal ? "shifted_antipodal" : "none";
-        std::cerr << ">>> [GPU Presolve C++ profile] phase=startup_variable_pair_aggregation"
+        throw_if_cuda_error(cudaDeviceSynchronize(), "profile piecewise-linear reformulation variable-pair");
+        const char* name = selected == PiecewiseLinearReformulationVariablePairCase::Epigraph ? "epigraph" :
+            selected == PiecewiseLinearReformulationVariablePairCase::ShiftedAntipodal ? "shifted_antipodal" : "none";
+        std::cerr << ">>> [GPU Presolve C++ profile] phase=startup_piecewise_linear_reformulation_variable_pair"
                   << " case=" << name << " changed=" << (changed ? "true" : "false")
                   << " dims=(" << m_before << "," << n_before << ")->("
                   << current.lp.A.rows << "," << current.lp.A.cols << ") nnz="
@@ -2444,10 +2444,10 @@ GpuPresolveSummary run_gpu_presolve_impl(const LPInfoGpu& lp,
       }
     }
 
-    if (params.enable_absolute_value_epigraph_reduction && !terminal && !time_exceeded() &&
-        absolute_value_epigraph_prefix_screen_passes(current.lp)) {
-      run_materialized_rule(true, "startup_absolute_value_epigraph",
-                            apply_rule_absolute_value_epigraph_reduction);
+    if (params.enable_piecewise_linear_reformulation_absolute_value && !terminal && !time_exceeded() &&
+        piecewise_linear_reformulation_absolute_value_prefix_screen_passes(current.lp)) {
+      run_materialized_rule(true, "startup_piecewise_linear_reformulation_absolute_value",
+                            apply_rule_piecewise_linear_reformulation_absolute_value);
     }
 
     ++summary.iterations;
