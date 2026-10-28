@@ -34,19 +34,15 @@ static void check_pipeline(IjocPresolver backend, bool presolve_only) {
     // Require actual presolve success: an original-model fallback cannot pass.
     LP_info_cpu reduced{};
     void *handle = nullptr;
-    const bool latest = backend == IJOC_PRESOLVER_PSLP0011;
     double core_time = NAN;
-    require(latest
-        ? ijoc_run_pslp_presolve(model, &p, &reduced, &handle, &core_time)
-        : ijoc_run_pslp_presolve(model, &p, &reduced, &handle, &core_time),
+    require(ijoc_run_pslp_presolve(model, &p, &reduced, &handle, &core_time),
         "CPU presolve handoff failed");
     require(std::isfinite(core_time) && core_time > 0,
             "native PSLP core timer did not cross the worker transport");
     require(reduced.n < model->n, "test did not reduce the model");
     require(std::abs(reduced.obj_constant - 17.5) < 1e-10, "objective constant was lost");
     free_lp_info_cpu(&reduced);
-    if (latest) ijoc_free_pslp(handle);
-    else ijoc_free_pslp(handle);
+    ijoc_free_pslp(handle);
     if (presolve_only) {
         free_model(model);
         std::cout << "CPU presolve handoff passed (backend=" << backend << ")\n";
@@ -103,6 +99,7 @@ int main(int argc, char **argv) {
         // Both public selectors must use PSLP 0.0.11 and recover original solutions.
         check_pipeline(IJOC_PRESOLVER_PSLP, presolve_only);
         check_pipeline(IJOC_PRESOLVER_PSLP0011, presolve_only);
+        // Reuse the first selector after both workers have been released.
         check_pipeline(IJOC_PRESOLVER_PSLP, presolve_only);
     } catch (const std::exception &e) {
         std::cerr << e.what() << '\n';

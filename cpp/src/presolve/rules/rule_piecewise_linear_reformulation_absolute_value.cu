@@ -140,10 +140,8 @@ bool ensure_structural_csr_rows_sorted_unique(DeviceCsrMatrix& matrix, const cha
   throw_if_cuda_error(cudaDeviceSynchronize(), context);
   cudaFree(keys);
 
-  // A structural substitution must never create parallel columns.  Sorting
-  // makes any collision adjacent, so one final linear check can reject it
-  // without the quadratic all-pairs scan that is prohibitive on dense Hans
-  // rows.
+  // Reject duplicate column indices within a row after substitution. Sorting
+  // makes duplicates adjacent, allowing a linear check of each row.
   throw_if_cuda_error(cudaMalloc(&status_flag, sizeof(std::int32_t)), context);
   throw_if_cuda_error(cudaMemset(status_flag, 0, sizeof(std::int32_t)), context);
   _kernel_structural_check_csr_sorted<<<row_blocks, GPU_PRESOLVE_THREADS>>>(

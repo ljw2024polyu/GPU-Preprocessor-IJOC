@@ -291,7 +291,7 @@ int main(int argc, char** argv) {
     std::string input_path;
     bool input_provided = false;
     bool inspect_input = false;
-    IntegrationParameters param; // defaults from structs.h
+    IntegrationParameters param; // HPR-LP defaults plus external-backend options.
     auto mark_specified = [&](std::uint64_t bit) {
         param.specified_parameter_mask |= bit;
     };

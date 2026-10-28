@@ -56,9 +56,8 @@ void test_fixed_variable(double width) {
   const double upper = lower + width;
   const double midpoint = lower + 0.5 * (upper - lower);
 
-  // Julia indexing equivalent:
-  // AT has 2 columns-as-rows. Column 1 appears in row 1 with coeff 2.0 and row 2 with coeff -1.0.
-  // Column 2 appears in row 2 with coeff 3.0.
+  // Zero-based indices: column 0 has coefficients 2.0 in row 0 and -1.0 in
+  // row 1; column 1 has coefficient 3.0 in row 1. AT stores columns as rows.
   NnzOffset* at_row_ptr = copy_to_device<NnzOffset>({0, 2, 3});
   std::int32_t* at_col_val = copy_to_device<std::int32_t>({0, 1, 1});
   double* at_nz_val = copy_to_device<double>({2.0, -1.0, 3.0});

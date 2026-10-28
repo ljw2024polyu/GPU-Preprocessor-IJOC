@@ -3,7 +3,7 @@
 
 #include "integration.hpp"
 
-// Same Presolve=-1 / unlimited presolve configuration as the paper project.
+// Automatic presolve (Presolve=-1), without a presolve time limit.
 // The reduced model has no public original-space postsolve mapping.
 bool ijoc_run_gurobi_presolve(const LP_info_cpu *model,
                                   const IntegrationParameters *param,

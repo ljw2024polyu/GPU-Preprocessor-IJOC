@@ -1445,8 +1445,9 @@ void append_globalized_postsolve_tape(PostsolveTape& dest,
   detail.mark("remap");
 }
 
-// Private to a single presolve invocation. Rule order and recovery checkpoints
-// use cumulative record counts; public records are flattened before return.
+// Host recovery backend only, private to one presolve invocation. Checkpoints
+// use cumulative record counts; host segments are flattened before return.
+// The default device backend retains its own GPU segments instead.
 struct HostTapeChunks {
   bool enabled = runtime::options().chunked_tape;
   std::size_t records = 0, indices = 0, values = 0;
@@ -1744,12 +1745,8 @@ void update_record_from_plan(PresolveRecordGpu &record, PresolvePlanGpu &plan,
   }
   if (tape_chunks.enabled) tape_chunks.append(plan.tape, old_row_red2org, old_col_red2org);
   else append_globalized_postsolve_tape(record.tape, plan.tape, old_row_red2org, old_col_red2org);
-  // Keep the canonical tape append-only on the host during presolve.  Growing
-  // one contiguous device mirror after every rule copies the entire tape each
-  // time a capacity boundary is crossed; on large models that turns a tiny
-  // final append into hundreds of milliseconds of historical D2D copies.
-  // The complete device tape is materialized once, in canonical order, after
-  // the last presolve rule has committed.
+  // This host-backend path appends records without maintaining a device mirror.
+  // postsolve_gpu uploads the completed tape once, when recovery begins.
   const auto after_tape = std::chrono::steady_clock::now();
 
   if (has_removed_rows) {
@@ -2607,7 +2604,8 @@ GpuPresolveSummary run_gpu_presolve_impl(const LPInfoGpu& lp,
               << " indices=" << d.indices << " values=" << d.values
               << " host_staged_bytes=" << d.host_staged_bytes << "\n";
   }
-  // Canonicalization is part of presolve timing, including terminal exits.
+  // Host-backend flattening is timed even on terminal exits; the device
+  // backend keeps its segments and has no host chunks to flatten.
   tape_chunks.finish(summary.record.tape);
   if (summary.record.tape_gpu.record_count != 0 ||
       summary.record.tape_gpu.index_count != 0 ||
@@ -2615,9 +2613,8 @@ GpuPresolveSummary run_gpu_presolve_impl(const LPInfoGpu& lp,
     throw std::runtime_error(
         "GPU postsolve tape must remain deferred during presolve");
   }
-  // Uploading the canonical tape is a postsolve concern.  postsolve_gpu owns
-  // the lazy upload path, so presolve does not wait on a transfer that cannot
-  // be consumed until after the reduced solve has finished.
+  // Only the host backend needs a lazy upload in postsolve_gpu. Default
+  // recovery records are already resident on the GPU.
   throw_if_cuda_error(cudaDeviceSynchronize(), "run_gpu_presolve_impl synchronize");
   summary.reduced_rows = current.lp.A.rows;
   summary.reduced_cols = current.lp.A.cols;

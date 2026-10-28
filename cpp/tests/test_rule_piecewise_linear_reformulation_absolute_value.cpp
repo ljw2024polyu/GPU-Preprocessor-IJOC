@@ -1460,7 +1460,7 @@ void test_outer_invalid_variable_ownership_fails_closed() {
 }
 
 // Startup recognizes an initially valid pattern. A pattern exposed only by
-// later cleanup is intentionally not retried by this experimental schedule.
+// later cleanup is not retried: this rule runs only during Startup.
 void test_absolute_value_schedule(bool needs_cleanup, int max_iters,
                                   bool enable_startup = true) {
   using namespace gpu_presolver::presolve;

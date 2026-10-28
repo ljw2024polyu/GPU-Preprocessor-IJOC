@@ -334,8 +334,8 @@ struct SegmentView {
 SegmentView view(PostsolveTapeGpu &s) {
   return {s.types, s.dual_modes, s.index_starts, s.value_starts, s.indices, s.vals};
 }
-// Wide allocation counters prevent overflow before checking the int32 payload
-// lengths. Sparse indices and the stored tape offsets remain NnzOffset/int32.
+// Accumulate allocation sizes in uint64 before checking the NnzOffset limit.
+// Row/column indices remain int32; tape offsets use NnzOffset.
 using Wide = unsigned long long;
 void scan_wide(Wide *p, int n) {
   std::size_t bytes = 0;

@@ -328,7 +328,8 @@ __global__ void _kernel_dual_fix_candidates(std::int32_t* status_flag,
 // Certify order-independent integer sums before changing column addresses.
 // Each term must be an integer of magnitude <= 2^31, and the sum of absolute
 // values <= 2^53. Then every possible partial sum is exactly representable.
-// The int32 nnz limit bounds the uint64 absolute total by 2^62 (no overflow).
+// For duplicate-free rows, the int32 column dimension bounds each row's
+// uint64 absolute total by 2^62, including in int64-offset builds.
 __global__ void _kernel_cleanup_shift_terms(unsigned int* counts,
     unsigned long long* absolute_sum, const std::uint8_t* fixed,
     const std::uint8_t* inf, const double* value, const std::uint8_t* keep_row,
