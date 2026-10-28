@@ -10,6 +10,8 @@ add_library(gpu_presolver_core STATIC
   src/presolve/identity_plan.cu
   src/presolve/fixed_col_tape.cu
   src/presolve/gpu_postsolve.cu
+  src/presolve/postsolve/postsolve_piecewise_linear_reformulation_absolute_value.cu
+  src/presolve/postsolve/postsolve_piecewise_linear_reformulation_variable_pair.cu
   src/presolve/gpu_presolve.cu
   src/presolve/gpu_presolve_kernels.cu
   src/presolve/presolve_structs.cu
