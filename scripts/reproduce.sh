@@ -72,9 +72,11 @@ case "$stage" in
       --sizes 20 --output-dir "$RUN_DIR"
     summarize
     ;;
-  run)
+  run|resume)
+    resume_args=()
+    if [[ "$stage" == resume ]]; then resume_args+=(--resume); fi
     "$PYTHON" scripts/run_experiments.py --input-root "$INPUT_ROOT" --solver "$SOLVER" \
-      --suite all --methods "${methods[@]}" --output-dir "$RUN_DIR"
+      --suite all --methods "${methods[@]}" --output-dir "$RUN_DIR" "${resume_args[@]}"
     ;;
   results)
     summarize
@@ -89,6 +91,7 @@ case "$stage" in
       '  test     Run Python and C++/CUDA regression tests (requires one GPU).' \
       '  smoke    Prepare one model per group, run all selected methods, and summarize.' \
       '  run      Run the complete Section 4 plan in a new RUN_DIR (one GPU).' \
+      '  resume   Continue RUN_DIR, reusing completed logs from its saved command plan.' \
       '  results  Rebuild tables and Figure 2 from that run (CPU).' \
       '  all      Execute setup, data, test, run, and results in order.' \
       'CMake discovers the toolchain and GPU architecture; set CUDA_ARCH for a target override.' \

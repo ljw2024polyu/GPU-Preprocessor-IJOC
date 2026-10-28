@@ -1,6 +1,7 @@
 """CPU checks for experiment selection, output protection, and log parsing."""
 import contextlib
 import csv
+import fcntl
 import importlib.util
 import io
 import json
@@ -175,6 +176,81 @@ class ExperimentRunnerTests(unittest.TestCase):
                 runner.run_jobs([job], root / 'run')
             self.assertTrue((root / 'run' / job['log']).is_file())
             self.assertFalse((root / 'run' / job['summary']).exists())
+
+    def interrupted_run(self, root):
+        model = root / 'model.mps'
+        model.write_text('fixture')
+        failure = root / 'interrupt'
+        failure.touch()
+        calls = root / 'solver-calls'
+        solver = root / 'solver.py'
+        solver.write_text(
+            'import pathlib, sys\n'
+            f'with pathlib.Path({str(calls)!r}).open("a") as out: out.write(sys.argv[1] + "\\n")\n'
+            'print("problem information: nRow = 3, nCol = 4, nnz A = 5")\n'
+            f'if sys.argv[1] == "1" and pathlib.Path({str(failure)!r}).exists():\n'
+            '    print("Status: OPTIMAL\\nSolve Time: 0.1 seconds")\n'
+            '    raise SystemExit(7)\n'
+            'if sys.argv[1] == "0": print("Warning: postsolve original KKT check failed")\n'
+            f'print({runner.FINAL_SUMMARY!r})\n'
+            'print("Status: " + ("TIME_LIMIT" if sys.argv[1] == "0" else "OPTIMAL"))\n'
+            'print("Preprocessing Time: 0.2 seconds\\nSolve Time: 1.3 seconds\\nTotal Time: 1.5 seconds")\n')
+        jobs = [dict(command=[sys.executable, str(solver), str(index)], input=str(model),
+                     log=f'results/raw/logs/model_{index}.log', summary='results/raw/summary.csv',
+                     dataset='fixture', method='gpu', instance=f'model_{index}.mps', environment={})
+                for index in range(3)]
+        output = root / 'run'
+        with self.assertRaises(RuntimeError), contextlib.redirect_stdout(io.StringIO()):
+            runner.run_jobs(jobs, output)
+        return jobs, output, failure, calls
+
+    def test_resume_reuses_completed_logs_and_preserves_the_interrupted_attempt(self):
+        with tempfile.TemporaryDirectory() as directory:
+            jobs, output, failure, calls = self.interrupted_run(Path(directory))
+            first_log = output / jobs[0]['log']
+            saved = first_log.read_bytes()
+            partial = (output / jobs[1]['log']).read_bytes()
+            plan = (output / 'commands.json').read_bytes()
+            # Older runs did not record exit codes in their completed logs.
+            first_log.write_bytes(saved.replace(b'\n# Exit code: 0\n', b''))
+            saved = first_log.read_bytes()
+            failure.unlink()
+            with contextlib.redirect_stdout(io.StringIO()):
+                runner.run_jobs(jobs, output, resume=True)
+            self.assertEqual(calls.read_text().splitlines(), ['0', '1', '1', '2'])
+            self.assertEqual(first_log.read_bytes(), saved)
+            self.assertEqual((output / 'commands.json').read_bytes(), plan)
+            previous = list((output / 'interrupted').rglob('*.log'))
+            self.assertEqual(len(previous), 1)
+            self.assertEqual(previous[0].read_bytes(), partial)
+            with (output / jobs[0]['summary']).open() as stream:
+                rows = list(csv.DictReader(stream))
+            self.assertEqual([row['name'] for row in rows], [job['instance'] for job in jobs])
+            self.assertEqual(rows[0]['status'], 'TIME_LIMIT')
+            self.assertEqual(len(runner.resume_results(jobs, output)), 3)
+            with contextlib.redirect_stdout(io.StringIO()):
+                runner.run_jobs(jobs, output, resume=True)
+            self.assertEqual(calls.read_text().splitlines(), ['0', '1', '1', '2'])
+
+    def test_resume_rejects_changed_commands_and_a_concurrent_runner(self):
+        with tempfile.TemporaryDirectory() as directory:
+            jobs, output, _, calls = self.interrupted_run(Path(directory))
+            changed = json.loads(json.dumps(jobs))
+            changed[0]['method'] = 'different-method'
+            with self.assertRaisesRegex(ValueError, 'differ from commands.json'):
+                runner.run_jobs(changed, output, resume=True)
+            with (output / '.run.lock').open('a') as lock:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                with self.assertRaisesRegex(ValueError, 'Another experiment runner'):
+                    runner.run_jobs(jobs, output, resume=True)
+            self.assertEqual(calls.read_text().splitlines(), ['0', '1'])
+
+    def test_resume_does_not_reuse_a_failed_exit_even_with_a_final_summary(self):
+        with tempfile.TemporaryDirectory() as directory:
+            jobs, output, _, _ = self.interrupted_run(Path(directory))
+            text = (output / jobs[0]['log']).read_text()
+            (output / jobs[0]['log']).write_text(text.replace('# Exit code: 0', '# Exit code: 7'))
+            self.assertEqual(runner.resume_results(jobs, output), {})
 
 
 if __name__ == '__main__':

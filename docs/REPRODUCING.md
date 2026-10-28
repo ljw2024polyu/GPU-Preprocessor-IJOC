@@ -113,6 +113,19 @@ several hours. For another run, set `RUN_DIR` to a new directory before steps
 4 and 5. For selected datasets, instances, or methods, see
 [running selected experiments](SOLVER_INTEGRATION.md#running-selected-experiments).
 
+To continue an interrupted run, keep `INPUT_ROOT` and the experiment settings
+unchanged, set `RUN_DIR` to its existing directory, and run:
+
+```sh
+bash scripts/reproduce.sh resume
+```
+
+Completed logs, including `TIME_LIMIT` runs, are reused. Interrupted calls are
+rerun, with their previous logs kept under `RUN_DIR/interrupted/`. Batch CSVs
+are rebuilt from the completed logs. The saved command plan must match, and
+only one runner can write to a run directory at a time. Use the same solver
+binary and inputs when resuming. Run the next step after the remaining calls finish.
+
 ## 5. Generate the results
 
 ```sh

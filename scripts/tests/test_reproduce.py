@@ -128,6 +128,13 @@ class ReproduceTests(unittest.TestCase):
                 self.assertEqual([c['tool'] for c in calls], [expected] * 4)
                 self.assertTrue(all(c['args'][0] == 'scripts/prepare_inputs.py' for c in calls))
 
+    def test_resume_uses_the_run_entry_with_resume_enabled(self):
+        call, = self.run_stage(stage='resume')
+        self.assertEqual(call['args'][0], 'scripts/run_experiments.py')
+        self.assertIn('--resume', call['args'])
+        methods = call['args'].index('--methods')
+        self.assertEqual(call['args'][methods + 1:methods + 5], ['none', 'folding', 'gpu', 'pslp'])
+
     @unittest.skipUnless(CMAKE, 'CMake is needed to check architecture initialization')
     def test_cmake_architecture_default_and_overrides(self):
         prefix = (ROOT / 'CMakeLists.txt').read_text().split('project(', 1)[0]
