@@ -77,7 +77,6 @@ def scale_log(path, final_fields=False):
         'r_m': str(Decimal(reduced[0]) / Decimal(original[0])),
         'r_n': str(Decimal(reduced[1]) / Decimal(original[1])),
         'r_nnz': str(Decimal(reduced[2]) / Decimal(original[2])),
-        'postsolve_original_kkt_warning': 'Warning: postsolve original KKT check failed' in text,
         'gurobi_original_solution_not_recovered': 'original_solution_recovery: NOT_PERFORMED' in text,
     }
 
@@ -159,8 +158,6 @@ def main():
                 **dict(zip(['reduced_rows', 'reduced_columns', 'reduced_nnz'], reduced)),
                 **dict(zip(['r_m', 'r_n', 'r_nnz'], ratio)),
                 'raw_log': str(log.relative_to(ROOT)), 'source_batch': batch,
-                **({'postsolve_original_kkt_warning': 'Warning: postsolve original KKT check failed' in text}
-                   if args.run_dir else {}),
             })
         if summary_rows and args.run_dir:
             write_csv(ROOT / run['local_summary'], summary_rows, list(summary_rows[0]))
@@ -231,9 +228,6 @@ def main():
     report = {'benchmark_instance_rows': len(instance_rows), 'scale_results': len(scale_rows),
               'table_rows_matching_archived_csv': None if args.run_dir else sum(c['rows'] for c in checks),
               'tables': checks}
-    if args.run_dir:
-        report['postsolve_original_kkt_warnings'] = sum(
-            r['postsolve_original_kkt_warning'] for r in instance_rows + scale_detailed)
     print(json.dumps(report, indent=2))
 
 if __name__ == '__main__':

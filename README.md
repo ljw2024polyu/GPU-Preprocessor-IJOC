@@ -90,26 +90,6 @@ GPU-Preprocessor applies folding and presolve to continuous linear programs befo
 | `docs/` | Experimental settings, statistical definitions, and log mappings |
 | `results/` | Raw logs, summary CSVs, CSV tables, and Figure 2 |
 
-### Structural rule names
-
-The rule names follow the paper. Existing C++ callers should update rule
-headers, functions, parameter prefixes, and recovery types and members:
-
-| Previous rule stem | Current rule stem |
-| --- | --- |
-| `mccormick_variable_elimination` | `zero_cost_product_variables` |
-| `absolute_value_epigraph_reduction` | `piecewise_linear_reformulation_absolute_value` |
-| `variable_pair_aggregation` | `piecewise_linear_reformulation_variable_pair` |
-
-The two `piecewise_linear_reformulation_*` branches retain independent
-`enable_*` switches. The variable-pair branch retains its epigraph and
-shifted-antipodal cases. This naming change preserves numerical operations,
-parameter defaults, thresholds, execution order, and recovery record layouts.
-The zero-cost product rule still requires its strict Fortet/McCormick envelope.
-Rebuild C++ callers against the renamed headers. Test targets and diagnostic
-labels use the current names; archived experiment logs retain their original
-labels. Internal profiling remains configured through `runtime::Options`.
-
 ## Results
 
 | Paper item | Files |
