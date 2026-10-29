@@ -28,7 +28,10 @@ bash scripts/reproduce.sh setup
 ```
 
 The executable is `build-experiments/bin/hprlp_solve`. HPR-LP and PSLP are built
-from the bundled sources; Gurobi support is disabled by default.
+from the bundled sources. The reproduction script automatically enables Gurobi
+when its separately installed SDK and license pass preflight; otherwise it
+builds without the Gurobi adapter. Direct CMake builds retain the opt-in
+`HPRLP_GUROBI=ON` option.
 
 CMake detects the visible GPU architecture. To select different compilers,
 set `CC`, `CXX`, `CUDACXX`, or `CUDAHOSTCXX` before building. Use
@@ -68,14 +71,28 @@ Set these variables before building and keep them set when running the full
 reproduction workflow:
 
 ```sh
-export WITH_GUROBI=ON
 export GUROBI_HOME=/path/to/gurobi1202/linux64
-bash scripts/reproduce.sh setup
+export GRB_LICENSE_FILE=/path/to/gurobi.lic
+WITH_GUROBI=ON bash scripts/reproduce.sh setup
 ./build-experiments/bin/hprlp_solve -i examples/model.mps --presolver gurobi
 ```
 
-If the license is outside Gurobi's standard search locations, set
-`GRB_LICENSE_FILE` to its path; see the [license-file instructions](https://support.gurobi.com/hc/en-us/articles/360013417211-Where-do-I-place-the-Gurobi-license-file-gurobi-lic).
+`GRB_LICENSE_FILE` is optional when your license is in Gurobi's standard search
+locations; see the [license-file instructions](https://support.gurobi.com/hc/en-us/articles/360013417211-Where-do-I-place-the-Gurobi-license-file-gurobi-lic).
+Provide your own license outside this repository. The reproduction script defaults
+to `WITH_GUROBI=AUTO`: it checks the SDK header/runtime version and starts an isolated,
+quiet license probe with a trivial 2,001-variable LP. This rejects the
+[size-limited license](https://support.gurobi.com/hc/en-us/articles/360051597492-How-do-I-resolve-a-Model-too-large-for-size-limited-Gurobi-license-error)
+that is insufficient for these benchmarks. The check has a 30-second timeout and
+does not print license contents or runtime licensing details.
+
+Without a usable SDK/license, automatic mode prints a skip reason and continues
+with the other four methods. `WITH_GUROBI=OFF` disables Gurobi without probing;
+`WITH_GUROBI=ON` requires it and fails early if preflight fails. The `run`, `resume`,
+`smoke` and `test` stages also check that the build was configured with the adapter.
+If the license is unavailable at test time, automatic mode skips Gurobi-specific
+CTest checks while retaining the other regression tests. Data preparation and
+result reconstruction do not activate the benchmark license probe.
 
 Gurobi uses automatic presolve (`Presolve=-1`) without a presolve time limit.
 The solve time limit applies to the subsequent HPR-LP solve. This adapter

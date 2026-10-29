@@ -14,9 +14,32 @@ RUN_DIR=${RUN_DIR:-"$WORK_ROOT/experiment"}
 PYTHON=${PYTHON:-python3}
 BUILD_DIR=${BUILD_DIR:-"$PWD/build-experiments"}
 SOLVER="$BUILD_DIR/bin/hprlp_solve"
-WITH_GUROBI=${WITH_GUROBI:-OFF}
+WITH_GUROBI=${WITH_GUROBI:-AUTO}
+GUROBI_ENABLED=OFF
 methods=(none folding gpu pslp)
-if [[ "$WITH_GUROBI" == ON ]]; then methods+=(gurobi); fi
+
+select_gurobi() {
+  GUROBI_ENABLED=OFF
+  case "$WITH_GUROBI" in
+    OFF) return ;;
+    AUTO|ON) ;;
+    *) printf '%s\n' 'WITH_GUROBI must be AUTO, ON, or OFF.' >&2; exit 2 ;;
+  esac
+  local probe_args=(scripts/check_gurobi.py)
+  if [[ "${1:-}" == built ]]; then probe_args+=(--build-dir "$BUILD_DIR"); fi
+  if [[ -n "${GUROBI_HOME:-}" ]] && "$PYTHON" "${probe_args[@]}"; then
+    GUROBI_ENABLED=ON
+    methods+=(gurobi)
+  else
+    if [[ -z "${GUROBI_HOME:-}" ]]; then
+      printf '%s\n' 'Gurobi skipped: set GUROBI_HOME to the Gurobi 12.0.2 C SDK and configure a full license.' >&2
+    fi
+    if [[ "$WITH_GUROBI" == ON ]]; then
+      printf '%s\n' 'WITH_GUROBI=ON requires a usable SDK, license, and adapter build; no experiments were started.' >&2
+      exit 1
+    fi
+  fi
+}
 
 prepare() {
   "$PYTHON" scripts/prepare_inputs.py "$1" --output-dir "$INPUT_ROOT" --resume \
@@ -38,16 +61,17 @@ case "$stage" in
       printf '%s\n' 'Usage: bash scripts/reproduce.sh setup [--fresh]' >&2
       exit 2
     fi
+    select_gurobi
     cmake_args=(-DCMAKE_BUILD_TYPE=Release
       -DGPUPREPROCESSOR_BUILD_HPRLP=ON -DGPUPREPROCESSOR_BUILD_TESTS=ON
-      "-DHPRLP_GUROBI=$WITH_GUROBI")
+      "-DHPRLP_GUROBI=$GUROBI_ENABLED")
     if [[ "${2:-}" == --fresh ]]; then
       cmake_args+=(--fresh)
     fi
     if [[ -n "${CUDA_ARCH:-}" ]]; then
       cmake_args+=("-DCMAKE_CUDA_ARCHITECTURES=$CUDA_ARCH")
     fi
-    if [[ "$WITH_GUROBI" == ON ]]; then
+    if [[ "$GUROBI_ENABLED" == ON ]]; then
       cmake_args+=("-DGUROBI_ROOT=${GUROBI_HOME:?Set GUROBI_HOME to the Gurobi 12.0.2 SDK}")
     fi
     "${CMAKE:-cmake}" -S . -B "$BUILD_DIR" "${cmake_args[@]}"
@@ -61,10 +85,14 @@ case "$stage" in
     for group in hans miplib-large qap20 qap-scale; do prepare "$group"; done
     ;;
   test)
+    select_gurobi built
     "$PYTHON" -m unittest discover -s scripts/tests -v
-    "${CTEST:-ctest}" --test-dir "$BUILD_DIR" --output-on-failure --no-tests=error
+    test_args=(--test-dir "$BUILD_DIR" --output-on-failure --no-tests=error)
+    if [[ "$GUROBI_ENABLED" == OFF ]]; then test_args+=(-E gurobi); fi
+    "${CTEST:-ctest}" "${test_args[@]}"
     ;;
   smoke)
+    select_gurobi built
     prepare hans --instances FOME13
     prepare miplib-large --instances scpn2_relax
     prepare qap20 --instances tho40
@@ -75,10 +103,11 @@ case "$stage" in
     summarize
     ;;
   run|resume)
-    resume_args=()
-    if [[ "$stage" == resume ]]; then resume_args+=(--resume); fi
-    "$PYTHON" scripts/run_experiments.py --input-root "$INPUT_ROOT" --solver "$SOLVER" \
-      --suite all --methods "${methods[@]}" --output-dir "$RUN_DIR" "${resume_args[@]}"
+    select_gurobi built
+    run_args=(scripts/run_experiments.py --input-root "$INPUT_ROOT" --solver "$SOLVER"
+      --suite all --methods "${methods[@]}" --output-dir "$RUN_DIR")
+    if [[ "$stage" == resume ]]; then run_args+=(--resume); fi
+    "$PYTHON" "${run_args[@]}"
     ;;
   results)
     summarize
@@ -99,6 +128,8 @@ case "$stage" in
       'CMake discovers the toolchain and GPU architecture; set CUDA_ARCH for a target override.' \
       'Set BUILD_JOBS to override CMake build parallelism.' \
       'The solver uses logical device 0 by default.' \
+      'Gurobi defaults to AUTO: include it only with a usable 12.0.2 C SDK and full license.' \
+      'Set GUROBI_HOME and, if needed, GRB_LICENSE_FILE. WITH_GUROBI=OFF skips it; ON requires it.' \
       'Set WORK_ROOT/RUN_DIR for outputs; see docs/REPRODUCING.md.'
     ;;
   *) printf 'Unknown stage: %s\n' "$stage" >&2; exit 2 ;;

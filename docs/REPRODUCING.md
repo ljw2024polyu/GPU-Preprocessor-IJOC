@@ -120,17 +120,26 @@ folders may use the prepared names (`Mittelmann`, `MIPLIB_Large`, `QAP20`,
 bash scripts/reproduce.sh run
 ```
 
-The default run selects no preprocessing, folding only, GPU-Preprocessor, and
-PSLP: 348 benchmark calls and 10 scalability calls, all solved with HPR-LP.
+The reproduction script defaults to `WITH_GUROBI=AUTO`. With the Gurobi 12.0.2
+C SDK, a usable full-size license, and a Gurobi-enabled build, it runs all five
+methods: 435 benchmark calls and 15 scalability calls (450 total). Without those
+requirements it reports why Gurobi is skipped and runs no preprocessing, folding
+only, GPU-Preprocessor, and PSLP: 348 benchmark calls and 10 scalability calls
+(358 total). Every method uses HPR-LP to solve the resulting LP.
 It uses one visible GPU (logical device 0), a tolerance of 1e-6, a solve time
 limit of 1000 seconds per call, and a check interval of 150.
 The shared [experiment configuration](../scripts/experiment_config.json)
 defines the command arguments, output paths, and recorded environment settings.
 
-Gurobi comparisons require its 12.0.2 C SDK and a full license. To include them,
-set `WITH_GUROBI=ON` and `GUROBI_HOME` before step 2 and keep them set for step 4;
-see [Gurobi setup](SOLVER_INTEGRATION.md#gurobi-optional). The five-method run has
-450 calls. Gurobi comparisons are disabled by default.
+To include Gurobi automatically, set `GUROBI_HOME` before step 2 and keep it set
+for step 4. Configure your own license in a standard Gurobi location, or set
+`GRB_LICENSE_FILE` to its path; see [Gurobi setup](SOLVER_INTEGRATION.md#gurobi-optional).
+The preflight checks both the C runtime and a trivial CPU-only LP above the
+restricted-license size limit. Missing, expired, unavailable or size-limited
+licenses do not enable Gurobi comparisons. No license is downloaded or bundled.
+If a license is configured after an earlier build without Gurobi, rerun `setup`.
+Set `WITH_GUROBI=OFF` to skip it explicitly, or `WITH_GUROBI=ON` to require it;
+the latter stops before the build or experiments if its requirements are unmet.
 
 A run writes to a new `runs/reproduction/experiment/` directory and can take
 several hours. For another run, set `RUN_DIR` to a new directory before steps
@@ -149,6 +158,11 @@ rerun, with their previous logs kept under `RUN_DIR/interrupted/`. Batch CSVs
 are rebuilt from the completed logs. The saved command plan must match, and
 only one runner can write to a run directory at a time. Use the same solver
 binary and inputs when resuming. Run the next step after the remaining calls finish.
+
+Keep the same Gurobi selection when resuming. For a saved four-method run,
+`WITH_GUROBI=OFF` preserves its plan even if a license has since become available.
+A saved five-method run needs the Gurobi SDK and license again. A changed selection
+is rejected before any saved experiment output is overwritten.
 
 ## 5. Generate the results
 

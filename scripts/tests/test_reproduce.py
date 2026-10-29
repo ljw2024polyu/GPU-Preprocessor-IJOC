@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 # SPDX-License-Identifier: MIT
 
-"""CPU checks for portable build defaults and user toolchain overrides."""
+"""CPU checks for portable builds, license gating, and reproduction selection."""
 import json
 import os
 from pathlib import Path
@@ -20,7 +20,7 @@ TOOLCHAIN = ('CC', 'CXX', 'FC', 'CUDACXX', 'CUDAHOSTCXX', 'CUDAToolkit_ROOT',
 CONFIGURATION = TOOLCHAIN + ('CUDA_ARCH', 'BUILD_JOBS', 'BUILD_DIR', 'CMAKE_ARGS',
                             'WORK_ROOT', 'RUN_DIR', 'INPUT_ROOT', 'WITH_GUROBI',
                             'GUROBI_HOME', 'JULIA', 'FFLAGS', 'MAKEFLAGS', 'MFLAGS',
-                            'PYTHON')
+                            'PYTHON', 'TEST_GUROBI_PROBE_EXIT')
 
 
 class ReproduceTests(unittest.TestCase):
@@ -43,14 +43,17 @@ class ReproduceTests(unittest.TestCase):
                 '    stream.write(json.dumps({"tool": os.path.basename(sys.argv[0]),\n'
                 '        "args": sys.argv[1:],\n'
                 '        "environment": {k: os.environ[k] for k in keys if k in os.environ}}) + "\\n")\n'
+                'if len(sys.argv) > 1 and sys.argv[1] == "scripts/check_gurobi.py":\n'
+                '    sys.exit(int(os.environ.get("TEST_GUROBI_PROBE_EXIT", "0")))\n'
             )
-            for name in ['python3', 'custom-python', 'cmake']:
+            for name in ['python3', 'custom-python', 'cmake', 'ctest']:
                 executable = tools / name
                 executable.write_text(fake_tool)
                 executable.chmod(0o755)
             environment = {k: v for k, v in os.environ.items() if k not in CONFIGURATION}
             environment.update(PATH=str(tools) + os.pathsep + os.environ['PATH'],
                                CMAKE=str(tools / 'cmake'),
+                               CTEST=str(tools / 'ctest'),
                                TEST_CALL_LOG=str(log))
             environment.update(overrides or {})
             command = ['make'] if make else ['bash', 'scripts/reproduce.sh', stage, *extra_args]
@@ -66,6 +69,8 @@ class ReproduceTests(unittest.TestCase):
                 self.assertEqual(len(calls), 2)
                 configure, build = calls
                 self.assertIn('-S', configure['args'])
+                if not make:
+                    self.assertIn('-DHPRLP_GUROBI=OFF', configure['args'])
                 self.assertFalse(any('CMAKE_CUDA_ARCHITECTURES' in a for a in configure['args']))
                 self.assertEqual(configure['environment'], {})
                 self.assertIn('--build', build['args'])
@@ -137,6 +142,58 @@ class ReproduceTests(unittest.TestCase):
         self.assertIn('--resume', call['args'])
         methods = call['args'].index('--methods')
         self.assertEqual(call['args'][methods + 1:methods + 5], ['none', 'folding', 'gpu', 'pslp'])
+
+    def test_auto_gurobi_build_requires_a_successful_sdk_and_license_probe(self):
+        for status, enabled in [('0', 'ON'), ('1', 'OFF')]:
+            with self.subTest(status=status):
+                calls = self.run_stage(overrides={'GUROBI_HOME': '/SDK with spaces',
+                                                 'TEST_GUROBI_PROBE_EXIT': status})
+                probe, configure, build = calls
+                self.assertEqual(probe['args'], ['scripts/check_gurobi.py'])
+                self.assertIn('-DHPRLP_GUROBI=' + enabled, configure['args'])
+                self.assertEqual('-DGUROBI_ROOT=/SDK with spaces' in configure['args'], enabled == 'ON')
+                self.assertIn('--build', build['args'])
+
+    def test_auto_run_includes_gurobi_only_when_probe_and_build_are_usable(self):
+        for status in ['0', '1']:
+            with self.subTest(status=status):
+                probe, run = self.run_stage(stage='run', overrides={'GUROBI_HOME': '/SDK',
+                                                 'TEST_GUROBI_PROBE_EXIT': status})
+                self.assertEqual(probe['args'][0], 'scripts/check_gurobi.py')
+                self.assertIn('--build-dir', probe['args'])
+                selected = run['args'][run['args'].index('--methods') + 1:run['args'].index('--output-dir')]
+                self.assertEqual(selected, ['none', 'folding', 'gpu', 'pslp'] + (['gurobi'] if status == '0' else []))
+
+    def test_gurobi_off_skips_the_probe_even_with_an_sdk(self):
+        configure, build = self.run_stage(overrides={'GUROBI_HOME': '/SDK', 'WITH_GUROBI': 'OFF'})
+        self.assertIn('-DHPRLP_GUROBI=OFF', configure['args'])
+        self.assertIn('--build', build['args'])
+
+    def test_explicit_gurobi_requirement_fails_before_build_or_experiments(self):
+        for stage in ['setup', 'run']:
+            for settings in [{'WITH_GUROBI': 'ON'},
+                             {'WITH_GUROBI': 'ON', 'GUROBI_HOME': '/SDK', 'TEST_GUROBI_PROBE_EXIT': '1'}]:
+                with self.subTest(stage=stage, settings=settings), self.assertRaises(subprocess.CalledProcessError) as failure:
+                    self.run_stage(stage=stage, overrides=settings)
+                self.assertIn('WITH_GUROBI=ON requires', failure.exception.stderr)
+
+    def test_data_preparation_does_not_check_the_benchmark_license(self):
+        calls = self.run_stage(stage='data', overrides={'GUROBI_HOME': '/SDK', 'TEST_GUROBI_PROBE_EXIT': '1'})
+        self.assertEqual(len(calls), 4)
+        self.assertTrue(all(c['args'][0] == 'scripts/prepare_inputs.py' for c in calls))
+
+    def test_test_stage_skips_only_gurobi_checks_when_license_is_unavailable(self):
+        for status in ['0', '1']:
+            with self.subTest(status=status):
+                probe, python_tests, cpp_tests = self.run_stage(stage='test',
+                    overrides={'GUROBI_HOME': '/SDK', 'TEST_GUROBI_PROBE_EXIT': status})
+                self.assertIn('--build-dir', probe['args'])
+                self.assertEqual(python_tests['args'][:3], ['-m', 'unittest', 'discover'])
+                self.assertEqual(cpp_tests['tool'], 'ctest')
+                self.assertIn('--no-tests=error', cpp_tests['args'])
+                self.assertEqual('-E' in cpp_tests['args'], status == '1')
+                if status == '1':
+                    self.assertEqual(cpp_tests['args'][-2:], ['-E', 'gurobi'])
 
     @unittest.skipUnless(CMAKE, 'CMake is needed to check architecture initialization')
     def test_cmake_architecture_default_and_overrides(self):
