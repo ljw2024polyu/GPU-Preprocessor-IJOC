@@ -1,9 +1,9 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/detail/runtime_options.hpp"
-#include "gpu_presolver/offset.hpp"
-#include "gpu_presolver/presolve/rules/rule_infeasible_and_redundant_rows.hpp"
+#include "gpu_preprocessor/detail/runtime_options.hpp"
+#include "gpu_preprocessor/offset.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_infeasible_and_redundant_rows.hpp"
 
 #include <cuda_runtime.h>
 
@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 
-namespace runtime = gpu_presolver::runtime;
+namespace runtime = gpu_preprocessor::runtime;
 
 namespace {
 
@@ -47,12 +47,12 @@ std::vector<T> copy_to_host(T* device, std::size_t size) {
 }  // namespace
 
 void test_activity_actions_match_julia_classification() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PostsolveDualMode;
-  using gpu_presolver::presolve::PostsolveReductionType;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PostsolveDualMode;
+  using gpu_preprocessor::presolve::PostsolveReductionType;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
   const double inf = std::numeric_limits<double>::infinity();
 
   LPInfoGpu lp;
@@ -75,7 +75,7 @@ void test_activity_actions_match_julia_classification() {
   PresolveParams params;
   params.bound_tol = 1.0e-9;
 
-  gpu_presolver::presolve::apply_rule_infeasible_and_redundant_rows(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_infeasible_and_redundant_rows(plan, lp, stats, params);
 
   const std::vector<std::uint8_t> keep = copy_to_host(plan.keep_row_mask, 5);
   const std::vector<double> AL = copy_to_host(plan.new_AL, 5);
@@ -107,7 +107,7 @@ void test_activity_actions_match_julia_classification() {
   stats.row_nnz = copy_to_device<std::int32_t>({2, 2, 2, 2, 1});
   params.record_postsolve_tape_cpu = true;
 
-  gpu_presolver::presolve::apply_rule_infeasible_and_redundant_rows(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_infeasible_and_redundant_rows(plan, lp, stats, params);
 
   assert((plan.tape.types == std::vector<std::int32_t>{
                                  static_cast<std::int32_t>(PostsolveReductionType::DeletedRow),
@@ -147,10 +147,10 @@ void test_activity_actions_match_julia_classification() {
 }
 
 void test_activity_infeasible_short_circuits_apply() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
 
   LPInfoGpu lp;
   lp.A.rows = 1;
@@ -170,7 +170,7 @@ void test_activity_infeasible_short_circuits_apply() {
   stats.row_nnz = copy_to_device<std::int32_t>({2});
   PresolveParams params;
 
-  gpu_presolver::presolve::apply_rule_infeasible_and_redundant_rows(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_infeasible_and_redundant_rows(plan, lp, stats, params);
   const std::vector<std::uint8_t> keep = copy_to_host(plan.keep_row_mask, 1);
   assert(plan.has_infeasible);
   assert(keep[0] == 1);
@@ -187,7 +187,7 @@ void test_activity_infeasible_short_circuits_apply() {
 }
 
 void test_long_row_classification() {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   const int lengths[] = {9,1025,4097,1025};
   std::vector<int> ptr{0},indices;
   std::vector<double> values;

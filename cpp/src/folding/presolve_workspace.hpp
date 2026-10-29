@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: MIT
 
 #pragma once
-#include "gpu_presolver/folding/folding.hpp"
-#include "gpu_presolver/presolve/cleanup_workspace.hpp"
-#include "gpu_presolver/presolve/duplicate_rule_workspace.hpp"
-#include "gpu_presolver/presolve/rules/rule_bound_strengthening.hpp"
-#include "gpu_presolver/presolve/rules/rule_parallel_rows.hpp"
-#include "gpu_presolver/presolve/rules/rule_parallel_columns.hpp"
+#include "gpu_preprocessor/folding/folding.hpp"
+#include "gpu_preprocessor/presolve/cleanup_workspace.hpp"
+#include "gpu_preprocessor/presolve/duplicate_rule_workspace.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_bound_strengthening.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_parallel_rows.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_parallel_columns.hpp"
 #include <cuda_runtime.h>
 #include <algorithm>
 #include <chrono>
@@ -17,8 +17,8 @@
 #include <stdexcept>
 #include <string>
 
-namespace gpu_presolver::folding::detail {
-namespace gp = gpu_presolver::presolve;
+namespace gpu_preprocessor::folding::detail {
+namespace gp = gpu_preprocessor::presolve;
 inline void throw_if_cuda_error(cudaError_t status, const char* context) {
   if (status != cudaSuccess)
     throw std::runtime_error(std::string(context) + ": " + cudaGetErrorString(status));
@@ -120,4 +120,4 @@ inline void run_prepared_presolve(FoldingPipelineSummary& summary,
   throw_if_cuda_error(cudaDeviceSynchronize(), "preprocessing workspace release");
   summary.workspace_release_seconds = std::chrono::duration<double>(Clock::now() - release_start).count();
 }
-}  // namespace gpu_presolver::folding::detail
+}  // namespace gpu_preprocessor::folding::detail

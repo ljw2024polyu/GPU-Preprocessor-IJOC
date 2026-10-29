@@ -5,7 +5,7 @@
 
 #include "postsolve_common.cuh"
 
-namespace gpu_presolver::presolve::postsolve {
+namespace gpu_preprocessor::presolve::postsolve {
 
 // DeletedRow records carrying a singleton-row certificate; ordinary deleted rows need no replay.
 
@@ -95,4 +95,4 @@ __device__ __forceinline__ void replay_deleted_singleton_row(
   }
 }
 
-}  // namespace gpu_presolver::presolve::postsolve
+}  // namespace gpu_preprocessor::presolve::postsolve

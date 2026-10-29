@@ -76,7 +76,7 @@ static void print_usage(const char* prog) {
               << "      --pock <true/false>    Enable/disable Pock-Chambolle scaling (default: true)\n"
               << "      --bc <true/false>      Enable/disable bounds/cost scaling (default: true)\n"
               << "      --presolver <pslp|pslp0011|gpu|gurobi|none>  Select backend; pslp/pslp0011 use 0.0.11 (default: gpu)\n"
-              << "      --gpu-folding <true/false>  Enable/disable GPU presolver folding (default: true)\n"
+              << "      --gpu-folding <true/false>  Enable/disable GPU preprocessor folding (default: true)\n"
               << "      --gpu-presolve <true/false>  Enable GPU presolve after optional folding (default: true)\n"
               << "      --gpu-new-rules <true/false>  Enable the structure-specific GPU presolve rules (default: true)\n"
               << "      --reduced-matrix <true/false>  Enable adaptive row/column reduction in manual mode (default: true)\n"

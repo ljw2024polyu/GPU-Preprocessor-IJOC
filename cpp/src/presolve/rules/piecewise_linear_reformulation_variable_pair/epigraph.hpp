@@ -3,11 +3,11 @@
 
 #pragma once
 
-#include "gpu_presolver/presolve/presolve_structs.hpp"
+#include "gpu_preprocessor/presolve/presolve_structs.hpp"
 
 #include <cstdint>
 
-namespace gpu_presolver::presolve::detail {
+namespace gpu_preprocessor::presolve::detail {
 
 // Device-owned state shared by the fail-closed detector and the one-pass CSR
 // quotient builder.  variable-pair epigraph models are laid out as
@@ -61,4 +61,4 @@ void build_piecewise_linear_reformulation_variable_pair_epigraph_plan(PresolvePl
 
 void free_piecewise_linear_reformulation_variable_pair_epigraph_analysis(PiecewiseLinearReformulationVariablePairEpigraphAnalysisGpu& analysis);
 
-}  // namespace gpu_presolver::presolve::detail
+}  // namespace gpu_preprocessor::presolve::detail

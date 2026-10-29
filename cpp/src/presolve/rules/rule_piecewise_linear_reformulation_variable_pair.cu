@@ -1,12 +1,12 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/presolve/rules/rule_piecewise_linear_reformulation_variable_pair.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_piecewise_linear_reformulation_variable_pair.hpp"
 #include "piecewise_linear_reformulation_variable_pair/epigraph.hpp"
 #include "piecewise_linear_reformulation_variable_pair/shifted_antipodal.hpp"
 #include "../plan_storage.hpp"
 
-namespace gpu_presolver::presolve {
+namespace gpu_preprocessor::presolve {
 PiecewiseLinearReformulationVariablePairCase build_piecewise_linear_reformulation_variable_pair_plan(
     PresolvePlanGpu& plan, const LPInfoGpu& lp, const PresolveParams& params,
     const std::function<bool()>& stop) {
@@ -35,4 +35,4 @@ PiecewiseLinearReformulationVariablePairCase build_piecewise_linear_reformulatio
   return applicable ? PiecewiseLinearReformulationVariablePairCase::ShiftedAntipodal :
                       PiecewiseLinearReformulationVariablePairCase::None;
 }
-}  // namespace gpu_presolver::presolve
+}  // namespace gpu_preprocessor::presolve

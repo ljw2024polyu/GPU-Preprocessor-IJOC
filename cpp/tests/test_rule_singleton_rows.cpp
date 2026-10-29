@@ -1,8 +1,8 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/offset.hpp"
-#include "gpu_presolver/presolve/rules/rule_singleton_rows.hpp"
+#include "gpu_preprocessor/offset.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_singleton_rows.hpp"
 
 #include <cuda_runtime.h>
 
@@ -42,12 +42,12 @@ std::vector<T> copy_to_host(T* device, std::size_t size) {
 }  // namespace
 
 int main() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PostsolveDualMode;
-  using gpu_presolver::presolve::PostsolveReductionType;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PostsolveDualMode;
+  using gpu_preprocessor::presolve::PostsolveReductionType;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
 
   LPInfoGpu lp;
   lp.A.rows = 2;
@@ -69,7 +69,7 @@ int main() {
   params.zero_tol = 1.0e-12;
   params.bound_tol = 1.0e-9;
 
-  gpu_presolver::presolve::apply_rule_singleton_rows(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_singleton_rows(plan, lp, stats, params);
 
   const std::vector<std::uint8_t> keep_row = copy_to_host(plan.keep_row_mask, 2);
   const std::vector<double> l = copy_to_host(plan.new_l, 2);
@@ -104,7 +104,7 @@ int main() {
   stats.singleton_row_val = copy_to_device<double>({2.0, -2.0});
   params.record_postsolve_tape_cpu = true;
 
-  gpu_presolver::presolve::apply_rule_singleton_rows(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_singleton_rows(plan, lp, stats, params);
 
   assert((plan.tape.types == std::vector<std::int32_t>{
                                  static_cast<std::int32_t>(PostsolveReductionType::DeletedRow),

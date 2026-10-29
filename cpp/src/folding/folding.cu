@@ -3,9 +3,9 @@
 
 #include "folding_internal.cuh"
 
-#include "gpu_presolver/folding/folding.hpp"
-#include "gpu_presolver/presolve/gpu_postsolve.hpp"
-#include "gpu_presolver/presolve/gpu_presolve.hpp"
+#include "gpu_preprocessor/folding/folding.hpp"
+#include "gpu_preprocessor/presolve/gpu_postsolve.hpp"
+#include "gpu_preprocessor/presolve/gpu_presolve.hpp"
 #include "presolve_workspace.hpp"
 
 #include <cuda_runtime.h>
@@ -18,7 +18,7 @@
 #include <utility>
 #include <vector>
 
-namespace gpu_presolver::folding {
+namespace gpu_preprocessor::folding {
 namespace {
 
 void throw_if_cuda_error(cudaError_t status, const char* context) {
@@ -260,4 +260,4 @@ UnfoldedSolutionHost postsolve_and_unfold_to_host(double* x_red,
   return unfolded;
 }
 
-}  // namespace gpu_presolver::folding
+}  // namespace gpu_preprocessor::folding

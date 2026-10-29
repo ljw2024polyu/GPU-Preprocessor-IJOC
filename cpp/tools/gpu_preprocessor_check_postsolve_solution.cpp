@@ -1,11 +1,11 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/offset.hpp"
-#include "gpu_presolver/presolve/device_recovery.hpp"
-#include "gpu_presolver/presolve/gpu_postsolve.hpp"
-#include "gpu_presolver/presolve/gpu_presolve.hpp"
-#include "gpu_presolver_tool_common.hpp"
+#include "gpu_preprocessor/offset.hpp"
+#include "gpu_preprocessor/presolve/device_recovery.hpp"
+#include "gpu_preprocessor/presolve/gpu_postsolve.hpp"
+#include "gpu_preprocessor/presolve/gpu_presolve.hpp"
+#include "gpu_preprocessor_tool_common.hpp"
 
 #include <algorithm>
 #include <cstddef>
@@ -66,7 +66,7 @@ std::uint64_t raw_vector_hash(const std::vector<T>& values) {
   return hash.value();
 }
 
-std::uint64_t record_hash(const gpu_presolver::presolve::PresolveRecordGpu& record) {
+std::uint64_t record_hash(const gpu_preprocessor::presolve::PresolveRecordGpu& record) {
   Fnv1a64 hash;
   hash.add_scalar(record.m0);
   hash.add_scalar(record.n0);
@@ -203,9 +203,9 @@ void keep_top_violation(std::vector<ViolationDetail>& top, ViolationDetail item,
   }
 }
 
-PrimalFeasibility compute_primal_feasibility(const cpu_presolve::LpModel& model,
+PrimalFeasibility compute_primal_feasibility(const mps_reader::LpModel& model,
                                              const std::vector<double>& x) {
-  const cpu_presolve::CsrMatrix& A = model.csr();
+  const mps_reader::CsrMatrix& A = model.csr();
   const std::vector<double>& AL = model.row_lower();
   const std::vector<double>& AU = model.row_upper();
   const std::vector<double>& l = model.col_lower();
@@ -239,10 +239,10 @@ PrimalFeasibility compute_primal_feasibility(const cpu_presolve::LpModel& model,
   return out;
 }
 
-void print_top_violations(const cpu_presolve::LpModel& model,
+void print_top_violations(const mps_reader::LpModel& model,
                           const std::vector<double>& x,
                           std::size_t limit) {
-  const cpu_presolve::CsrMatrix& A = model.csr();
+  const mps_reader::CsrMatrix& A = model.csr();
   const std::vector<double>& AL = model.row_lower();
   const std::vector<double>& AU = model.row_upper();
   const std::vector<double>& l = model.col_lower();
@@ -291,42 +291,42 @@ void print_top_violations(const cpu_presolve::LpModel& model,
 
 int main(int argc, char** argv) {
   try {
-    const auto options = gpu_presolver::tools::parse_command_line(argc, argv, 2, true);
+    const auto options = gpu_preprocessor::tools::parse_command_line(argc, argv, 2, true);
     if (options.help) {
-      gpu_presolver::tools::print_usage(std::cout, "gpu_preprocessor_check_postsolve_solution",
+      gpu_preprocessor::tools::print_usage(std::cout, "gpu_preprocessor_check_postsolve_solution",
                                        "<model.mps|-> <solution_dir>", true);
       return 0;
     }
     const std::string input_path = options.positional[0];
     const std::filesystem::path solution_dir = options.positional[1];
     const auto& params = options.params;
-    cpu_presolve::MpsModel model = gpu_presolver::tools::read_mps_file(input_path);
-    gpu_presolver::tools::DeviceLpOwner device_lp = gpu_presolver::tools::upload_lp(model.lp);
+    mps_reader::MpsModel model = gpu_preprocessor::tools::read_mps_file(input_path);
+    gpu_preprocessor::tools::DeviceLpOwner device_lp = gpu_preprocessor::tools::upload_lp(model.lp);
 
-    gpu_presolver::tools::FoldingPipelineOwner pipeline;
-    pipeline.summary = gpu_presolver::folding::run_gpu_presolve_with_folding(
+    gpu_preprocessor::tools::FoldingPipelineOwner pipeline;
+    pipeline.summary = gpu_preprocessor::folding::run_gpu_presolve_with_folding(
         device_lp.lp, params, false, true);
-    gpu_presolver::presolve::export_recovery_record(pipeline.summary.presolve.record);
+    gpu_preprocessor::presolve::export_recovery_record(pipeline.summary.presolve.record);
     const auto& summary = pipeline.summary.presolve;
     if (summary.has_infeasible || summary.has_unbounded) {
       throw std::runtime_error("no reduced solution for infeasible/unbounded model");
     }
 
     const std::vector<double> x_red_h =
-        gpu_presolver::tools::read_binary_vector<double>(solution_dir / "x_f64.bin",
+        gpu_preprocessor::tools::read_binary_vector<double>(solution_dir / "x_f64.bin",
                                                          static_cast<std::size_t>(summary.reduced_cols));
     const std::vector<double> y_red_h =
-        gpu_presolver::tools::read_binary_vector<double>(solution_dir / "y_f64.bin",
+        gpu_preprocessor::tools::read_binary_vector<double>(solution_dir / "y_f64.bin",
                                                          static_cast<std::size_t>(summary.reduced_rows));
     const std::vector<double> z_red_h =
-        gpu_presolver::tools::read_binary_vector<double>(solution_dir / "z_f64.bin",
+        gpu_preprocessor::tools::read_binary_vector<double>(solution_dir / "z_f64.bin",
                                                          static_cast<std::size_t>(summary.reduced_cols));
 
-    double* x_red = gpu_presolver::tools::copy_to_device(x_red_h);
-    double* y_red = gpu_presolver::tools::copy_to_device(y_red_h);
-    double* z_red = gpu_presolver::tools::copy_to_device(z_red_h);
+    double* x_red = gpu_preprocessor::tools::copy_to_device(x_red_h);
+    double* y_red = gpu_preprocessor::tools::copy_to_device(y_red_h);
+    double* z_red = gpu_preprocessor::tools::copy_to_device(z_red_h);
 
-    const auto unfolded = gpu_presolver::folding::postsolve_and_unfold_to_host(
+    const auto unfolded = gpu_preprocessor::folding::postsolve_and_unfold_to_host(
         x_red, y_red, z_red, pipeline.summary, &device_lp.lp);
     const auto& x_org = unfolded.x;
     const auto& y_org = unfolded.y;

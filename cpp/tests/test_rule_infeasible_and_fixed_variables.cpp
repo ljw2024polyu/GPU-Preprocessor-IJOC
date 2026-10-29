@@ -1,8 +1,8 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/offset.hpp"
-#include "gpu_presolver/presolve/rules/rule_infeasible_and_fixed_variables.hpp"
+#include "gpu_preprocessor/offset.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_infeasible_and_fixed_variables.hpp"
 
 #include <cuda_runtime.h>
 
@@ -50,10 +50,10 @@ void free_all(std::initializer_list<void*> pointers) {
 }  // namespace
 
 void test_fixed_variable(double width) {
-  using gpu_presolver::presolve::DeviceCsrMatrix;
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::DeviceCsrMatrix;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
 
   constexpr double lower = 2.0;
   const double upper = lower + width;
@@ -91,7 +91,7 @@ void test_fixed_variable(double width) {
   PresolveParams params;
   params.bound_tol = 1.0e-6;
 
-  gpu_presolver::presolve::apply_rule_infeasible_and_fixed_variables(plan, lp, params);
+  gpu_preprocessor::presolve::apply_rule_infeasible_and_fixed_variables(plan, lp, params);
 
   const std::vector<std::uint8_t> keep_col_after = copy_to_host(plan.keep_col_mask, 2);
   const std::vector<double> l_after = copy_to_host(plan.new_l, 2);
@@ -130,7 +130,7 @@ void test_fixed_variable(double width) {
 void test_narrow_intervals_preserve_feasible_equality(std::int32_t narrow_count,
                                                      double coefficient,
                                                      bool alternate_signs = false) {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   // A known feasible point is x[0] = 2, x[1:] = 0. The worst-case activity
   // perturbation exceeds feasibility_tol, both for many small contributions
   // and one large one. Opposite coefficient signs must not cancel this bound.

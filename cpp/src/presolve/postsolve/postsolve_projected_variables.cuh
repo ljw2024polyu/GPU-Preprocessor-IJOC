@@ -5,7 +5,7 @@
 
 #include "postsolve_common.cuh"
 
-namespace gpu_presolver::presolve::postsolve {
+namespace gpu_preprocessor::presolve::postsolve {
 
 // Projected-column records shared by zero-cost product and two-row variable elimination.
 // indices: [K, eliminated_col, row_ids[K], N, L, (orient, len)[L], col_ids[N]].
@@ -66,4 +66,4 @@ __device__ __forceinline__ void replay_projected_column(
   }
 }
 
-}  // namespace gpu_presolver::presolve::postsolve
+}  // namespace gpu_preprocessor::presolve::postsolve

@@ -8,7 +8,7 @@
 #define CUSPARSE_ENABLE_EXPERIMENTAL_API
 #endif
 #include <cusparse.h>
-#include "gpu_presolver/cusparse_index_view.cuh"
+#include "gpu_preprocessor/cusparse_index_view.cuh"
 
 #include <algorithm>
 #include <chrono>
@@ -19,7 +19,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace gpu_presolver::folding {
+namespace gpu_preprocessor::folding {
 namespace {
 
 constexpr double kMaxFoldingReduceSize = 0.8;
@@ -358,4 +358,4 @@ bool refine_color(const presolve::LPInfoGpu& device_model,
   return true;
 }
 
-}  // namespace gpu_presolver::folding
+}  // namespace gpu_preprocessor::folding

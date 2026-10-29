@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/presolve/transpose64.hpp"
+#include "gpu_preprocessor/presolve/transpose64.hpp"
 #include <cuda_runtime.h>
 #include <cusparse.h>
 #include <cub/cub.cuh>
@@ -11,7 +11,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace gpu_presolver::presolve {
+namespace gpu_preprocessor::presolve {
 namespace {
 void ck(cudaError_t e) { if(e != cudaSuccess) throw std::runtime_error(cudaGetErrorString(e)); }
 void ck(cusparseStatus_t e) { if(e != CUSPARSE_STATUS_SUCCESS) throw std::runtime_error("64-bit transpose cuSPARSE error " + std::to_string(e)); }

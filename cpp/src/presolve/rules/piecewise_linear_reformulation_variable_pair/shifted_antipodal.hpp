@@ -3,11 +3,11 @@
 
 #pragma once
 
-#include "gpu_presolver/presolve/presolve_structs.hpp"
+#include "gpu_preprocessor/presolve/presolve_structs.hpp"
 
 #include <cstdint>
 
-namespace gpu_presolver::presolve::detail {
+namespace gpu_preprocessor::presolve::detail {
 
 // Device-owned analysis retained between the full detector and the CSR plan
 // builder.  Keeping it explicit avoids rerunning the union-find or copying a
@@ -45,4 +45,4 @@ void build_piecewise_linear_reformulation_variable_pair_shifted_antipodal_plan(P
 
 void free_piecewise_linear_reformulation_variable_pair_shifted_antipodal_analysis(PiecewiseLinearReformulationVariablePairShiftedAntipodalAnalysisGpu& analysis);
 
-}  // namespace gpu_presolver::presolve::detail
+}  // namespace gpu_preprocessor::presolve::detail

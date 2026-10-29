@@ -1,12 +1,12 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/detail/runtime_options.hpp"
-#include "gpu_presolver/offset.hpp"
-#include "gpu_presolver/presolve/gpu_presolve_kernels.hpp"
-#include "gpu_presolver/presolve/cleanup_workspace.hpp"
+#include "gpu_preprocessor/detail/runtime_options.hpp"
+#include "gpu_preprocessor/offset.hpp"
+#include "gpu_preprocessor/presolve/gpu_presolve_kernels.hpp"
+#include "gpu_preprocessor/presolve/cleanup_workspace.hpp"
 
-#include "gpu_presolver/presolve/live_matrix.cuh"
+#include "gpu_preprocessor/presolve/live_matrix.cuh"
 #include <cuda_runtime.h>
 #include <cub/cub.cuh>
 #include <thrust/functional.h>
@@ -19,7 +19,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace gpu_presolver::presolve {
+namespace gpu_preprocessor::presolve {
 namespace {
 
 constexpr int GPU_PRESOLVE_THREADS = 256;
@@ -808,4 +808,4 @@ void compute_col_max_abs(double* col_max_abs, const DeviceCsrMatrix& AT_csr,
   }
 }
 
-}  // namespace gpu_presolver::presolve
+}  // namespace gpu_preprocessor::presolve

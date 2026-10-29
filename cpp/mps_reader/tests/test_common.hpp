@@ -8,7 +8,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace cpu_presolve_tests {
+namespace mps_reader_tests {
 
 using TestFn = void (*)();
 
@@ -41,19 +41,19 @@ inline void require_near(double actual,
   }
 }
 
-}  // namespace cpu_presolve_tests
+}  // namespace mps_reader_tests
 
-#define CPU_PRESOLVE_REQUIRE(expr) \
-  ::cpu_presolve_tests::require((expr), #expr, __FILE__, __LINE__)
+#define MPS_READER_REQUIRE(expr) \
+  ::mps_reader_tests::require((expr), #expr, __FILE__, __LINE__)
 
-#define CPU_PRESOLVE_REQUIRE_NEAR(actual, expected, tolerance) \
-  ::cpu_presolve_tests::require_near((actual), (expected), (tolerance), #actual, __FILE__, __LINE__)
+#define MPS_READER_REQUIRE_NEAR(actual, expected, tolerance) \
+  ::mps_reader_tests::require_near((actual), (expected), (tolerance), #actual, __FILE__, __LINE__)
 
-#define CPU_PRESOLVE_TEST(name)                                                \
+#define MPS_READER_TEST(name)                                                \
   void name();                                                                 \
   namespace {                                                                  \
   struct name##_registrar {                                                    \
-    name##_registrar() { ::cpu_presolve_tests::register_test(#name, &name); }  \
+    name##_registrar() { ::mps_reader_tests::register_test(#name, &name); }  \
   };                                                                           \
   static name##_registrar name##_registrar_instance;                           \
   }                                                                            \

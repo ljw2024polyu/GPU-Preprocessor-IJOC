@@ -1,13 +1,13 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/presolve/live_matrix.cuh"
+#include "gpu_preprocessor/presolve/live_matrix.cuh"
 #include <cuda_runtime.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <vector>
-using namespace gpu_presolver::presolve;
+using namespace gpu_preprocessor::presolve;
 void check(cudaError_t e) { if(e!=cudaSuccess){std::fprintf(stderr,"%s\n",cudaGetErrorString(e));std::abort();} }
 template<int Width> __global__ void visit_rows(int n,const int* indices,
     const std::uint8_t* keep,int* positions,double* sums,bool masked) {

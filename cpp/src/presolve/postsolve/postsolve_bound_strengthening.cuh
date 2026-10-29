@@ -5,7 +5,7 @@
 
 #include "postsolve_common.cuh"
 
-namespace gpu_presolver::presolve::postsolve {
+namespace gpu_preprocessor::presolve::postsolve {
 
 __device__ __forceinline__ void replay_row_implied_bound_change(
     double* x_org,
@@ -75,4 +75,4 @@ __device__ __forceinline__ void replay_row_implied_bound_change(
   }
 }
 
-}  // namespace gpu_presolver::presolve::postsolve
+}  // namespace gpu_preprocessor::presolve::postsolve

@@ -4,7 +4,7 @@
 #include "postsolve_piecewise_linear_reformulation_absolute_value.hpp"
 #include "postsolve_common.cuh"
 
-namespace gpu_presolver::presolve::postsolve {
+namespace gpu_preprocessor::presolve::postsolve {
 
 __global__ void _kernel_structural_restore_splits(double* x_org,
                                                   const std::int32_t* t_cols,
@@ -270,4 +270,4 @@ void validate_piecewise_linear_reformulation_absolute_value_recovery(
   }
 }
 
-}  // namespace gpu_presolver::presolve::postsolve
+}  // namespace gpu_preprocessor::presolve::postsolve

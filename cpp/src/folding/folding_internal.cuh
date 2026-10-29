@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include "gpu_presolver/detail/runtime_options.hpp"
+#include "gpu_preprocessor/detail/runtime_options.hpp"
 
-#include "gpu_presolver/folding/folding_structs.hpp"
+#include "gpu_preprocessor/folding/folding_structs.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 
-namespace gpu_presolver::folding {
+namespace gpu_preprocessor::folding {
 
 // The validated default pipeline is the only production implementation.
 // Detailed profiling restores stage barriers and synchronous count reads.
@@ -98,4 +98,4 @@ UnfoldedSolutionHost unfold_solution_device_to_host(const FoldingMapDevice& map,
 
 void free_lp_device(presolve::LPInfoGpu& lp);
 
-}  // namespace gpu_presolver::folding
+}  // namespace gpu_preprocessor::folding

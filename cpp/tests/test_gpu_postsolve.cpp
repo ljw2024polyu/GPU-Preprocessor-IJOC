@@ -1,10 +1,10 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/offset.hpp"
-#include "gpu_presolver/presolve/device_recovery.hpp"
-#include "gpu_presolver/presolve/gpu_postsolve.hpp"
-#include "gpu_presolver/presolve/gpu_presolve.hpp"
+#include "gpu_preprocessor/offset.hpp"
+#include "gpu_preprocessor/presolve/device_recovery.hpp"
+#include "gpu_preprocessor/presolve/gpu_postsolve.hpp"
+#include "gpu_preprocessor/presolve/gpu_presolve.hpp"
 
 #include <cuda_runtime.h>
 
@@ -43,8 +43,8 @@ std::vector<T> copy_to_host(T* device, std::size_t size) {
 }
 
 void test_postsolve_scatter_and_fixed_variable_restore() {
-  using gpu_presolver::presolve::GpuPostsolveResult;
-  using gpu_presolver::presolve::PresolveRecordGpu;
+  using gpu_preprocessor::presolve::GpuPostsolveResult;
+  using gpu_preprocessor::presolve::PresolveRecordGpu;
 
   PresolveRecordGpu record;
   record.m0 = 3;
@@ -62,7 +62,7 @@ void test_postsolve_scatter_and_fixed_variable_restore() {
   double* y_red = copy_to_device<double>({1.5, -3.0});
   double* z_red = copy_to_device<double>({0.25, 0.75});
 
-  GpuPostsolveResult result = gpu_presolver::presolve::postsolve_gpu(x_red, y_red, z_red, record);
+  GpuPostsolveResult result = gpu_preprocessor::presolve::postsolve_gpu(x_red, y_red, z_red, record);
   const std::vector<double> x = copy_to_host(result.x_org, 4);
   const std::vector<double> y = copy_to_host(result.y_org, 3);
   const std::vector<double> z = copy_to_host(result.z_org, 4);
@@ -80,8 +80,8 @@ void test_postsolve_scatter_and_fixed_variable_restore() {
 }
 
 void test_postsolve_allows_null_reduced_dual_inputs() {
-  using gpu_presolver::presolve::GpuPostsolveResult;
-  using gpu_presolver::presolve::PresolveRecordGpu;
+  using gpu_preprocessor::presolve::GpuPostsolveResult;
+  using gpu_preprocessor::presolve::PresolveRecordGpu;
 
   PresolveRecordGpu record;
   record.m0 = 1;
@@ -94,7 +94,7 @@ void test_postsolve_allows_null_reduced_dual_inputs() {
   record.col_org2red = {0};
 
   double* x_red = copy_to_device<double>({2.0});
-  GpuPostsolveResult result = gpu_presolver::presolve::postsolve_gpu(x_red, nullptr, nullptr, record);
+  GpuPostsolveResult result = gpu_preprocessor::presolve::postsolve_gpu(x_red, nullptr, nullptr, record);
   const std::vector<double> x = copy_to_host(result.x_org, 1);
   const std::vector<double> y = copy_to_host(result.y_org, 1);
   const std::vector<double> z = copy_to_host(result.z_org, 1);
@@ -109,9 +109,9 @@ void test_postsolve_allows_null_reduced_dual_inputs() {
 }
 
 void test_postsolve_keeps_unretrieved_fixed_variable_dual_tape_based_with_original_model() {
-  using gpu_presolver::presolve::GpuPostsolveResult;
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PresolveRecordGpu;
+  using gpu_preprocessor::presolve::GpuPostsolveResult;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PresolveRecordGpu;
 
   PresolveRecordGpu record;
   record.m0 = 1;
@@ -137,7 +137,7 @@ void test_postsolve_keeps_unretrieved_fixed_variable_dual_tape_based_with_origin
   double* z_red = copy_to_device<double>({1.5});
 
   GpuPostsolveResult result =
-      gpu_presolver::presolve::postsolve_gpu(x_red, y_red, z_red, record, &original);
+      gpu_preprocessor::presolve::postsolve_gpu(x_red, y_red, z_red, record, &original);
   const std::vector<double> x = copy_to_host(result.x_org, 2);
   const std::vector<double> z = copy_to_host(result.z_org, 2);
   assert((x == std::vector<double>{2.0, 7.0}));
@@ -157,10 +157,10 @@ void test_postsolve_keeps_unretrieved_fixed_variable_dual_tape_based_with_origin
 }
 
 void test_presolve_record_drives_fixed_variable_postsolve() {
-  using gpu_presolver::presolve::GpuPostsolveResult;
-  using gpu_presolver::presolve::GpuPresolveSummary;
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::GpuPostsolveResult;
+  using gpu_preprocessor::presolve::GpuPresolveSummary;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
 
   const double inf = std::numeric_limits<double>::infinity();
   LPInfoGpu lp;
@@ -194,8 +194,8 @@ void test_presolve_record_drives_fixed_variable_postsolve() {
   params.enable_piecewise_linear_reformulation_absolute_value = false;
   params.enable_startup = false;
 
-  GpuPresolveSummary summary = gpu_presolver::presolve::run_gpu_presolve_with_record(lp, params);
-  gpu_presolver::presolve::export_recovery_record(summary.record);
+  GpuPresolveSummary summary = gpu_preprocessor::presolve::run_gpu_presolve_with_record(lp, params);
+  gpu_preprocessor::presolve::export_recovery_record(summary.record);
   assert(summary.reduced_rows == 1);
   assert(summary.reduced_cols == 1);
   assert(summary.record.m0 == 1);
@@ -210,7 +210,7 @@ void test_presolve_record_drives_fixed_variable_postsolve() {
   double* y_red = copy_to_device<double>({1.0});
   double* z_red = copy_to_device<double>({0.5});
   GpuPostsolveResult result =
-      gpu_presolver::presolve::postsolve_gpu(x_red, y_red, z_red, summary.record, &lp);
+      gpu_preprocessor::presolve::postsolve_gpu(x_red, y_red, z_red, summary.record, &lp);
   const std::vector<double> x = copy_to_host(result.x_org, 2);
   const std::vector<double> y = copy_to_host(result.y_org, 1);
   const std::vector<double> z = copy_to_host(result.z_org, 2);
@@ -238,10 +238,10 @@ void test_presolve_record_drives_fixed_variable_postsolve() {
 }
 
 void test_infeasible_and_fixed_variables_postsolve(double width, bool expect_fixed) {
-  using gpu_presolver::presolve::GpuPostsolveResult;
-  using gpu_presolver::presolve::GpuPresolveSummary;
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::GpuPostsolveResult;
+  using gpu_preprocessor::presolve::GpuPresolveSummary;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
 
   constexpr double lower = 2.0;
   const double upper = lower + width;
@@ -284,8 +284,8 @@ void test_infeasible_and_fixed_variables_postsolve(double width, bool expect_fix
 
   assert(params.bound_tol == 1.0e-6);
   assert(!params.record_postsolve_tape_cpu);
-  GpuPresolveSummary summary = gpu_presolver::presolve::run_gpu_presolve_with_record(lp, params);
-  gpu_presolver::presolve::export_recovery_record(summary.record);
+  GpuPresolveSummary summary = gpu_preprocessor::presolve::run_gpu_presolve_with_record(lp, params);
+  gpu_preprocessor::presolve::export_recovery_record(summary.record);
   assert(summary.reduced_rows == 1);
   if (expect_fixed) {
     assert(summary.reduced_cols == 1);
@@ -302,7 +302,7 @@ void test_infeasible_and_fixed_variables_postsolve(double width, bool expect_fix
   double* x_red = copy_to_device(expect_fixed ? std::vector<double>{4.0}
                                               : std::vector<double>{lower, 4.0});
   GpuPostsolveResult result =
-      gpu_presolver::presolve::postsolve_gpu(x_red, nullptr, nullptr, summary.record);
+      gpu_preprocessor::presolve::postsolve_gpu(x_red, nullptr, nullptr, summary.record);
   const std::vector<double> x = copy_to_host(result.x_org, 2);
   // Recover accepted midpoints exactly; preserve the solver's endpoint when
   // the approximate fixing was rejected by the row-error guard.
@@ -328,10 +328,10 @@ void test_infeasible_and_fixed_variables_postsolve(double width, bool expect_fix
 }
 
 void test_empty_column_fixed_value_is_recorded_for_postsolve() {
-  using gpu_presolver::presolve::GpuPostsolveResult;
-  using gpu_presolver::presolve::GpuPresolveSummary;
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::GpuPostsolveResult;
+  using gpu_preprocessor::presolve::GpuPresolveSummary;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
 
   LPInfoGpu lp;
   lp.A = {0, 1, 0,
@@ -364,14 +364,14 @@ void test_empty_column_fixed_value_is_recorded_for_postsolve() {
   params.enable_parallel_columns = false;
   params.enable_piecewise_linear_reformulation_absolute_value = false;
 
-  GpuPresolveSummary summary = gpu_presolver::presolve::run_gpu_presolve_with_record(lp, params);
-  gpu_presolver::presolve::export_recovery_record(summary.record);
+  GpuPresolveSummary summary = gpu_preprocessor::presolve::run_gpu_presolve_with_record(lp, params);
+  gpu_preprocessor::presolve::export_recovery_record(summary.record);
   assert(summary.reduced_rows == 0);
   assert(summary.reduced_cols == 0);
   assert((summary.record.fixed_idx == std::vector<std::int32_t>{0}));
   assert(std::fabs(summary.record.fixed_val[0] - 3.0) < 1.0e-12);
 
-  GpuPostsolveResult result = gpu_presolver::presolve::postsolve_gpu(nullptr, nullptr, nullptr, summary.record);
+  GpuPostsolveResult result = gpu_preprocessor::presolve::postsolve_gpu(nullptr, nullptr, nullptr, summary.record);
   const std::vector<double> x = copy_to_host(result.x_org, 1);
   assert((x == std::vector<double>{3.0}));
 
@@ -385,10 +385,10 @@ void test_empty_column_fixed_value_is_recorded_for_postsolve() {
 }
 
 void test_parallel_column_tape_replay_restores_primal_and_dual() {
-  using gpu_presolver::presolve::GpuPostsolveResult;
-  using gpu_presolver::presolve::PostsolveDualMode;
-  using gpu_presolver::presolve::PostsolveReductionType;
-  using gpu_presolver::presolve::PresolveRecordGpu;
+  using gpu_preprocessor::presolve::GpuPostsolveResult;
+  using gpu_preprocessor::presolve::PostsolveDualMode;
+  using gpu_preprocessor::presolve::PostsolveReductionType;
+  using gpu_preprocessor::presolve::PresolveRecordGpu;
 
   PresolveRecordGpu record;
   record.m0 = 0;
@@ -406,7 +406,7 @@ void test_parallel_column_tape_replay_restores_primal_and_dual() {
 
   double* x_red = copy_to_device<double>({5.0});
   double* z_red = copy_to_device<double>({0.5});
-  GpuPostsolveResult result = gpu_presolver::presolve::postsolve_gpu(x_red, nullptr, z_red, record);
+  GpuPostsolveResult result = gpu_preprocessor::presolve::postsolve_gpu(x_red, nullptr, z_red, record);
   const std::vector<double> x = copy_to_host(result.x_org, 2);
   const std::vector<double> z = copy_to_host(result.z_org, 2);
   assert(std::fabs(x[0] - 1.0) < 1.0e-12);
@@ -421,10 +421,10 @@ void test_parallel_column_tape_replay_restores_primal_and_dual() {
 }
 
 void test_doubleton_equations_tape_replay_restores_primal_and_basic_dual() {
-  using gpu_presolver::presolve::GpuPostsolveResult;
-  using gpu_presolver::presolve::PostsolveDualMode;
-  using gpu_presolver::presolve::PostsolveReductionType;
-  using gpu_presolver::presolve::PresolveRecordGpu;
+  using gpu_preprocessor::presolve::GpuPostsolveResult;
+  using gpu_preprocessor::presolve::PostsolveDualMode;
+  using gpu_preprocessor::presolve::PostsolveReductionType;
+  using gpu_preprocessor::presolve::PresolveRecordGpu;
 
   PresolveRecordGpu record;
   record.m0 = 1;
@@ -442,7 +442,7 @@ void test_doubleton_equations_tape_replay_restores_primal_and_basic_dual() {
 
   double* x_red = copy_to_device<double>({2.0});
   double* z_red = copy_to_device<double>({0.5});
-  GpuPostsolveResult result = gpu_presolver::presolve::postsolve_gpu(x_red, nullptr, z_red, record);
+  GpuPostsolveResult result = gpu_preprocessor::presolve::postsolve_gpu(x_red, nullptr, z_red, record);
   const std::vector<double> x = copy_to_host(result.x_org, 2);
   const std::vector<double> y = copy_to_host(result.y_org, 1);
   const std::vector<double> z = copy_to_host(result.z_org, 2);
@@ -460,11 +460,11 @@ void test_doubleton_equations_tape_replay_restores_primal_and_basic_dual() {
 }
 
 void test_doubleton_equations_original_model_replay_splits_induced_bound_dual() {
-  using gpu_presolver::presolve::GpuPostsolveResult;
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PostsolveDualMode;
-  using gpu_presolver::presolve::PostsolveReductionType;
-  using gpu_presolver::presolve::PresolveRecordGpu;
+  using gpu_preprocessor::presolve::GpuPostsolveResult;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PostsolveDualMode;
+  using gpu_preprocessor::presolve::PostsolveReductionType;
+  using gpu_preprocessor::presolve::PresolveRecordGpu;
 
   const double inf = std::numeric_limits<double>::infinity();
   LPInfoGpu original;
@@ -500,7 +500,7 @@ void test_doubleton_equations_original_model_replay_splits_induced_bound_dual() 
   double* x_red = copy_to_device<double>({5.0});
   double* y_red = copy_to_device<double>({1.0});
   double* z_red = copy_to_device<double>({4.0});
-  GpuPostsolveResult result = gpu_presolver::presolve::postsolve_gpu(x_red, y_red, z_red, record, &original);
+  GpuPostsolveResult result = gpu_preprocessor::presolve::postsolve_gpu(x_red, y_red, z_red, record, &original);
   const std::vector<double> x = copy_to_host(result.x_org, 2);
   const std::vector<double> y = copy_to_host(result.y_org, 2);
   const std::vector<double> z = copy_to_host(result.z_org, 2);
@@ -531,10 +531,10 @@ void test_doubleton_equations_original_model_replay_splits_induced_bound_dual() 
 }
 
 void test_singleton_column_substitution_tape_replay_restores_primal_and_dual() {
-  using gpu_presolver::presolve::GpuPostsolveResult;
-  using gpu_presolver::presolve::PostsolveDualMode;
-  using gpu_presolver::presolve::PostsolveReductionType;
-  using gpu_presolver::presolve::PresolveRecordGpu;
+  using gpu_preprocessor::presolve::GpuPostsolveResult;
+  using gpu_preprocessor::presolve::PostsolveDualMode;
+  using gpu_preprocessor::presolve::PostsolveReductionType;
+  using gpu_preprocessor::presolve::PresolveRecordGpu;
 
   PresolveRecordGpu record;
   record.m0 = 1;
@@ -552,7 +552,7 @@ void test_singleton_column_substitution_tape_replay_restores_primal_and_dual() {
 
   double* x_red = copy_to_device<double>({2.0, 3.0});
   double* z_red = copy_to_device<double>({0.5, 0.7});
-  GpuPostsolveResult result = gpu_presolver::presolve::postsolve_gpu(x_red, nullptr, z_red, record);
+  GpuPostsolveResult result = gpu_preprocessor::presolve::postsolve_gpu(x_red, nullptr, z_red, record);
   const std::vector<double> x = copy_to_host(result.x_org, 3);
   const std::vector<double> y = copy_to_host(result.y_org, 1);
   const std::vector<double> z = copy_to_host(result.z_org, 3);
@@ -568,10 +568,10 @@ void test_singleton_column_substitution_tape_replay_restores_primal_and_dual() {
 }
 
 void test_fixed_variable_tape_replay_restores_exact_reduced_cost() {
-  using gpu_presolver::presolve::GpuPostsolveResult;
-  using gpu_presolver::presolve::PostsolveDualMode;
-  using gpu_presolver::presolve::PostsolveReductionType;
-  using gpu_presolver::presolve::PresolveRecordGpu;
+  using gpu_preprocessor::presolve::GpuPostsolveResult;
+  using gpu_preprocessor::presolve::PostsolveDualMode;
+  using gpu_preprocessor::presolve::PostsolveReductionType;
+  using gpu_preprocessor::presolve::PresolveRecordGpu;
 
   PresolveRecordGpu record;
   record.m0 = 1;
@@ -590,7 +590,7 @@ void test_fixed_variable_tape_replay_restores_exact_reduced_cost() {
   double* x_red = copy_to_device<double>({8.0});
   double* y_red = copy_to_device<double>({3.0});
   double* z_red = copy_to_device<double>({0.5});
-  GpuPostsolveResult result = gpu_presolver::presolve::postsolve_gpu(x_red, y_red, z_red, record);
+  GpuPostsolveResult result = gpu_preprocessor::presolve::postsolve_gpu(x_red, y_red, z_red, record);
   const std::vector<double> x = copy_to_host(result.x_org, 2);
   const std::vector<double> z = copy_to_host(result.z_org, 2);
   assert(std::fabs(x[0] - 4.0) < 1.0e-12);
@@ -605,10 +605,10 @@ void test_fixed_variable_tape_replay_restores_exact_reduced_cost() {
 }
 
 void test_fme_and_row_dual_shift_tape_replay() {
-  using gpu_presolver::presolve::GpuPostsolveResult;
-  using gpu_presolver::presolve::PostsolveDualMode;
-  using gpu_presolver::presolve::PostsolveReductionType;
-  using gpu_presolver::presolve::PresolveRecordGpu;
+  using gpu_preprocessor::presolve::GpuPostsolveResult;
+  using gpu_preprocessor::presolve::PostsolveDualMode;
+  using gpu_preprocessor::presolve::PostsolveReductionType;
+  using gpu_preprocessor::presolve::PresolveRecordGpu;
 
   PresolveRecordGpu record;
   record.m0 = 2;
@@ -629,7 +629,7 @@ void test_fme_and_row_dual_shift_tape_replay() {
   double* x_red = copy_to_device<double>({2.0});
   double* y_red = copy_to_device<double>({0.75});
   double* z_red = copy_to_device<double>({0.5});
-  GpuPostsolveResult result = gpu_presolver::presolve::postsolve_gpu(x_red, y_red, z_red, record);
+  GpuPostsolveResult result = gpu_preprocessor::presolve::postsolve_gpu(x_red, y_red, z_red, record);
   const std::vector<double> x = copy_to_host(result.x_org, 2);
   const std::vector<double> y = copy_to_host(result.y_org, 2);
   const std::vector<double> z = copy_to_host(result.z_org, 2);
@@ -647,7 +647,7 @@ void test_fme_and_row_dual_shift_tape_replay() {
 }
 
 void test_projected_column_integer_metadata() {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   PresolveRecordGpu record;
   record.m0 = 3;
   record.n0 = 5;
@@ -690,11 +690,11 @@ void test_projected_column_integer_metadata() {
 }
 
 void test_parallel_row_original_model_replay_splits_dual_between_rows() {
-  using gpu_presolver::presolve::GpuPostsolveResult;
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PostsolveDualMode;
-  using gpu_presolver::presolve::PostsolveReductionType;
-  using gpu_presolver::presolve::PresolveRecordGpu;
+  using gpu_preprocessor::presolve::GpuPostsolveResult;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PostsolveDualMode;
+  using gpu_preprocessor::presolve::PostsolveReductionType;
+  using gpu_preprocessor::presolve::PresolveRecordGpu;
 
   const double inf = std::numeric_limits<double>::infinity();
   LPInfoGpu original;
@@ -729,7 +729,7 @@ void test_parallel_row_original_model_replay_splits_dual_between_rows() {
   double* x_red = copy_to_device<double>({2.0});
   double* y_red = copy_to_device<double>({5.0});
   double* z_red = copy_to_device<double>({0.0});
-  GpuPostsolveResult result = gpu_presolver::presolve::postsolve_gpu(x_red, y_red, z_red, record, &original);
+  GpuPostsolveResult result = gpu_preprocessor::presolve::postsolve_gpu(x_red, y_red, z_red, record, &original);
   const std::vector<double> y = copy_to_host(result.y_org, 2);
   assert(std::fabs(y[0]) < 1.0e-12);
   assert(std::fabs(y[1] - 5.0) < 1.0e-12);
@@ -754,11 +754,11 @@ void test_parallel_row_original_model_replay_splits_dual_between_rows() {
 }
 
 void test_deleted_row_and_bound_change_replay_with_original_model() {
-  using gpu_presolver::presolve::GpuPostsolveResult;
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PostsolveDualMode;
-  using gpu_presolver::presolve::PostsolveReductionType;
-  using gpu_presolver::presolve::PresolveRecordGpu;
+  using gpu_preprocessor::presolve::GpuPostsolveResult;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PostsolveDualMode;
+  using gpu_preprocessor::presolve::PostsolveReductionType;
+  using gpu_preprocessor::presolve::PresolveRecordGpu;
 
   LPInfoGpu original;
   original.A = {1, 1, 1,
@@ -790,7 +790,7 @@ void test_deleted_row_and_bound_change_replay_with_original_model() {
 
   double* x_red = copy_to_device<double>({2.0});
   double* z_red = copy_to_device<double>({0.0});
-  GpuPostsolveResult result = gpu_presolver::presolve::postsolve_gpu(x_red, nullptr, z_red, record, &original);
+  GpuPostsolveResult result = gpu_preprocessor::presolve::postsolve_gpu(x_red, nullptr, z_red, record, &original);
   const std::vector<double> y = copy_to_host(result.y_org, 1);
   const std::vector<double> z = copy_to_host(result.z_org, 1);
   assert(std::fabs(y[0] - 3.0) < 1.0e-12);
@@ -815,11 +815,11 @@ void test_deleted_row_and_bound_change_replay_with_original_model() {
 }
 
 void test_row_bound_change_replay_refines_live_row_duals_from_original_model() {
-  using gpu_presolver::presolve::GpuPostsolveResult;
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PostsolveDualMode;
-  using gpu_presolver::presolve::PostsolveReductionType;
-  using gpu_presolver::presolve::PresolveRecordGpu;
+  using gpu_preprocessor::presolve::GpuPostsolveResult;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PostsolveDualMode;
+  using gpu_preprocessor::presolve::PostsolveReductionType;
+  using gpu_preprocessor::presolve::PresolveRecordGpu;
 
   const double inf = std::numeric_limits<double>::infinity();
   LPInfoGpu original;
@@ -854,7 +854,7 @@ void test_row_bound_change_replay_refines_live_row_duals_from_original_model() {
   double* x_red = copy_to_device<double>({2.0});
   double* y_red = copy_to_device<double>({0.0});
   double* z_red = copy_to_device<double>({6.0});
-  GpuPostsolveResult result = gpu_presolver::presolve::postsolve_gpu(x_red, y_red, z_red, record, &original);
+  GpuPostsolveResult result = gpu_preprocessor::presolve::postsolve_gpu(x_red, y_red, z_red, record, &original);
   const std::vector<double> y = copy_to_host(result.y_org, 1);
   const std::vector<double> z = copy_to_host(result.z_org, 1);
   assert(std::fabs(y[0] - 3.0) < 1.0e-12);
@@ -880,11 +880,11 @@ void test_row_bound_change_replay_refines_live_row_duals_from_original_model() {
 }
 
 void test_variable_bound_change_replay_projects_unprotected_column_dual() {
-  using gpu_presolver::presolve::GpuPostsolveResult;
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PostsolveDualMode;
-  using gpu_presolver::presolve::PostsolveReductionType;
-  using gpu_presolver::presolve::PresolveRecordGpu;
+  using gpu_preprocessor::presolve::GpuPostsolveResult;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PostsolveDualMode;
+  using gpu_preprocessor::presolve::PostsolveReductionType;
+  using gpu_preprocessor::presolve::PresolveRecordGpu;
 
   const double inf = std::numeric_limits<double>::infinity();
   LPInfoGpu original;
@@ -918,7 +918,7 @@ void test_variable_bound_change_replay_projects_unprotected_column_dual() {
   double* x_red = copy_to_device<double>({0.0});
   double* y_red = copy_to_device<double>({1.0});
   double* z_red = copy_to_device<double>({99.0});
-  GpuPostsolveResult result = gpu_presolver::presolve::postsolve_gpu(x_red, y_red, z_red, record, &original);
+  GpuPostsolveResult result = gpu_preprocessor::presolve::postsolve_gpu(x_red, y_red, z_red, record, &original);
   const std::vector<double> z = copy_to_host(result.z_org, 1);
   assert(std::fabs(z[0] - 3.0) < 1.0e-12);
 
@@ -942,15 +942,15 @@ void test_variable_bound_change_replay_projects_unprotected_column_dual() {
 }
 
 void test_dual_tape_replay_runs_after_piecewise_linear_reformulation_absolute_value_recovery() {
-  using gpu_presolver::presolve::GpuPostsolveResult;
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PostsolveDualMode;
-  using gpu_presolver::presolve::PostsolveReductionType;
-  using gpu_presolver::presolve::PrimalRecoveryCheckpoint;
-  using gpu_presolver::presolve::PrimalRecoveryKind;
-  using gpu_presolver::presolve::PresolveRecordGpu;
-  using gpu_presolver::presolve::PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep;
-  using gpu_presolver::presolve::PiecewiseLinearReformulationAbsoluteValueSplitRecovery;
+  using gpu_preprocessor::presolve::GpuPostsolveResult;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PostsolveDualMode;
+  using gpu_preprocessor::presolve::PostsolveReductionType;
+  using gpu_preprocessor::presolve::PrimalRecoveryCheckpoint;
+  using gpu_preprocessor::presolve::PrimalRecoveryKind;
+  using gpu_preprocessor::presolve::PresolveRecordGpu;
+  using gpu_preprocessor::presolve::PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep;
+  using gpu_preprocessor::presolve::PiecewiseLinearReformulationAbsoluteValueSplitRecovery;
 
   const double inf = std::numeric_limits<double>::infinity();
   LPInfoGpu original;
@@ -991,7 +991,7 @@ void test_dual_tape_replay_runs_after_piecewise_linear_reformulation_absolute_va
   double* x_red = copy_to_device<double>({3.0, 1.0});
   double* y_red = copy_to_device<double>({0.0});
   double* z_red = copy_to_device<double>({99.0, 0.0});
-  GpuPostsolveResult result = gpu_presolver::presolve::postsolve_gpu(x_red, y_red, z_red, record, &original);
+  GpuPostsolveResult result = gpu_preprocessor::presolve::postsolve_gpu(x_red, y_red, z_red, record, &original);
   const std::vector<double> x = copy_to_host(result.x_org, 2);
   const std::vector<double> z = copy_to_host(result.z_org, 2);
   assert(std::fabs(x[0] - 4.0) < 1.0e-12);
@@ -1018,14 +1018,14 @@ void test_dual_tape_replay_runs_after_piecewise_linear_reformulation_absolute_va
 }
 
 void test_tape_checkpoint_replays_after_structural_primal() {
-  using gpu_presolver::presolve::GpuPostsolveResult;
-  using gpu_presolver::presolve::PostsolveDualMode;
-  using gpu_presolver::presolve::PostsolveReductionType;
-  using gpu_presolver::presolve::PrimalRecoveryCheckpoint;
-  using gpu_presolver::presolve::PrimalRecoveryKind;
-  using gpu_presolver::presolve::PresolveRecordGpu;
-  using gpu_presolver::presolve::PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep;
-  using gpu_presolver::presolve::PiecewiseLinearReformulationAbsoluteValueSplitRecovery;
+  using gpu_preprocessor::presolve::GpuPostsolveResult;
+  using gpu_preprocessor::presolve::PostsolveDualMode;
+  using gpu_preprocessor::presolve::PostsolveReductionType;
+  using gpu_preprocessor::presolve::PrimalRecoveryCheckpoint;
+  using gpu_preprocessor::presolve::PrimalRecoveryKind;
+  using gpu_preprocessor::presolve::PresolveRecordGpu;
+  using gpu_preprocessor::presolve::PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep;
+  using gpu_preprocessor::presolve::PiecewiseLinearReformulationAbsoluteValueSplitRecovery;
 
   PresolveRecordGpu record;
   record.m0 = 0;
@@ -1053,7 +1053,7 @@ void test_tape_checkpoint_replays_after_structural_primal() {
 
   double* x_red = copy_to_device<double>({3.0, 1.0});
   double* z_red = copy_to_device<double>({0.0, 0.0});
-  GpuPostsolveResult result = gpu_presolver::presolve::postsolve_gpu(
+  GpuPostsolveResult result = gpu_preprocessor::presolve::postsolve_gpu(
       x_red, nullptr, z_red, record);
   const std::vector<double> x = copy_to_host(result.x_org, 3);
   assert(std::fabs(x[0] - 4.0) < 1.0e-12);
@@ -1068,14 +1068,14 @@ void test_tape_checkpoint_replays_after_structural_primal() {
 }
 
 void test_structural_tape_structural_timeline_replays_exact_reverse_order() {
-  using gpu_presolver::presolve::GpuPostsolveResult;
-  using gpu_presolver::presolve::PostsolveDualMode;
-  using gpu_presolver::presolve::PostsolveReductionType;
-  using gpu_presolver::presolve::PrimalRecoveryCheckpoint;
-  using gpu_presolver::presolve::PrimalRecoveryKind;
-  using gpu_presolver::presolve::PresolveRecordGpu;
-  using gpu_presolver::presolve::PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep;
-  using gpu_presolver::presolve::PiecewiseLinearReformulationAbsoluteValueSplitRecovery;
+  using gpu_preprocessor::presolve::GpuPostsolveResult;
+  using gpu_preprocessor::presolve::PostsolveDualMode;
+  using gpu_preprocessor::presolve::PostsolveReductionType;
+  using gpu_preprocessor::presolve::PrimalRecoveryCheckpoint;
+  using gpu_preprocessor::presolve::PrimalRecoveryKind;
+  using gpu_preprocessor::presolve::PresolveRecordGpu;
+  using gpu_preprocessor::presolve::PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep;
+  using gpu_preprocessor::presolve::PiecewiseLinearReformulationAbsoluteValueSplitRecovery;
 
   PresolveRecordGpu record;
   record.m0 = 0;
@@ -1109,7 +1109,7 @@ void test_structural_tape_structural_timeline_replays_exact_reverse_order() {
 
   double* x_red = copy_to_device<double>({2.0, 1.0, 1.0});
   double* z_red = copy_to_device<double>({0.0, 0.0, 0.0});
-  GpuPostsolveResult result = gpu_presolver::presolve::postsolve_gpu(
+  GpuPostsolveResult result = gpu_preprocessor::presolve::postsolve_gpu(
       x_red, nullptr, z_red, record);
   const std::vector<double> x = copy_to_host(result.x_org, 4);
   assert((x == std::vector<double>{4.0, 2.0, 3.0, 1.0}));
@@ -1122,11 +1122,11 @@ void test_structural_tape_structural_timeline_replays_exact_reverse_order() {
 }
 
 void test_postsolve_rejects_invalid_primal_recovery_checkpoint() {
-  using gpu_presolver::presolve::PrimalRecoveryCheckpoint;
-  using gpu_presolver::presolve::PrimalRecoveryKind;
-  using gpu_presolver::presolve::PresolveRecordGpu;
-  using gpu_presolver::presolve::PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep;
-  using gpu_presolver::presolve::PiecewiseLinearReformulationAbsoluteValueSplitRecovery;
+  using gpu_preprocessor::presolve::PrimalRecoveryCheckpoint;
+  using gpu_preprocessor::presolve::PrimalRecoveryKind;
+  using gpu_preprocessor::presolve::PresolveRecordGpu;
+  using gpu_preprocessor::presolve::PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep;
+  using gpu_preprocessor::presolve::PiecewiseLinearReformulationAbsoluteValueSplitRecovery;
 
   PresolveRecordGpu record;
   record.n0 = 2;
@@ -1138,7 +1138,7 @@ void test_postsolve_rejects_invalid_primal_recovery_checkpoint() {
 
   bool threw = false;
   try {
-    (void)gpu_presolver::presolve::postsolve_gpu(
+    (void)gpu_preprocessor::presolve::postsolve_gpu(
         nullptr, nullptr, nullptr, record);
   } catch (const std::runtime_error&) {
     threw = true;
@@ -1147,11 +1147,11 @@ void test_postsolve_rejects_invalid_primal_recovery_checkpoint() {
 }
 
 void test_parallel_column_rule_records_globalized_postsolve_tape() {
-  using gpu_presolver::presolve::GpuPostsolveResult;
-  using gpu_presolver::presolve::GpuPresolveSummary;
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PostsolveReductionType;
-  using gpu_presolver::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::GpuPostsolveResult;
+  using gpu_preprocessor::presolve::GpuPresolveSummary;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PostsolveReductionType;
+  using gpu_preprocessor::presolve::PresolveParams;
 
   LPInfoGpu lp;
   lp.A = {2, 2, 4,
@@ -1185,8 +1185,8 @@ void test_parallel_column_rule_records_globalized_postsolve_tape() {
   params.enable_dual_fix = false;
   params.enable_piecewise_linear_reformulation_absolute_value = false;
 
-  GpuPresolveSummary summary = gpu_presolver::presolve::run_gpu_presolve_with_record(lp, params);
-  gpu_presolver::presolve::export_recovery_record(summary.record);
+  GpuPresolveSummary summary = gpu_preprocessor::presolve::run_gpu_presolve_with_record(lp, params);
+  gpu_preprocessor::presolve::export_recovery_record(summary.record);
   assert(summary.reduced_rows == 2);
   assert(summary.reduced_cols == 1);
   assert(summary.record.tape.types.size() == 1);
@@ -1200,7 +1200,7 @@ void test_parallel_column_rule_records_globalized_postsolve_tape() {
   double* x_red = copy_to_device<double>({5.0});
   double* y_red = copy_to_device<double>({0.0, 0.0});
   double* z_red = copy_to_device<double>({0.4});
-  GpuPostsolveResult result = gpu_presolver::presolve::postsolve_gpu(x_red, y_red, z_red, summary.record);
+  GpuPostsolveResult result = gpu_preprocessor::presolve::postsolve_gpu(x_red, y_red, z_red, summary.record);
   const std::vector<double> x = copy_to_host(result.x_org, 2);
   const std::vector<double> z = copy_to_host(result.z_org, 2);
   assert(std::fabs(x[0] - 1.5) < 1.0e-12);

@@ -1,11 +1,11 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/offset.hpp"
-#include "gpu_presolver/presolve/device_recovery.hpp"
-#include "gpu_presolver/presolve/gpu_postsolve.hpp"
-#include "gpu_presolver/presolve/gpu_presolve.hpp"
-#include "gpu_presolver/presolve/rules/rule_column_domination.hpp"
+#include "gpu_preprocessor/offset.hpp"
+#include "gpu_preprocessor/presolve/device_recovery.hpp"
+#include "gpu_preprocessor/presolve/gpu_postsolve.hpp"
+#include "gpu_preprocessor/presolve/gpu_presolve.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_column_domination.hpp"
 
 #include <cuda_runtime.h>
 
@@ -38,7 +38,7 @@ T* copy_to_device(const std::vector<T>& values) {
   return out;
 }
 
-void free_lp(gpu_presolver::presolve::LPInfoGpu& lp) {
+void free_lp(gpu_preprocessor::presolve::LPInfoGpu& lp) {
   cudaFree(lp.A.rowPtr);
   cudaFree(lp.A.colVal);
   cudaFree(lp.A.nzVal);
@@ -50,7 +50,7 @@ void free_lp(gpu_presolver::presolve::LPInfoGpu& lp) {
   cudaFree(lp.AU);
   cudaFree(lp.l);
   cudaFree(lp.u);
-  lp = gpu_presolver::presolve::LPInfoGpu{};
+  lp = gpu_preprocessor::presolve::LPInfoGpu{};
 }
 
 enum class Variant {
@@ -61,8 +61,8 @@ enum class Variant {
   NonBinaryBound,
 };
 
-gpu_presolver::presolve::LPInfoGpu make_covering_lp(Variant variant) {
-  using gpu_presolver::presolve::LPInfoGpu;
+gpu_preprocessor::presolve::LPInfoGpu make_covering_lp(Variant variant) {
+  using gpu_preprocessor::presolve::LPInfoGpu;
   const double inf = std::numeric_limits<double>::infinity();
   std::vector<double> a_values(11, 1.0);
   std::vector<double> at_values(11, 1.0);
@@ -102,8 +102,8 @@ gpu_presolver::presolve::LPInfoGpu make_covering_lp(Variant variant) {
   return lp;
 }
 
-gpu_presolver::presolve::PresolveParams test_params() {
-  gpu_presolver::presolve::PresolveParams params;
+gpu_preprocessor::presolve::PresolveParams test_params() {
+  gpu_preprocessor::presolve::PresolveParams params;
   params.max_iters = 1;
   params.enable_piecewise_linear_reformulation_variable_pair = false;
   params.enable_infeasible_and_fixed_variables = false;
@@ -129,11 +129,11 @@ gpu_presolver::presolve::PresolveParams test_params() {
 }
 
 void test_exact_reduction_and_primal_recovery() {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   LPInfoGpu lp = make_covering_lp(Variant::Valid);
   PresolveParams params = test_params();
   GpuPresolveSummary summary = run_gpu_presolve_with_reduced_lp(lp, params);
-  gpu_presolver::presolve::export_recovery_record(summary.record);
+  gpu_preprocessor::presolve::export_recovery_record(summary.record);
   assert(!summary.has_infeasible);
   assert(!summary.has_unbounded);
   assert(summary.reduced_rows == 3);
@@ -173,12 +173,12 @@ void test_exact_reduction_and_primal_recovery() {
 }
 
 void test_rule_is_owned_by_startup() {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   LPInfoGpu lp = make_covering_lp(Variant::Valid);
   PresolveParams params = test_params();
   params.enable_startup = false;
   GpuPresolveSummary summary = run_gpu_presolve_with_reduced_lp(lp, params);
-  gpu_presolver::presolve::export_recovery_record(summary.record);
+  gpu_preprocessor::presolve::export_recovery_record(summary.record);
   assert(summary.reduced_rows == 3);
   assert(summary.reduced_cols == 6);
   assert(summary.reduced_nnz == 11);
@@ -188,7 +188,7 @@ void test_rule_is_owned_by_startup() {
 }
 
 void assert_fail_closed(Variant variant) {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   LPInfoGpu lp = make_covering_lp(variant);
   PresolveParams params = test_params();
   ColumnDominationAnalysisGpu analysis =

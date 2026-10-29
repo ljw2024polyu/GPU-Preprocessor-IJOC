@@ -78,6 +78,35 @@ first build the experiment driver using the `setup` step in the
 ./build-experiments/bin/hprlp_solve -i examples/model.mps --presolver gpu
 ~~~
 
+For C++ integration, include `gpu_preprocessor/gpu_preprocessor.hpp` and use
+`gpu_preprocessor::preprocess()`, `gpu_preprocessor::postprocess()`, and
+`gpu_preprocessor::free_summary()`. The [integration example](examples/presolve_example.cpp)
+shows device-memory ownership and solution recovery. Folding and presolve are
+available under `gpu_preprocessor::folding` and `gpu_preprocessor::presolve`.
+
+To build and run the integration example against an installed library, run
+these commands from the repository root:
+
+~~~sh
+cmake --install build --prefix "$PWD/install"
+cmake -S examples -B build-consumer -DCMAKE_PREFIX_PATH="$PWD/install"
+cmake --build build-consumer
+./build-consumer/gpu_preprocessor_example
+~~~
+
+The standalone [example project](examples/CMakeLists.txt) finds the installed
+package and links its executable with:
+
+~~~cmake
+find_package(GPUPreprocessor CONFIG REQUIRED)
+target_link_libraries(gpu_preprocessor_example PRIVATE GPUPreprocessor::core)
+~~~
+
+Build options and the sparse-offset ABI definition use the
+`GPUPREPROCESSOR_` prefix. The default sparse-offset type is int32; builds with
+`GPUPREPROCESSOR_USE_INT64_NNZ=ON` use int64 offsets. The CMake target propagates
+this setting to consumers.
+
 ## Description
 
 GPU-Preprocessor applies folding and presolve to continuous linear programs before an external solver solves the reduced problem. Postsolve and unfolding recover a solution in the original model space. Both preprocessing stages are enabled by default.

@@ -1,15 +1,15 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/detail/runtime_options.hpp"
-#include "gpu_presolver/offset.hpp"
-#include "gpu_presolver/presolve/gpu_presolve_kernels.hpp"
+#include "gpu_preprocessor/detail/runtime_options.hpp"
+#include "gpu_preprocessor/offset.hpp"
+#include "gpu_preprocessor/presolve/gpu_presolve_kernels.hpp"
 
 #include <cuda_runtime.h>
 
 #include <cassert>
 #include <cstring>
-#include "gpu_presolver/presolve/rules/rule_parallel_rows.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_parallel_rows.hpp"
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -19,7 +19,7 @@
 #include <string>
 #include <vector>
 
-namespace runtime = gpu_presolver::runtime;
+namespace runtime = gpu_preprocessor::runtime;
 
 namespace {
 
@@ -47,7 +47,7 @@ std::vector<T> copy_to_host(T* device, std::size_t size) {
 }
 
 void test_adaptive_activity_mixed_lengths() {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   const int lengths[] = {0, 1, 8, 9, 31, 32, 33, 1024, 1025, 4097};
   constexpr int rows = 2100, cols = 4097;
   const double inf = std::numeric_limits<double>::infinity();
@@ -137,7 +137,7 @@ void test_adaptive_activity_mixed_lengths() {
 }
 
 void test_hash_values_match_cpu() {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   const int lengths[]={0,1,8,9,31,32,33,1024,1025,4097};
   std::vector<int> ptr{0},indices;
   std::vector<double> values;
@@ -179,7 +179,7 @@ void test_hash_values_match_cpu() {
 }
 
 void test_incremental_live_structure_matches_full_scan() {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   auto require = [](bool condition, const char* what) {
     if (!condition) throw std::runtime_error(what);
   };
@@ -312,7 +312,7 @@ void test_incremental_live_structure_matches_full_scan() {
 }  // namespace
 
 int main() {
-  using gpu_presolver::presolve::DeviceCsrMatrix;
+  using gpu_preprocessor::presolve::DeviceCsrMatrix;
   const double inf = std::numeric_limits<double>::infinity();
 
   NnzOffset* row_ptr = copy_to_device<NnzOffset>({0, 0, 1, 3});
@@ -328,8 +328,8 @@ int main() {
   check(cudaMalloc(&singleton_column, sizeof(std::int32_t) * 3), "cudaMalloc singleton_column");
   check(cudaMalloc(&singleton_val, sizeof(double) * 3), "cudaMalloc singleton_val");
 
-  gpu_presolver::presolve::compute_row_nnz(row_nnz, matrix);
-  gpu_presolver::presolve::compute_singleton_row_support(singleton_column, singleton_val, row_nnz, matrix);
+  gpu_preprocessor::presolve::compute_row_nnz(row_nnz, matrix);
+  gpu_preprocessor::presolve::compute_singleton_row_support(singleton_column, singleton_val, row_nnz, matrix);
   check(cudaDeviceSynchronize(), "sync");
 
   const std::vector<std::int32_t> nnz = copy_to_host(row_nnz, 3);
@@ -357,8 +357,8 @@ int main() {
   check(cudaMalloc(&row_min_neg_inf_count, sizeof(std::int32_t) * 3), "cudaMalloc row_min_neg_inf_count");
   check(cudaMalloc(&row_max_pos_inf_count, sizeof(std::int32_t) * 3), "cudaMalloc row_max_pos_inf_count");
 
-  gpu_presolver::presolve::compute_row_activity_bounds(row_min, row_max, matrix, l, u);
-  gpu_presolver::presolve::compute_row_activity_summary(
+  gpu_preprocessor::presolve::compute_row_activity_bounds(row_min, row_max, matrix, l, u);
+  gpu_preprocessor::presolve::compute_row_activity_summary(
       row_min_fin,
       row_max_fin,
       row_min_neg_inf_count,
@@ -392,7 +392,7 @@ int main() {
   DeviceCsrMatrix transpose{3, 3, 3, at_row_ptr, at_col_val, at_nz_val};
   double* col_max_abs = nullptr;
   check(cudaMalloc(&col_max_abs, sizeof(double) * 3), "cudaMalloc col_max_abs");
-  gpu_presolver::presolve::compute_col_max_abs(col_max_abs, transpose);
+  gpu_preprocessor::presolve::compute_col_max_abs(col_max_abs, transpose);
   check(cudaDeviceSynchronize(), "col max sync");
   const std::vector<double> h_col_max_abs = copy_to_host(col_max_abs, 3);
   assert((h_col_max_abs == std::vector<double>{5.0, 6.0, 4.0}));

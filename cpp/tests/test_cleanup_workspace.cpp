@@ -1,10 +1,10 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/detail/runtime_options.hpp"
-#include "gpu_presolver/presolve/cleanup_workspace.hpp"
-#include "gpu_presolver/presolve/gpu_presolve.hpp"
-#include "gpu_presolver/presolve/device_recovery.hpp"
+#include "gpu_preprocessor/detail/runtime_options.hpp"
+#include "gpu_preprocessor/presolve/cleanup_workspace.hpp"
+#include "gpu_preprocessor/presolve/gpu_presolve.hpp"
+#include "gpu_preprocessor/presolve/device_recovery.hpp"
 #include <cuda_runtime.h>
 #include <cassert>
 #include <cstdlib>
@@ -16,8 +16,8 @@
 #include <numeric>
 #include <random>
 
-namespace runtime = gpu_presolver::runtime;
-using namespace gpu_presolver::presolve;
+namespace runtime = gpu_preprocessor::runtime;
+using namespace gpu_preprocessor::presolve;
 namespace {
 void check(cudaError_t e) { assert(e == cudaSuccess); }
 template<class T> T* upload(const std::vector<T>& v) {

@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include "gpu_presolver/presolve/presolve_structs.hpp"
+#include "gpu_preprocessor/presolve/presolve_structs.hpp"
 
-namespace gpu_presolver::presolve {
+namespace gpu_preprocessor::presolve {
 
 // Projection batches only remove rows/columns; surviving coefficients stay intact.
 inline LPInfoGpu projection_view(const LPInfoGpu& lp, const PresolvePlanGpu* plan) {
@@ -35,4 +35,4 @@ __device__ bool projection_rows(const NnzOffset* ptr, const std::int32_t* rows,
   return size == Count;
 }
 
-}  // namespace gpu_presolver::presolve
+}  // namespace gpu_preprocessor::presolve

@@ -1,11 +1,11 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/model/lp_problem.hpp"
+#include "gpu_preprocessor/model/lp_problem.hpp"
 
 #include <algorithm>
 
-namespace gpu_presolver::model {
+namespace gpu_preprocessor::model {
 
 std::size_t CscMatrix::nnz() const { return values.size(); }
 
@@ -26,7 +26,7 @@ void CscMatrix::validate() const {
     throw std::invalid_argument("CscMatrix col_ptr must start at 0");
   }
   if (values.size() > static_cast<std::size_t>(std::numeric_limits<NnzOffset>::max())) {
-    throw std::length_error("nnz exceeds this build; enable GPUPRESOLVER_USE_INT64_NNZ");
+    throw std::length_error("nnz exceeds this build; enable GPUPREPROCESSOR_USE_INT64_NNZ");
   }
   if (col_ptr.back() != static_cast<NnzOffset>(values.size())) {
     throw std::invalid_argument("CscMatrix col_ptr must end at nnz");
@@ -75,4 +75,4 @@ std::size_t LpProblem::nnz() const { return matrix_.nnz(); }
 
 double LpProblem::objective_constant() const { return objective_constant_; }
 
-}  // namespace gpu_presolver::model
+}  // namespace gpu_preprocessor::model

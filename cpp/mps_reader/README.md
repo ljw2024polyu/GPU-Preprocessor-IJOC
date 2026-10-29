@@ -1,8 +1,9 @@
 # MPS reader
 
 The bundled continuous-LP MPS reader needs no external download and is covered
-by the repository's MIT license. The internal `cpu_presolve` namespace is
-retained for compatibility; this directory contains no CPU presolve algorithm.
+by the repository's MIT license. Include `mps_reader/mpsreader.hpp` and call
+`mps_reader::read_mps()` to parse a model. This directory contains the reader
+and sparse-matrix data structures.
 
 Its parser tests can run without CUDA:
 

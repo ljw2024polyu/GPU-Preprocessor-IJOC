@@ -5,7 +5,7 @@
 
 #include "postsolve_common.cuh"
 
-namespace gpu_presolver::presolve::postsolve {
+namespace gpu_preprocessor::presolve::postsolve {
 
 enum : std::uint8_t {
   PARALLEL_ROW_STATE_ZERO = 0,
@@ -249,4 +249,4 @@ __device__ __forceinline__ void replay_parallel_row(
   }
 }
 
-}  // namespace gpu_presolver::presolve::postsolve
+}  // namespace gpu_preprocessor::presolve::postsolve

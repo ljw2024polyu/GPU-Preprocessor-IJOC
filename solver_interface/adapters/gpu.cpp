@@ -8,15 +8,15 @@
 #include "gpu/preprocessing/preprocess.h"
 #include "support/utils.h"
 
-#include "gpu_presolver/folding/folding.hpp"
-#include "gpu_presolver/detail/runtime_options.hpp"
-#include "gpu_presolver/presolve/gpu_postsolve.hpp"
-#include "gpu_presolver/presolve/gpu_presolve.hpp"
-#include "gpu_presolver/presolve/cleanup_workspace.hpp"
-#include "gpu_presolver/presolve/duplicate_rule_workspace.hpp"
-#include "gpu_presolver/presolve/rules/rule_bound_strengthening.hpp"
-#include "gpu_presolver/presolve/rules/rule_parallel_rows.hpp"
-#include "gpu_presolver/presolve/rules/rule_parallel_columns.hpp"
+#include "gpu_preprocessor/folding/folding.hpp"
+#include "gpu_preprocessor/detail/runtime_options.hpp"
+#include "gpu_preprocessor/presolve/gpu_postsolve.hpp"
+#include "gpu_preprocessor/presolve/gpu_presolve.hpp"
+#include "gpu_preprocessor/presolve/cleanup_workspace.hpp"
+#include "gpu_preprocessor/presolve/duplicate_rule_workspace.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_bound_strengthening.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_parallel_rows.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_parallel_columns.hpp"
 
 #include <cuda_runtime.h>
 
@@ -38,8 +38,8 @@
 
 namespace {
 
-namespace gf = gpu_presolver::folding;
-namespace gp = gpu_presolver::presolve;
+namespace gf = gpu_preprocessor::folding;
+namespace gp = gpu_preprocessor::presolve;
 
 struct OriginalKktMetrics {
     HPRLP_FLOAT primal_obj = 0.0;
@@ -49,7 +49,7 @@ struct OriginalKktMetrics {
     HPRLP_FLOAT gap = 0.0;
 };
 
-struct GpuPresolverHandle {
+struct GpuPreprocessorHandle {
     gp::LPInfoGpu original_lp;
     gf::FoldingPipelineSummary folding_summary;
     double presolve_seconds = 0.0;
@@ -149,7 +149,7 @@ private:
     void *col_temp_ = nullptr;
 };
 
-void run_timed_gpu_presolve(GpuPresolverHandle *handle,
+void run_timed_gpu_presolve(GpuPreprocessorHandle *handle,
                             const gp::PresolveParams &params) {
     std::cout << "GPU-Preprocessor configuration: folding=" << (params.enable_folding ? "true" : "false")
               << ", presolve=" << (params.enable_presolve ? "true" : "false")
@@ -205,7 +205,7 @@ void run_timed_gpu_presolve(GpuPresolverHandle *handle,
                 input.A.rows, input.A.cols,
                 params.enable_presolve &&
                     params.enable_bound_strengthening);
-        const bool parallel_column_preverify = gpu_presolver::runtime::options().parallel_column_preverify;
+        const bool parallel_column_preverify = gpu_preprocessor::runtime::options().parallel_column_preverify;
         const std::size_t parallel_rows_bytes = params.enable_parallel_rows
             ? gp::parallel_rows_scratch_bytes(input.A.rows) : 0;
         const std::size_t parallel_columns_bytes = params.enable_parallel_columns
@@ -288,7 +288,7 @@ void free_device_lp(gp::LPInfoGpu *lp) {
     *lp = gp::LPInfoGpu{};
 }
 
-void free_gpu_presolver_handle_resources(GpuPresolverHandle *handle) {
+void free_gpu_preprocessor_handle_resources(GpuPreprocessorHandle *handle) {
     if (!handle) {
         return;
     }
@@ -316,20 +316,20 @@ gp::DeviceCsrMatrix upload_csr(const sparseMatrix *matrix, const char *name) {
 }
 
 void upload_hprlp_model(const LP_info_cpu *model, gp::LPInfoGpu *out) {
-    out->A = upload_csr(model->A, "cudaMalloc/copy GPU presolver A");
+    out->A = upload_csr(model->A, "cudaMalloc/copy GPU preprocessor A");
 
     sparseMatrix at_host;
     CSR_transpose_host(*(model->A), &at_host);
-    out->AT = upload_csr(&at_host, "cudaMalloc/copy GPU presolver AT");
+    out->AT = upload_csr(&at_host, "cudaMalloc/copy GPU preprocessor AT");
     std::free(at_host.value);
     std::free(at_host.colIndex);
     std::free(at_host.rowPtr);
 
-    out->c = copy_vector_to_device(model->c, static_cast<size_t>(model->n), "cudaMalloc/copy GPU presolver c");
-    out->AL = copy_vector_to_device(model->AL, static_cast<size_t>(model->m), "cudaMalloc/copy GPU presolver AL");
-    out->AU = copy_vector_to_device(model->AU, static_cast<size_t>(model->m), "cudaMalloc/copy GPU presolver AU");
-    out->l = copy_vector_to_device(model->l, static_cast<size_t>(model->n), "cudaMalloc/copy GPU presolver l");
-    out->u = copy_vector_to_device(model->u, static_cast<size_t>(model->n), "cudaMalloc/copy GPU presolver u");
+    out->c = copy_vector_to_device(model->c, static_cast<size_t>(model->n), "cudaMalloc/copy GPU preprocessor c");
+    out->AL = copy_vector_to_device(model->AL, static_cast<size_t>(model->m), "cudaMalloc/copy GPU preprocessor AL");
+    out->AU = copy_vector_to_device(model->AU, static_cast<size_t>(model->m), "cudaMalloc/copy GPU preprocessor AU");
+    out->l = copy_vector_to_device(model->l, static_cast<size_t>(model->n), "cudaMalloc/copy GPU preprocessor l");
+    out->u = copy_vector_to_device(model->u, static_cast<size_t>(model->n), "cudaMalloc/copy GPU preprocessor u");
     out->obj_constant = model->obj_constant;
 }
 
@@ -693,7 +693,7 @@ bool ijoc_run_gpu_presolve(const LP_info_cpu *model,
         *folding_time_out = 0.0;
     }
 
-    std::unique_ptr<GpuPresolverHandle> handle(new (std::nothrow) GpuPresolverHandle);
+    std::unique_ptr<GpuPreprocessorHandle> handle(new (std::nothrow) GpuPreprocessorHandle);
     if (!handle) {
         std::cerr << "[warn] Failed to allocate GPU-Preprocessor handle; preprocessing failed" << std::endl;
         return false;
@@ -759,7 +759,7 @@ bool ijoc_run_gpu_presolve(const LP_info_cpu *model,
             std::cerr << "[warn] GPU-Preprocessor reported "
                       << (summary.has_infeasible ? "infeasible" : "unbounded")
                       << "; preprocessing failed" << std::endl;
-            free_gpu_presolver_handle_resources(handle.get());
+            free_gpu_preprocessor_handle_resources(handle.get());
             return false;
         }
 
@@ -767,7 +767,7 @@ bool ijoc_run_gpu_presolve(const LP_info_cpu *model,
         if (!copy_reduced_lp_to_hprlp(summary.reduced_lp,
                                       summary.record.obj_constant_new,
                                       reduced_model)) {
-            free_gpu_presolver_handle_resources(handle.get());
+            free_gpu_preprocessor_handle_resources(handle.get());
             return false;
         }
 
@@ -775,7 +775,7 @@ bool ijoc_run_gpu_presolve(const LP_info_cpu *model,
         handle->reduced_n = reduced_model->n;
         gp::free_gpu_presolve_reduced_lp(summary);
 
-        GpuPresolverHandle *released_handle = handle.release();
+        GpuPreprocessorHandle *released_handle = handle.release();
         *presolver_handle_out = released_handle;
         return true;
     } catch (const std::exception &err) {
@@ -783,7 +783,7 @@ bool ijoc_run_gpu_presolve(const LP_info_cpu *model,
                   << "; preprocessing failed" << std::endl;
         free_lp_info_cpu(reduced_model);
         initialize_empty_model(reduced_model);
-        free_gpu_presolver_handle_resources(handle.get());
+        free_gpu_preprocessor_handle_resources(handle.get());
         // Clear a pending allocation error after releasing presolver storage
         // so subsequent CUDA operations do not inherit it.
         const cudaError_t recovery_status = cudaDeviceSynchronize();
@@ -829,7 +829,7 @@ bool ijoc_run_gpu_presolve_device(const LP_info_cpu *model,
         *preprocessing_time_out = 0.0;
     }
 
-    std::unique_ptr<GpuPresolverHandle> handle(new (std::nothrow) GpuPresolverHandle);
+    std::unique_ptr<GpuPreprocessorHandle> handle(new (std::nothrow) GpuPreprocessorHandle);
     if (!handle) {
         std::cerr << "[warn] Failed to allocate GPU-Preprocessor handle; preprocessing failed" << std::endl;
         return false;
@@ -900,14 +900,14 @@ bool ijoc_run_gpu_presolve_device(const LP_info_cpu *model,
             std::cerr << "[warn] GPU-Preprocessor reported "
                       << (summary.has_infeasible ? "infeasible" : "unbounded")
                       << "; preprocessing failed" << std::endl;
-            free_gpu_presolver_handle_resources(handle.get());
+            free_gpu_preprocessor_handle_resources(handle.get());
             return false;
         }
 
         if (!copy_reduced_lp_to_hprlp_device(summary.reduced_lp,
                                              summary.record.obj_constant_new,
                                              reduced_model)) {
-            free_gpu_presolver_handle_resources(handle.get());
+            free_gpu_preprocessor_handle_resources(handle.get());
             return false;
         }
 
@@ -938,7 +938,7 @@ bool ijoc_run_gpu_presolve_device(const LP_info_cpu *model,
                   << "; preprocessing failed" << std::endl;
         free_lp_info(reduced_model);
         initialize_empty_device_model(reduced_model);
-        free_gpu_presolver_handle_resources(handle.get());
+        free_gpu_preprocessor_handle_resources(handle.get());
         // Clear a pending allocation error after releasing presolver storage
         // so subsequent CUDA operations do not inherit it.
         const cudaError_t recovery_status = cudaDeviceSynchronize();
@@ -960,7 +960,7 @@ bool ijoc_apply_gpu_postsolve(HPRLP_results *result,
         return false;
     }
 
-    GpuPresolverHandle *handle = static_cast<GpuPresolverHandle*>(presolver_handle);
+    GpuPreprocessorHandle *handle = static_cast<GpuPreprocessorHandle*>(presolver_handle);
     if (handle->folding_summary.original_rows != original_m ||
         handle->folding_summary.original_cols != original_n ||
         handle->reduced_m <= 0 || handle->reduced_n <= 0) {
@@ -1056,7 +1056,7 @@ void ijoc_free_gpu(void *presolver_handle) {
     if (!presolver_handle) {
         return;
     }
-    GpuPresolverHandle *handle = static_cast<GpuPresolverHandle*>(presolver_handle);
-    free_gpu_presolver_handle_resources(handle);
+    GpuPreprocessorHandle *handle = static_cast<GpuPreprocessorHandle*>(presolver_handle);
+    free_gpu_preprocessor_handle_resources(handle);
     delete handle;
 }

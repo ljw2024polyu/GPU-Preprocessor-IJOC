@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: MIT
 
 #pragma once
-#include "gpu_presolver/presolve/presolve_structs.hpp"
+#include "gpu_preprocessor/presolve/presolve_structs.hpp"
 
-namespace gpu_presolver::presolve::detail {
+namespace gpu_preprocessor::presolve::detail {
 struct PlanRequirements {
   bool objective = true;
   bool col_bounds = true;
@@ -13,4 +13,4 @@ struct PlanRequirements {
 void allocate_plan(PresolvePlanGpu& plan, const LPInfoGpu& lp,
                    const PlanRequirements& needs);
 void free_plan(PresolvePlanGpu& plan);
-}  // namespace gpu_presolver::presolve::detail
+}  // namespace gpu_preprocessor::presolve::detail

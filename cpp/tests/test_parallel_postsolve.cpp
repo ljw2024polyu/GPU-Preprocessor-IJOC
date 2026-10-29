@@ -1,8 +1,8 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/presolve/device_recovery.hpp"
-#include "gpu_presolver/presolve/gpu_postsolve.hpp"
+#include "gpu_preprocessor/presolve/device_recovery.hpp"
+#include "gpu_preprocessor/presolve/gpu_postsolve.hpp"
 #include "../src/presolve/postsolve/parallel_replay_control.hpp"
 #include <cuda_runtime.h>
 #include <algorithm>
@@ -16,9 +16,9 @@
 #include <string>
 #include <vector>
 
-using namespace gpu_presolver;
-using namespace gpu_presolver::presolve;
-namespace parallel = gpu_presolver::presolve::postsolve::parallel;
+using namespace gpu_preprocessor;
+using namespace gpu_preprocessor::presolve;
+namespace parallel = gpu_preprocessor::presolve::postsolve::parallel;
 namespace {
 void check(cudaError_t error) { if(error != cudaSuccess) throw std::runtime_error(cudaGetErrorString(error)); }
 template<class T> T* upload(const std::vector<T>& v) {

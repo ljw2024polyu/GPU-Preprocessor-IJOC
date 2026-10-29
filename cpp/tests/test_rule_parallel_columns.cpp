@@ -1,11 +1,11 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/detail/runtime_options.hpp"
-#include "gpu_presolver/offset.hpp"
-#include "gpu_presolver/presolve/device_recovery.hpp"
-#include "gpu_presolver/presolve/duplicate_rule_workspace.hpp"
-#include "gpu_presolver/presolve/rules/rule_parallel_columns.hpp"
+#include "gpu_preprocessor/detail/runtime_options.hpp"
+#include "gpu_preprocessor/offset.hpp"
+#include "gpu_preprocessor/presolve/device_recovery.hpp"
+#include "gpu_preprocessor/presolve/duplicate_rule_workspace.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_parallel_columns.hpp"
 
 #include <cuda_runtime.h>
 
@@ -20,7 +20,7 @@
 #include <tuple>
 #include <vector>
 
-namespace runtime = gpu_presolver::runtime;
+namespace runtime = gpu_preprocessor::runtime;
 
 namespace {
 
@@ -50,12 +50,12 @@ std::vector<T> copy_to_host(T* device, std::size_t size) {
 }  // namespace
 
 void test_merges_objective_compatible_parallel_columns() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PostsolveDualMode;
-  using gpu_presolver::presolve::PostsolveReductionType;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PostsolveDualMode;
+  using gpu_preprocessor::presolve::PostsolveReductionType;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
 
   LPInfoGpu lp;
   lp.A.rows = 2;
@@ -76,7 +76,7 @@ void test_merges_objective_compatible_parallel_columns() {
   PresolveStatsGpu stats;
   PresolveParams params;
 
-  gpu_presolver::presolve::apply_rule_parallel_columns(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_parallel_columns(plan, lp, stats, params);
   const std::vector<std::uint8_t> keep = copy_to_host(plan.keep_col_mask, 2);
   const std::vector<double> l = copy_to_host(plan.new_l, 2);
   const std::vector<double> u = copy_to_host(plan.new_u, 2);
@@ -112,12 +112,12 @@ void test_merges_objective_compatible_parallel_columns() {
 }
 
 void test_fixed_parallel_column_records_tape() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PostsolveDualMode;
-  using gpu_presolver::presolve::PostsolveReductionType;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PostsolveDualMode;
+  using gpu_preprocessor::presolve::PostsolveReductionType;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
   const double inf = std::numeric_limits<double>::infinity();
 
   LPInfoGpu lp;
@@ -139,7 +139,7 @@ void test_fixed_parallel_column_records_tape() {
   PresolveStatsGpu stats;
   PresolveParams params;
 
-  gpu_presolver::presolve::apply_rule_parallel_columns(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_parallel_columns(plan, lp, stats, params);
   const std::vector<std::uint8_t> keep = copy_to_host(plan.keep_col_mask, 2);
   const std::vector<double> l = copy_to_host(plan.new_l, 2);
   const std::vector<double> u = copy_to_host(plan.new_u, 2);
@@ -179,10 +179,10 @@ void test_fixed_parallel_column_records_tape() {
 }
 
 void test_ratio_guard_keeps_scaled_parallel_columns() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
 
   LPInfoGpu lp;
   lp.A.rows = 2;
@@ -205,7 +205,7 @@ void test_ratio_guard_keeps_scaled_parallel_columns() {
   params.parallel_columns_max_abs_ratio = 1.0;
   params.parallel_columns_scale_guard_min_groups = 1;
 
-  gpu_presolver::presolve::apply_rule_parallel_columns(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_parallel_columns(plan, lp, stats, params);
   const std::vector<std::uint8_t> keep = copy_to_host(plan.keep_col_mask, 2);
   assert(keep[0] == 1);
   assert(keep[1] == 1);
@@ -226,7 +226,7 @@ void test_ratio_guard_keeps_scaled_parallel_columns() {
 }
 
 void test_bounded_objective_prefilter() {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   constexpr int m=4097;
   PresolveParams params;
   const double tol=std::fmax(params.zero_tol,params.bound_tol);
@@ -257,7 +257,7 @@ void test_bounded_objective_prefilter() {
 }
 
 void test_parallel_large_group_matches_serial(bool masked, bool device_tape) {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   constexpr int m = 2048;
   constexpr int n = 10;
   std::vector<NnzOffset> ptr(n + 1);
@@ -329,7 +329,7 @@ void test_parallel_large_group_matches_serial(bool masked, bool device_tape) {
 // warp-sized and block-sized columns, zero-tolerance skipping and sign collisions.
 void test_signature_preserves_plan_and_recovery(bool masked, bool device_tape,
                                                bool preverify, bool scale_gate) {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   constexpr int m = 1300, n = 18;
   std::vector<NnzOffset> ptr{0};
   std::vector<int> rows;
@@ -434,7 +434,7 @@ void test_signature_preserves_plan_and_recovery(bool masked, bool device_tape,
 }
 
 void test_signature_no_candidates_and_unbounded(bool terminal) {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   for (bool mode : {false,true}) {
     runtime::options().column_signatures = (mode) ? runtime::SignatureMode::Enabled : runtime::SignatureMode::Disabled;
     LPInfoGpu lp;
@@ -469,7 +469,7 @@ void test_signature_no_candidates_and_unbounded(bool terminal) {
 // are not antiparallel. With -x+y=1e8 and z>=eps*(x+y), x,y,z>=0,
 // falsely merging them changes min(z) from 1e8*eps to zero.
 void test_small_coefficients_do_not_hide_nonproportional_columns() {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   const auto saved = runtime::options().parallel_column_preverify;
   const double eps = 1.9877659e-8;
   const double inf = std::numeric_limits<double>::infinity();

@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "gpu_presolver/presolve/device_recovery.hpp"
+#include "gpu_preprocessor/presolve/device_recovery.hpp"
 #include <cuda_runtime.h>
 #include <cmath>
 #include <cstdint>
@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 
-namespace gpu_presolver::presolve::postsolve {
+namespace gpu_preprocessor::presolve::postsolve {
 
 constexpr int GPU_PRESOLVE_THREADS = 256;
 
@@ -128,4 +128,4 @@ __device__ __forceinline__ void replay_row_dual_shift(
   }
 }
 
-}  // namespace gpu_presolver::presolve::postsolve
+}  // namespace gpu_preprocessor::presolve::postsolve

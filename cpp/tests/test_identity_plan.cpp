@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/presolve/identity_plan.hpp"
+#include "gpu_preprocessor/presolve/identity_plan.hpp"
 #include <cuda_runtime.h>
 #include <cassert>
 #include <cstring>
@@ -9,7 +9,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <vector>
-using namespace gpu_presolver::presolve;
+using namespace gpu_preprocessor::presolve;
 static void check(cudaError_t e) {
   if (e != cudaSuccess) throw std::runtime_error(cudaGetErrorString(e));
 }

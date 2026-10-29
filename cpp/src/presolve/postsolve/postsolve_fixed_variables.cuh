@@ -5,7 +5,7 @@
 
 #include "postsolve_common.cuh"
 
-namespace gpu_presolver::presolve::postsolve {
+namespace gpu_preprocessor::presolve::postsolve {
 
 // Fixed-variable records shared by fixed-variable, empty-column and dual-fixing reductions.
 
@@ -88,4 +88,4 @@ __device__ __forceinline__ void replay_infinite_bound_dual_fix(
   }
 }
 
-}  // namespace gpu_presolver::presolve::postsolve
+}  // namespace gpu_preprocessor::presolve::postsolve

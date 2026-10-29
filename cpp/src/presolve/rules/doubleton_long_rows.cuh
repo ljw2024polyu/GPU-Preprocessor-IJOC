@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "gpu_presolver/offset.hpp"
+#include "gpu_preprocessor/offset.hpp"
 #include <cub/cub.cuh>
 #include <cuda_runtime.h>
 #include <climits>
@@ -11,7 +11,7 @@
 #include <cstddef>
 #include <cmath>
 
-namespace gpu_presolver::presolve::detail {
+namespace gpu_preprocessor::presolve::detail {
 
 constexpr int DOUBLETON_MERGE_THREADS = 256;
 constexpr int DOUBLETON_LONG_ROW_THRESHOLD = 4096;
@@ -132,4 +132,4 @@ __global__ void doubleton_merge_long_rows(
   }
 }
 
-}  // namespace gpu_presolver::presolve::detail
+}  // namespace gpu_preprocessor::presolve::detail

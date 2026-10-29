@@ -1,9 +1,9 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/presolve/device_recovery.hpp"
-#include "gpu_presolver/presolve/gpu_presolve.hpp"
-#include "gpu_presolver_tool_common.hpp"
+#include "gpu_preprocessor/presolve/device_recovery.hpp"
+#include "gpu_preprocessor/presolve/gpu_presolve.hpp"
+#include "gpu_preprocessor_tool_common.hpp"
 
 #include <filesystem>
 #include <fstream>
@@ -18,10 +18,10 @@ namespace {
 
 void write_lp_export(const std::filesystem::path& out_dir,
                      const std::string& model_name,
-                     const gpu_presolver::folding::FoldingPipelineSummary& pipeline) {
+                     const gpu_preprocessor::folding::FoldingPipelineSummary& pipeline) {
   const auto& summary = pipeline.presolve;
-  namespace tools = gpu_presolver::tools;
-  const gpu_presolver::presolve::LPInfoGpu& lp = summary.reduced_lp;
+  namespace tools = gpu_preprocessor::tools;
+  const gpu_preprocessor::presolve::LPInfoGpu& lp = summary.reduced_lp;
   std::filesystem::create_directories(out_dir);
 
   std::ofstream meta(out_dir / "meta.txt");
@@ -29,7 +29,7 @@ void write_lp_export(const std::filesystem::path& out_dir,
     throw std::runtime_error("failed to open export meta");
   }
   meta << std::setprecision(17);
-  meta << (sizeof(NnzOffset) == 8 ? "format gpu_presolver_reduced_lp_v2\n" : "format gpu_presolver_reduced_lp_v1\n");
+  meta << (sizeof(NnzOffset) == 8 ? "format gpu_preprocessor_reduced_lp_v2\n" : "format gpu_preprocessor_reduced_lp_v1\n");
   meta << "offset_bits " << sizeof(NnzOffset)*8 << "\n";
   meta << "model " << model_name << "\n";
   meta << "status " << (summary.has_infeasible ? "infeasible" : (summary.has_unbounded ? "unbounded" : "ok")) << "\n";
@@ -71,22 +71,22 @@ void write_lp_export(const std::filesystem::path& out_dir,
 
 int main(int argc, char** argv) {
   try {
-    const auto options = gpu_presolver::tools::parse_command_line(argc, argv, 2);
+    const auto options = gpu_preprocessor::tools::parse_command_line(argc, argv, 2);
     if (options.help) {
-      gpu_presolver::tools::print_usage(std::cout, "gpu_preprocessor_export_reduced",
+      gpu_preprocessor::tools::print_usage(std::cout, "gpu_preprocessor_export_reduced",
                                        "<model.mps|-> <out_dir>");
       return 0;
     }
     const std::string input_path = options.positional[0];
     const std::filesystem::path out_dir = options.positional[1];
     const auto& params = options.params;
-    cpu_presolve::MpsModel model = gpu_presolver::tools::read_mps_file(input_path);
-    gpu_presolver::tools::DeviceLpOwner device_lp = gpu_presolver::tools::upload_lp(model.lp);
+    mps_reader::MpsModel model = gpu_preprocessor::tools::read_mps_file(input_path);
+    gpu_preprocessor::tools::DeviceLpOwner device_lp = gpu_preprocessor::tools::upload_lp(model.lp);
 
-    gpu_presolver::tools::FoldingPipelineOwner pipeline;
-    pipeline.summary = gpu_presolver::folding::run_gpu_presolve_with_folding(
+    gpu_preprocessor::tools::FoldingPipelineOwner pipeline;
+    pipeline.summary = gpu_preprocessor::folding::run_gpu_presolve_with_folding(
         device_lp.lp, params, true, false);
-    gpu_presolver::presolve::export_recovery_record(pipeline.summary.presolve.record);
+    gpu_preprocessor::presolve::export_recovery_record(pipeline.summary.presolve.record);
     const auto& summary = pipeline.summary.presolve;
 
     if (summary.has_infeasible || summary.has_unbounded) {

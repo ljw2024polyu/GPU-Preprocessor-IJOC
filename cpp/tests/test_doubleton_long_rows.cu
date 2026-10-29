@@ -10,8 +10,8 @@
 #include <numeric>
 #include <random>
 #include <vector>
-using namespace gpu_presolver;
-using namespace gpu_presolver::presolve::detail;
+using namespace gpu_preprocessor;
+using namespace gpu_preprocessor::presolve::detail;
 static void check(cudaError_t e) { if(e != cudaSuccess) {std::cerr<<cudaGetErrorString(e)<<'\n';std::abort();} }
 template<class T> struct Buffer {
   T* p=nullptr; size_t n;

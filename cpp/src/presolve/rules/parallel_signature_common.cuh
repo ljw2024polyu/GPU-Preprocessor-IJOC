@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include "gpu_presolver/detail/runtime_options.hpp"
+#include "gpu_preprocessor/detail/runtime_options.hpp"
 
-#include "gpu_presolver/presolve/presolve_structs.hpp"
+#include "gpu_preprocessor/presolve/presolve_structs.hpp"
 #include <cuda_runtime.h>
 #include <cub/cub.cuh>
 #include <cfloat>
@@ -16,7 +16,7 @@
 // Internal infrastructure shared by the row and column projection kernels.
 // Support traversal remains separate: rows retain stored tiny coefficients,
 // whereas columns follow the legacy hash's zero-tolerance filtering.
-namespace gpu_presolver::presolve::parallel_signature {
+namespace gpu_preprocessor::presolve::parallel_signature {
 
 constexpr double bin_scale = 1024.0;
 constexpr int max_probe = 64;
@@ -195,4 +195,4 @@ static __global__ void count_nnz(Workspace w, int m) {
   if (!threadIdx.x) { atomicAdd(w.counts, total); atomicAdd(w.counts+1, selected); }
 }
 
-}  // namespace gpu_presolver::presolve::parallel_signature
+}  // namespace gpu_preprocessor::presolve::parallel_signature

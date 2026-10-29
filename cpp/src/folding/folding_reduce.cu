@@ -1,8 +1,8 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/presolve/transpose64.hpp"
-#include "gpu_presolver/offset.hpp"
+#include "gpu_preprocessor/presolve/transpose64.hpp"
+#include "gpu_preprocessor/offset.hpp"
 #include "folding_internal.cuh"
 
 #include <cub/cub.cuh>
@@ -20,7 +20,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace gpu_presolver::folding {
+namespace gpu_preprocessor::folding {
 namespace {
 
 constexpr int kFoldingThreads = 256;
@@ -236,7 +236,7 @@ __global__ void sorted_coo_row_ptr(const int* rows, NnzOffset nnz, int m, NnzOff
 }
 
 presolve::DeviceCsrMatrix transpose_csr_gpu(const presolve::DeviceCsrMatrix& A) {
-  return gpu_presolver::presolve::transpose_csr64(A);
+  return gpu_preprocessor::presolve::transpose_csr64(A);
 }
 
 }  // namespace
@@ -562,4 +562,4 @@ presolve::LPInfoGpu reduce_size(FoldingWorkspace& workspace,
   return reduced;
 }
 
-}  // namespace gpu_presolver::folding
+}  // namespace gpu_preprocessor::folding

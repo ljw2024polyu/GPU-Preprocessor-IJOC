@@ -1,12 +1,12 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/presolve/rules/rule_piecewise_linear_reformulation_variable_pair.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_piecewise_linear_reformulation_variable_pair.hpp"
 #include "../src/presolve/plan_storage.hpp"
-#include "gpu_presolver/offset.hpp"
-#include "gpu_presolver/presolve/device_recovery.hpp"
-#include "gpu_presolver/presolve/gpu_postsolve.hpp"
-#include "gpu_presolver/presolve/gpu_presolve.hpp"
+#include "gpu_preprocessor/offset.hpp"
+#include "gpu_preprocessor/presolve/device_recovery.hpp"
+#include "gpu_preprocessor/presolve/gpu_postsolve.hpp"
+#include "gpu_preprocessor/presolve/gpu_presolve.hpp"
 #include "../src/presolve/rules/piecewise_linear_reformulation_variable_pair/epigraph.hpp"
 
 #include <cuda_runtime.h>
@@ -21,7 +21,7 @@
 #include <utility>
 #include <vector>
 
-using namespace gpu_presolver::presolve::detail;
+using namespace gpu_preprocessor::presolve::detail;
 
 namespace {
 
@@ -53,7 +53,7 @@ std::vector<T> copy_to_host(const T* values, std::size_t size) {
   return out;
 }
 
-void free_lp(gpu_presolver::presolve::LPInfoGpu& lp) {
+void free_lp(gpu_preprocessor::presolve::LPInfoGpu& lp) {
   cudaFree(lp.A.rowPtr);
   cudaFree(lp.A.colVal);
   cudaFree(lp.A.nzVal);
@@ -65,13 +65,13 @@ void free_lp(gpu_presolver::presolve::LPInfoGpu& lp) {
   cudaFree(lp.AU);
   cudaFree(lp.l);
   cudaFree(lp.u);
-  lp = gpu_presolver::presolve::LPInfoGpu{};
+  lp = gpu_preprocessor::presolve::LPInfoGpu{};
 }
 
-gpu_presolver::presolve::LPInfoGpu make_piecewise_linear_reformulation_variable_pair_epigraph_lp(bool wrong_tail,
+gpu_preprocessor::presolve::LPInfoGpu make_piecewise_linear_reformulation_variable_pair_epigraph_lp(bool wrong_tail,
                                                 bool wrong_coefficient,
                                                 bool normalization_row = false) {
-  using gpu_presolver::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
   const double inf = std::numeric_limits<double>::infinity();
   const std::int32_t cols = wrong_tail ? 8 : 7;
   const std::int32_t second_tail = wrong_tail ? 7 : 6;
@@ -164,8 +164,8 @@ gpu_presolver::presolve::LPInfoGpu make_piecewise_linear_reformulation_variable_
   return lp;
 }
 
-gpu_presolver::presolve::PresolveParams test_params() {
-  gpu_presolver::presolve::PresolveParams params;
+gpu_preprocessor::presolve::PresolveParams test_params() {
+  gpu_preprocessor::presolve::PresolveParams params;
   params.max_iters = 1;
   params.enable_startup = true;
   params.enable_column_domination = false;
@@ -198,11 +198,11 @@ void assert_near(double actual, double expected) {
 }
 
 void test_contraction_bounds_and_primal_recovery() {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   LPInfoGpu lp = make_piecewise_linear_reformulation_variable_pair_epigraph_lp(false, false);
   PresolveParams params = test_params();
   GpuPresolveSummary summary = run_gpu_presolve_with_reduced_lp(lp, params);
-  gpu_presolver::presolve::export_recovery_record(summary.record);
+  gpu_preprocessor::presolve::export_recovery_record(summary.record);
 
   assert(!summary.has_infeasible);
   assert(!summary.has_unbounded);
@@ -275,7 +275,7 @@ void test_contraction_bounds_and_primal_recovery() {
 }
 
 void test_unified_entry() {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   LPInfoGpu lp = make_piecewise_linear_reformulation_variable_pair_epigraph_lp(false, false);
   PresolveParams params = test_params();
   PresolvePlanGpu plan;
@@ -300,12 +300,12 @@ void test_unified_entry() {
 }
 
 void test_rule_is_owned_by_startup() {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   LPInfoGpu lp = make_piecewise_linear_reformulation_variable_pair_epigraph_lp(false, false);
   PresolveParams params = test_params();
   params.enable_startup = false;
   GpuPresolveSummary summary = run_gpu_presolve_with_reduced_lp(lp, params);
-  gpu_presolver::presolve::export_recovery_record(summary.record);
+  gpu_preprocessor::presolve::export_recovery_record(summary.record);
   assert(summary.reduced_rows == 5);
   assert(summary.reduced_cols == 7);
   assert(summary.reduced_nnz == 19);
@@ -315,11 +315,11 @@ void test_rule_is_owned_by_startup() {
 }
 
 void test_retained_equality_is_canonically_normalized() {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   LPInfoGpu lp = make_piecewise_linear_reformulation_variable_pair_epigraph_lp(false, false, true);
   PresolveParams params = test_params();
   GpuPresolveSummary summary = run_gpu_presolve_with_reduced_lp(lp, params);
-  gpu_presolver::presolve::export_recovery_record(summary.record);
+  gpu_preprocessor::presolve::export_recovery_record(summary.record);
   assert(summary.reduced_rows == 4);
   assert(summary.reduced_cols == 5);
   assert(summary.reduced_nnz == 14);
@@ -338,7 +338,7 @@ void test_retained_equality_is_canonically_normalized() {
 
 void test_component_metadata_mismatch_is_fail_closed(bool wrong_tail,
                                                      bool wrong_coefficient) {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   LPInfoGpu lp = make_piecewise_linear_reformulation_variable_pair_epigraph_lp(wrong_tail, wrong_coefficient);
   PresolveParams params = test_params();
   assert(quick_probe_piecewise_linear_reformulation_variable_pair_epigraph(lp, params));

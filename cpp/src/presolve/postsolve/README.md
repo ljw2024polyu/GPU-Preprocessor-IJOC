@@ -46,8 +46,8 @@ Forward presolve, stored records and public interfaces are unchanged.
 Ranges below 1,024 records, unsupported layouts, scratch-memory limits and
 allocation exhaustion retain serial replay. Row-implied bound recovery retains
 its existing serial handler. Plans are temporary and scratch is reused within a postsolve call.
-`GPUPRESOLVER_PARALLEL_FIXED_COLS=0`, `GPUPRESOLVER_PARALLEL_SUBCOL=0` and
-`GPUPRESOLVER_PARALLEL_COMPONENTS=0` independently disable the corresponding
+`GPUPREPROCESSOR_PARALLEL_FIXED_COLS=0`, `GPUPREPROCESSOR_PARALLEL_SUBCOL=0` and
+`GPUPREPROCESSOR_PARALLEL_COMPONENTS=0` independently disable the corresponding
 paths for paired correctness checks.
 
 `test_parallel_postsolve` checks byte equality, actual path selection,

@@ -175,7 +175,7 @@ class ExperimentRunnerTests(unittest.TestCase):
                 'import os\n'
                 'assert os.environ["CUDA_VISIBLE_DEVICES"] == "2"\n'
                 'assert os.environ["HPRLP_TEST_SETTING"] == "recorded"\n'
-                'assert "GPUPRESOLVER_UNRECORDED" not in os.environ\n'
+                'assert "GPUPREPROCESSOR_UNRECORDED" not in os.environ\n'
                 'print("problem information: nRow = 3, nCol = 4, nnz A = 5")\n'
                 'print("problem information: nRow = 2, nCol = 3, nnz A = 4")\n'
                 'print("Status: OPTIMAL\\nPreprocessing Time: 0.2 seconds\\n"'
@@ -188,7 +188,7 @@ class ExperimentRunnerTests(unittest.TestCase):
             output = root / 'run'
             with patch.dict(os.environ, {'CUDA_VISIBLE_DEVICES': '2',
                                          'HPRLP_TEST_SETTING': 'inherited',
-                                         'GPUPRESOLVER_UNRECORDED': '1'}), \
+                                         'GPUPREPROCESSOR_UNRECORDED': '1'}), \
                  contextlib.redirect_stdout(io.StringIO()):
                 runner.run_jobs([job], output)
             with (output / job['summary']).open() as handle:

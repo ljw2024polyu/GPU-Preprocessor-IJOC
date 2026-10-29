@@ -1,8 +1,8 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/presolve/device_recovery.hpp"
-#include "gpu_presolver/presolve/gpu_postsolve.hpp"
+#include "gpu_preprocessor/presolve/device_recovery.hpp"
+#include "gpu_preprocessor/presolve/gpu_postsolve.hpp"
 #include <cuda_runtime.h>
 #include <cassert>
 #include <cstring>
@@ -10,7 +10,7 @@
 #include <numeric>
 #include <vector>
 
-using namespace gpu_presolver::presolve;
+using namespace gpu_preprocessor::presolve;
 namespace {
 bool measure = false;
 std::size_t downloaded = 0, uploaded = 0;

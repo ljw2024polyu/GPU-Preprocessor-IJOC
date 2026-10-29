@@ -10,9 +10,9 @@
 #include <string>
 #include <vector>
 
-namespace runtime = gpu_presolver::runtime;
+namespace runtime = gpu_preprocessor::runtime;
 
-namespace sig = gpu_presolver::presolve::parallel_signature;
+namespace sig = gpu_preprocessor::presolve::parallel_signature;
 
 void check(cudaError_t status) {
   if (status != cudaSuccess) throw std::runtime_error(cudaGetErrorString(status));
@@ -20,7 +20,7 @@ void check(cudaError_t status) {
 
 void test_modes_and_scratch() {
   using Mode = runtime::SignatureMode;
-  gpu_presolver::presolve::DeviceCsrMatrix a;
+  gpu_preprocessor::presolve::DeviceCsrMatrix a;
   a.rows = 17;
   a.nnz = 32;
   assert(sig::enabled(a, Mode::Enabled));

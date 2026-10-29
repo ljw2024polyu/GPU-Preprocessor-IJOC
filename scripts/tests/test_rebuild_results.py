@@ -151,11 +151,11 @@ class RebuildResultsTests(unittest.TestCase):
             self.assertEqual(result['solve_time_s'], '0.3')
             self.assertEqual(result['preprocessing_time_s'], '0.123456789')
 
-    def test_current_and_archived_gpu_timing_labels_are_equivalent(self):
+    def test_diagnostic_timing_does_not_depend_on_backend_name(self):
         with tempfile.TemporaryDirectory() as temporary:
             log = Path(temporary) / 'scale.log'
             results = []
-            for label in ['GPU-Presolver-C', 'GPU-Preprocessor']:
+            for label in ['GPU-Preprocessor', 'ExternalBackend']:
                 log.write_text('problem information: nRow = 3, nCol = 4, nnz A = 5\n'
                                'problem information: nRow = 2, nCol = 3, nnz A = 4\n'
                                'Status: OPTIMAL\nIterations: 10\nPrimal Objective: 2\n'

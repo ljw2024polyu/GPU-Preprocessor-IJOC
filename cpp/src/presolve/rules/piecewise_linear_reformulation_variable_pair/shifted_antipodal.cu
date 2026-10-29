@@ -1,9 +1,9 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/detail/runtime_options.hpp"
-#include "gpu_presolver/presolve/device_recovery.hpp"
-#include "gpu_presolver/offset.hpp"
+#include "gpu_preprocessor/detail/runtime_options.hpp"
+#include "gpu_preprocessor/presolve/device_recovery.hpp"
+#include "gpu_preprocessor/offset.hpp"
 #include "shifted_antipodal.hpp"
 
 #include <cub/cub.cuh>
@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 
-namespace gpu_presolver::presolve::detail {
+namespace gpu_preprocessor::presolve::detail {
 namespace {
 
 constexpr int GPU_PRESOLVE_THREADS = 256;
@@ -1105,4 +1105,4 @@ void build_piecewise_linear_reformulation_variable_pair_shifted_antipodal_plan(P
   }
 }
 
-}  // namespace gpu_presolver::presolve::detail
+}  // namespace gpu_preprocessor::presolve::detail

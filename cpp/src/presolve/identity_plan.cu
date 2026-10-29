@@ -1,14 +1,14 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/presolve/identity_plan.hpp"
-#include "gpu_presolver/presolve/device_recovery.hpp"
+#include "gpu_preprocessor/presolve/identity_plan.hpp"
+#include "gpu_preprocessor/presolve/device_recovery.hpp"
 
 #include <cuda_runtime.h>
 #include <algorithm>
 #include <stdexcept>
 
-namespace gpu_presolver::presolve::detail {
+namespace gpu_preprocessor::presolve::detail {
 namespace {
 void check(cudaError_t status) {
   if (status != cudaSuccess) {
@@ -70,4 +70,4 @@ void commit_identity_plan_vectors(const PresolvePlanGpu& plan, LPInfoGpu& lp) {
       plan.new_c, plan.new_l, plan.new_u, plan.new_AL, plan.new_AU);
   check(cudaGetLastError());
 }
-}  // namespace gpu_presolver::presolve::detail
+}  // namespace gpu_preprocessor::presolve::detail

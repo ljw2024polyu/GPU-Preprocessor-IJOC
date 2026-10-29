@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: MIT
 
 #include "gpu_preprocessor/gpu_preprocessor.hpp"
-#include "../tools/gpu_presolver_tool_common.hpp"
+#include "../tools/gpu_preprocessor_tool_common.hpp"
 #include <cmath>
 #include <sstream>
 #include <stdexcept>
 #include <type_traits>
 
-static_assert(!std::is_copy_constructible_v<gpu_presolver::tools::DeviceLpOwner>);
-static_assert(std::is_nothrow_move_constructible_v<gpu_presolver::tools::DeviceLpOwner>);
+static_assert(!std::is_copy_constructible_v<gpu_preprocessor::tools::DeviceLpOwner>);
+static_assert(std::is_nothrow_move_constructible_v<gpu_preprocessor::tools::DeviceLpOwner>);
 
 void require(bool value, const char* message) {
   if (!value) throw std::runtime_error(message);
@@ -21,8 +21,8 @@ int main() {
       "NAME BOUNDS\nROWS\n N OBJ\n E EQ\nCOLUMNS\n"
       " X OBJ 1 EQ 1\n Y OBJ 2 EQ 1\nRHS\n R EQ 2\n"
       "BOUNDS\n UP B X 10\n UP B Y 10\nENDATA\n");
-  auto model = cpu_presolve::read_mps(input);
-  auto owned = gpu_presolver::tools::upload_lp(model.lp);
+  auto model = mps_reader::read_mps(input);
+  auto owned = gpu_preprocessor::tools::upload_lp(model.lp);
   auto moved = std::move(owned);
   require(owned.lp.A.rowPtr == nullptr, "upload owner did not transfer ownership");
   gpu_preprocessor::Parameters p;
@@ -48,9 +48,9 @@ int main() {
   require(result.presolve.has_change, "bound-only change was not reported");
   require(result.presolve.reduced_rows == 1 && result.presolve.reduced_cols == 2,
           "bound-only test unexpectedly changed dimensions");
-  const auto bounds = gpu_presolver::tools::copy_to_host(result.presolve.reduced_lp.u, 2);
+  const auto bounds = gpu_preprocessor::tools::copy_to_host(result.presolve.reduced_lp.u, 2);
   require(bounds[0] < 2.0001 && bounds[1] < 2.0001, "upper bounds were not tightened");
-  const auto original = gpu_presolver::tools::copy_to_host(moved.lp.u, 2);
+  const auto original = gpu_preprocessor::tools::copy_to_host(moved.lp.u, 2);
   require(original[0] == 10.0 && original[1] == 10.0, "input was modified");
   require(result.preprocessing_seconds >= result.presolve.elapsed_seconds,
           "core timer exceeds preprocessing wall time");

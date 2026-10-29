@@ -1,8 +1,8 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver_tool_common.hpp"
-#include "gpu_presolver/presolve/device_recovery.hpp"
+#include "gpu_preprocessor_tool_common.hpp"
+#include "gpu_preprocessor/presolve/device_recovery.hpp"
 #include <chrono>
 #include <iomanip>
 
@@ -15,7 +15,7 @@ double elapsed(Clock::time_point start) {
 
 int main(int argc, char** argv) {
   try {
-    namespace tools = gpu_presolver::tools;
+    namespace tools = gpu_preprocessor::tools;
     const auto options = tools::parse_command_line(argc, argv, 1);
     if (options.help) {
       tools::print_usage(std::cout, "gpu_preprocessor_mps", "<model.mps|->");
@@ -27,11 +27,11 @@ int main(int argc, char** argv) {
     const double parse_seconds = elapsed(parse_start);
     auto device = tools::upload_lp(model.lp);
     tools::FoldingPipelineOwner pipeline;
-    pipeline.summary = gpu_presolver::folding::run_gpu_presolve_with_folding(
+    pipeline.summary = gpu_preprocessor::folding::run_gpu_presolve_with_folding(
         device.lp, params, true, false);
     // Explicit diagnostics are outside preprocessing and core timing.
     const auto diagnostic_start = Clock::now();
-    gpu_presolver::presolve::export_recovery_record(pipeline.summary.presolve.record);
+    gpu_preprocessor::presolve::export_recovery_record(pipeline.summary.presolve.record);
     auto& summary = pipeline.summary.presolve;
     auto fixed = summary.record.fixed_idx;
     std::sort(fixed.begin(), fixed.end());

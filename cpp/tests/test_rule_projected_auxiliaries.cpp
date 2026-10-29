@@ -1,13 +1,13 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/offset.hpp"
-#include "gpu_presolver/detail/runtime_options.hpp"
-#include "gpu_presolver/presolve/device_recovery.hpp"
-#include "gpu_presolver/presolve/gpu_postsolve.hpp"
-#include "gpu_presolver/presolve/gpu_presolve.hpp"
-#include "gpu_presolver/presolve/rules/rule_two_row_variable_elimination.hpp"
-#include "gpu_presolver/presolve/rules/rule_zero_cost_product_variables.hpp"
+#include "gpu_preprocessor/offset.hpp"
+#include "gpu_preprocessor/detail/runtime_options.hpp"
+#include "gpu_preprocessor/presolve/device_recovery.hpp"
+#include "gpu_preprocessor/presolve/gpu_postsolve.hpp"
+#include "gpu_preprocessor/presolve/gpu_presolve.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_two_row_variable_elimination.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_zero_cost_product_variables.hpp"
 
 #include <cuda_runtime.h>
 
@@ -54,7 +54,7 @@ std::vector<T> copy_to_host(const T* values, std::size_t count) {
   return out;
 }
 
-void free_lp(gpu_presolver::presolve::LPInfoGpu& lp) {
+void free_lp(gpu_preprocessor::presolve::LPInfoGpu& lp) {
   cudaFree(lp.A.rowPtr);
   cudaFree(lp.A.colVal);
   cudaFree(lp.A.nzVal);
@@ -66,7 +66,7 @@ void free_lp(gpu_presolver::presolve::LPInfoGpu& lp) {
   cudaFree(lp.AU);
   cudaFree(lp.l);
   cudaFree(lp.u);
-  lp = gpu_presolver::presolve::LPInfoGpu{};
+  lp = gpu_preprocessor::presolve::LPInfoGpu{};
 }
 
 struct HostCsr {
@@ -105,14 +105,14 @@ HostCsr transpose(const HostCsr& A) {
   return AT;
 }
 
-gpu_presolver::presolve::LPInfoGpu upload_lp(
+gpu_preprocessor::presolve::LPInfoGpu upload_lp(
     const HostCsr& A,
     const std::vector<double>& c,
     const std::vector<double>& AL,
     const std::vector<double>& AU,
     const std::vector<double>& lower,
     const std::vector<double>& upper) {
-  using gpu_presolver::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
   const HostCsr AT = transpose(A);
   LPInfoGpu lp;
   lp.A = {A.rows, A.cols, static_cast<std::int32_t>(A.nz_val.size()),
@@ -129,7 +129,7 @@ gpu_presolver::presolve::LPInfoGpu upload_lp(
   return lp;
 }
 
-gpu_presolver::presolve::LPInfoGpu make_pair_block_lp(
+gpu_preprocessor::presolve::LPInfoGpu make_pair_block_lp(
     double second_schedule_rhs = 4.0,
     double recourse_cost = 0.0) {
   const double inf = std::numeric_limits<double>::infinity();
@@ -155,7 +155,7 @@ gpu_presolver::presolve::LPInfoGpu make_pair_block_lp(
                    std::vector<double>(6, 1.0));
 }
 
-gpu_presolver::presolve::LPInfoGpu make_mccormick_lp(
+gpu_preprocessor::presolve::LPInfoGpu make_mccormick_lp(
     bool corrupt_upper_row,
     bool nonunit_endpoint) {
   const double inf = std::numeric_limits<double>::infinity();
@@ -176,8 +176,8 @@ gpu_presolver::presolve::LPInfoGpu make_mccormick_lp(
                    upper);
 }
 
-gpu_presolver::presolve::PresolveParams projected_only_params() {
-  using gpu_presolver::presolve::PresolveParams;
+gpu_preprocessor::presolve::PresolveParams projected_only_params() {
+  using gpu_preprocessor::presolve::PresolveParams;
   PresolveParams params;
   params.max_iters = 1;
   params.enable_column_domination = false;
@@ -205,13 +205,13 @@ gpu_presolver::presolve::PresolveParams projected_only_params() {
 }
 
 void test_chained_projection_and_primal_recovery(bool resident) {
-  using namespace gpu_presolver::presolve;
-  const bool previous = gpu_presolver::runtime::options().device_recovery;
-  gpu_presolver::runtime::options().device_recovery = resident;
+  using namespace gpu_preprocessor::presolve;
+  const bool previous = gpu_preprocessor::runtime::options().device_recovery;
+  gpu_preprocessor::runtime::options().device_recovery = resident;
   LPInfoGpu lp = make_pair_block_lp();
   PresolveParams params = projected_only_params();
   GpuPresolveSummary summary = run_gpu_presolve_with_reduced_lp(lp, params);
-  gpu_presolver::presolve::export_recovery_record(summary.record);
+  gpu_preprocessor::presolve::export_recovery_record(summary.record);
   assert(!summary.has_infeasible);
   assert(!summary.has_unbounded);
   assert(summary.reduced_rows == 0);
@@ -243,11 +243,11 @@ void test_chained_projection_and_primal_recovery(bool resident) {
   cudaFree(post.z_org);
   free_gpu_presolve_reduced_lp(summary);
   free_lp(lp);
-  gpu_presolver::runtime::options().device_recovery = previous;
+  gpu_preprocessor::runtime::options().device_recovery = previous;
 }
 
 void test_bounded_projection_fails_closed() {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   PresolveParams params = projected_only_params();
 
   LPInfoGpu boundary = make_pair_block_lp(3.0, 0.0);
@@ -267,7 +267,7 @@ void test_bounded_projection_fails_closed() {
 }
 
 void test_mccormick_detector_is_exact_and_fail_closed() {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   PresolveParams params = projected_only_params();
 
   LPInfoGpu exact = make_mccormick_lp(false, false);
@@ -292,12 +292,12 @@ void test_mccormick_detector_is_exact_and_fail_closed() {
 }
 
 void test_rules_are_startup_only() {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   LPInfoGpu lp = make_pair_block_lp();
   PresolveParams params = projected_only_params();
   params.enable_startup = false;
   GpuPresolveSummary summary = run_gpu_presolve_with_reduced_lp(lp, params);
-  gpu_presolver::presolve::export_recovery_record(summary.record);
+  gpu_preprocessor::presolve::export_recovery_record(summary.record);
   assert(summary.reduced_rows == 5);
   assert(summary.reduced_cols == 6);
   assert(summary.reduced_nnz == 15);
@@ -309,7 +309,7 @@ void test_rules_are_startup_only() {
 
 // Compare the shared-plan chain with two physically materialized rule calls.
 void test_batch_matches_separate_applies() {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   auto lp = make_pair_block_lp();
   auto params = projected_only_params();
   // The second rule sees 5 live columns: 1/5 passes, whereas 1/6 would fail.
@@ -345,7 +345,7 @@ void test_batch_matches_separate_applies() {
 }
 
 void test_pending_masks_and_gpu_tape() {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   const double inf = std::numeric_limits<double>::infinity();
   auto reference_lp = make_pair_block_lp();
   auto params = projected_only_params();

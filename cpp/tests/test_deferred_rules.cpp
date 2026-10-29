@@ -1,20 +1,20 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/detail/runtime_options.hpp"
-#include "gpu_presolver/presolve/gpu_presolve_kernels.hpp"
-#include "gpu_presolver/presolve/device_recovery.hpp"
-#include "gpu_presolver/presolve/gpu_postsolve.hpp"
-#include "gpu_presolver/presolve/gpu_presolve.hpp"
-#include "gpu_presolver/presolve/rules/rule_infeasible_and_fixed_variables.hpp"
-#include "gpu_presolver/presolve/rules/rule_empty_rows_and_columns.hpp"
-#include "gpu_presolver/presolve/rules/rule_singleton_rows.hpp"
-#include "gpu_presolver/presolve/rules/rule_singleton_columns.hpp"
-#include "gpu_presolver/presolve/rules/rule_infeasible_and_redundant_rows.hpp"
-#include "gpu_presolver/presolve/rules/rule_bound_strengthening.hpp"
-#include "gpu_presolver/presolve/rules/rule_dual_fix.hpp"
-#include "gpu_presolver/presolve/rules/rule_parallel_rows.hpp"
-#include "gpu_presolver/presolve/rules/rule_parallel_columns.hpp"
+#include "gpu_preprocessor/detail/runtime_options.hpp"
+#include "gpu_preprocessor/presolve/gpu_presolve_kernels.hpp"
+#include "gpu_preprocessor/presolve/device_recovery.hpp"
+#include "gpu_preprocessor/presolve/gpu_postsolve.hpp"
+#include "gpu_preprocessor/presolve/gpu_presolve.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_infeasible_and_fixed_variables.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_empty_rows_and_columns.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_singleton_rows.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_singleton_columns.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_infeasible_and_redundant_rows.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_bound_strengthening.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_dual_fix.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_parallel_rows.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_parallel_columns.hpp"
 #include <cuda_runtime.h>
 #include <cassert>
 #include <cmath>
@@ -23,8 +23,8 @@
 #include <iostream>
 #include <vector>
 
-namespace runtime = gpu_presolver::runtime;
-using namespace gpu_presolver::presolve;
+namespace runtime = gpu_preprocessor::runtime;
+using namespace gpu_preprocessor::presolve;
 namespace {
 void check(cudaError_t e) { if (e != cudaSuccess) { std::cerr << cudaGetErrorString(e) << '\n'; std::abort(); } }
 template<class T> std::vector<T> download(const T* p, int n) {

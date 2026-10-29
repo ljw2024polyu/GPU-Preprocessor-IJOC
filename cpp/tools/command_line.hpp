@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "gpu_presolver/presolve/presolve_structs.hpp"
+#include "gpu_preprocessor/presolve/presolve_structs.hpp"
 
 #include <cerrno>
 #include <charconv>
@@ -14,7 +14,7 @@
 #include <string>
 #include <vector>
 
-namespace gpu_presolver::tools {
+namespace gpu_preprocessor::tools {
 
 struct CommandLine {
   presolve::PresolveParams params;
@@ -97,4 +97,4 @@ inline void print_usage(std::ostream& out, const char* tool, const char* paths,
   out << "  --help                       Show this help\n";
 }
 
-}  // namespace gpu_presolver::tools
+}  // namespace gpu_preprocessor::tools

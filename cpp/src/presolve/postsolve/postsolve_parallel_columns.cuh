@@ -5,7 +5,7 @@
 
 #include "postsolve_common.cuh"
 
-namespace gpu_presolver::presolve::postsolve {
+namespace gpu_preprocessor::presolve::postsolve {
 
 __device__ __forceinline__ double _choose_merged_source_value(double lo, double hi, double tol) {
   if (isfinite(lo) && isfinite(hi)) {
@@ -130,4 +130,4 @@ __device__ __forceinline__ void replay_parallel_column(
   }
 }
 
-}  // namespace gpu_presolver::presolve::postsolve
+}  // namespace gpu_preprocessor::presolve::postsolve

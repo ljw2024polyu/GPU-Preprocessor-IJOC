@@ -14,7 +14,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace gpu_presolver::folding {
+namespace gpu_preprocessor::folding {
 namespace {
 
 constexpr int kFoldingThreads = 256;
@@ -335,4 +335,4 @@ void folding_write_col_color_sig(FoldingWorkspace& workspace, std::int32_t round
                   color_seed(round, side));
 }
 
-}  // namespace gpu_presolver::folding
+}  // namespace gpu_preprocessor::folding

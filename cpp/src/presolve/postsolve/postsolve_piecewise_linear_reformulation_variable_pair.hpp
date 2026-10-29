@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include "gpu_presolver/presolve/device_recovery.hpp"
+#include "gpu_preprocessor/presolve/device_recovery.hpp"
 
-namespace gpu_presolver::presolve::postsolve {
+namespace gpu_preprocessor::presolve::postsolve {
 
 void restore_piecewise_linear_reformulation_variable_pair(
     double* x_org,
@@ -17,4 +17,4 @@ void validate_piecewise_linear_reformulation_variable_pair_recovery(
     const PiecewiseLinearReformulationVariablePairRecoveryStep& recovery,
     std::int32_t n0);
 
-}  // namespace gpu_presolver::presolve::postsolve
+}  // namespace gpu_preprocessor::presolve::postsolve

@@ -1,12 +1,12 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/folding/folding.hpp"
+#include "gpu_preprocessor/folding/folding.hpp"
 #include "../src/folding/folding_internal.cuh"
 #include <cstring>
-#include "gpu_presolver/offset.hpp"
-#include "gpu_presolver/presolve/device_recovery.hpp"
-#include "gpu_presolver/presolve/gpu_postsolve.hpp"
+#include "gpu_preprocessor/offset.hpp"
+#include "gpu_preprocessor/presolve/device_recovery.hpp"
+#include "gpu_preprocessor/presolve/gpu_postsolve.hpp"
 
 #include <cuda_runtime.h>
 
@@ -50,7 +50,7 @@ std::vector<T> copy_to_host(T* device, std::size_t size) {
   return values;
 }
 
-void free_lp(gpu_presolver::presolve::LPInfoGpu& lp) {
+void free_lp(gpu_preprocessor::presolve::LPInfoGpu& lp) {
   cudaFree(lp.A.rowPtr);
   cudaFree(lp.A.colVal);
   cudaFree(lp.A.nzVal);
@@ -62,11 +62,11 @@ void free_lp(gpu_presolver::presolve::LPInfoGpu& lp) {
   cudaFree(lp.AU);
   cudaFree(lp.l);
   cudaFree(lp.u);
-  lp = gpu_presolver::presolve::LPInfoGpu{};
+  lp = gpu_preprocessor::presolve::LPInfoGpu{};
 }
 
-gpu_presolver::presolve::LPInfoGpu make_symmetric_2x2_lp() {
-  using gpu_presolver::presolve::LPInfoGpu;
+gpu_preprocessor::presolve::LPInfoGpu make_symmetric_2x2_lp() {
+  using gpu_preprocessor::presolve::LPInfoGpu;
   LPInfoGpu lp;
   lp.A = {2, 2, 4,
           copy_to_device<NnzOffset>({0, 2, 4}),
@@ -88,21 +88,21 @@ void test_fold_initial_vector_uses_first_representative() {
   const std::vector<double> value{3.0, 7.0, 11.0, 13.0};
   const std::vector<std::int32_t> color_index{1, 2, 1, 2};
   const std::vector<double> folded =
-      gpu_presolver::folding::fold_initial_vector(&value, color_index, 2);
+      gpu_preprocessor::folding::fold_initial_vector(&value, color_index, 2);
   assert((folded == std::vector<double>{3.0, 7.0}));
 }
 
 void test_run_folding_reduces_identical_rows_and_cols() {
-  gpu_presolver::presolve::LPInfoGpu lp = make_symmetric_2x2_lp();
-  gpu_presolver::folding::FoldingRunSummary summary =
-      gpu_presolver::folding::run_folding(lp, 1.0e-8, false);
+  gpu_preprocessor::presolve::LPInfoGpu lp = make_symmetric_2x2_lp();
+  gpu_preprocessor::folding::FoldingRunSummary summary =
+      gpu_preprocessor::folding::run_folding(lp, 1.0e-8, false);
   assert(summary.applied);
   assert(summary.original_rows == 2);
   assert(summary.original_cols == 2);
   assert(summary.folded_rows == 1);
   assert(summary.folded_cols == 1);
-  const gpu_presolver::folding::FoldingMapHost map =
-      gpu_presolver::folding::copy_map_to_host(summary.map);
+  const gpu_preprocessor::folding::FoldingMapHost map =
+      gpu_preprocessor::folding::copy_map_to_host(summary.map);
   assert((map.row_color_id == std::vector<std::int32_t>{1, 1}));
   assert((map.col_color_id == std::vector<std::int32_t>{1, 1}));
   assert(map.row_scale.size() == 2);
@@ -115,22 +115,22 @@ void test_run_folding_reduces_identical_rows_and_cols() {
   assert(summary.profile.reduce.copy_unique_to_host_seconds == 0.0);
   assert(summary.profile.reduce.host_filter_rebuild_seconds == 0.0);
   assert(summary.profile.reduce.host_csr_build_seconds == 0.0);
-  gpu_presolver::folding::free_folded_lp(summary);
+  gpu_preprocessor::folding::free_folded_lp(summary);
   free_lp(lp);
 }
 
 void test_unfold_solution_scales_duals_and_slacks() {
-  gpu_presolver::presolve::LPInfoGpu lp = make_symmetric_2x2_lp();
-  gpu_presolver::folding::FoldingRunSummary summary =
-      gpu_presolver::folding::run_folding(lp, 1.0e-8, false);
+  gpu_preprocessor::presolve::LPInfoGpu lp = make_symmetric_2x2_lp();
+  gpu_preprocessor::folding::FoldingRunSummary summary =
+      gpu_preprocessor::folding::run_folding(lp, 1.0e-8, false);
   assert(summary.applied);
   assert(summary.map.original_rows == 2);
   assert(summary.map.original_cols == 2);
   assert(summary.map.reduced_rows == 1);
   assert(summary.map.reduced_cols == 1);
 
-  const gpu_presolver::folding::UnfoldedSolutionHost unfolded =
-      gpu_presolver::folding::unfold_solution_to_host(summary.map, {4.0}, {6.0}, {8.0});
+  const gpu_preprocessor::folding::UnfoldedSolutionHost unfolded =
+      gpu_preprocessor::folding::unfold_solution_to_host(summary.map, {4.0}, {6.0}, {8.0});
 
   const std::vector<double>& x = unfolded.x;
   const std::vector<double>& y = unfolded.y;
@@ -139,14 +139,14 @@ void test_unfold_solution_scales_duals_and_slacks() {
   assert((y == std::vector<double>{3.0, 3.0}));
   assert((z == std::vector<double>{4.0, 4.0}));
 
-  gpu_presolver::folding::free_folded_lp(summary);
+  gpu_preprocessor::folding::free_folded_lp(summary);
   free_lp(lp);
 }
 
 void test_postsolve_and_unfold_restores_original_dimensions() {
-  gpu_presolver::presolve::LPInfoGpu lp = make_symmetric_2x2_lp();
+  gpu_preprocessor::presolve::LPInfoGpu lp = make_symmetric_2x2_lp();
 
-  gpu_presolver::presolve::PresolveParams params;
+  gpu_preprocessor::presolve::PresolveParams params;
   params.max_iters = 1;
   params.enable_infeasible_and_fixed_variables = false;
   params.enable_empty_rows = false;
@@ -164,8 +164,8 @@ void test_postsolve_and_unfold_restores_original_dimensions() {
 
   params.enable_folding = true;
 
-  gpu_presolver::folding::FoldingPipelineSummary summary =
-      gpu_presolver::folding::run_gpu_presolve_with_folding(lp, params, false, true);
+  gpu_preprocessor::folding::FoldingPipelineSummary summary =
+      gpu_preprocessor::folding::run_gpu_presolve_with_folding(lp, params, false, true);
   assert(summary.folding_applied);
   assert(summary.folded_rows == 1);
   assert(summary.folded_cols == 1);
@@ -175,8 +175,8 @@ void test_postsolve_and_unfold_restores_original_dimensions() {
   double* x_red = copy_to_device<double>({4.0});
   double* y_red = copy_to_device<double>({6.0});
   double* z_red = copy_to_device<double>({8.0});
-  const gpu_presolver::folding::UnfoldedSolutionHost unfolded =
-      gpu_presolver::folding::postsolve_and_unfold_to_host(x_red, y_red, z_red, summary);
+  const gpu_preprocessor::folding::UnfoldedSolutionHost unfolded =
+      gpu_preprocessor::folding::postsolve_and_unfold_to_host(x_red, y_red, z_red, summary);
 
   assert((unfolded.x == std::vector<double>{4.0, 4.0}));
   assert(unfolded.y.size() == 2);
@@ -189,7 +189,7 @@ void test_postsolve_and_unfold_restores_original_dimensions() {
   cudaFree(x_red);
   cudaFree(y_red);
   cudaFree(z_red);
-  gpu_presolver::folding::free_folded_lp(summary.folding);
+  gpu_preprocessor::folding::free_folded_lp(summary.folding);
   free_lp(lp);
 }
 
@@ -203,12 +203,12 @@ void test_equitable_partition_and_original_kkt() {
   check(cudaMemcpy(lp.AL, rhs.data(), 2 * sizeof(double), cudaMemcpyHostToDevice), "set AL");
   check(cudaMemcpy(lp.AU, rhs.data(), 2 * sizeof(double), cudaMemcpyHostToDevice), "set AU");
   lp.obj_constant = 7.0;
-  gpu_presolver::presolve::PresolveParams params;
+  gpu_preprocessor::presolve::PresolveParams params;
   assert(params.enable_folding && params.enable_presolve);
   // Check aggregation before any generic reductions.
   params.max_iters = 0;
-  auto pipeline = gpu_presolver::folding::run_gpu_presolve_with_folding(lp, params, true, true);
-  gpu_presolver::presolve::export_recovery_record(pipeline.presolve.record);
+  auto pipeline = gpu_preprocessor::folding::run_gpu_presolve_with_folding(lp, params, true, true);
+  gpu_preprocessor::presolve::export_recovery_record(pipeline.presolve.record);
   assert(pipeline.folding_applied);
   assert(pipeline.presolve.original_rows == 1 && pipeline.presolve.original_cols == 1);
   assert(pipeline.original_rows == 2 && pipeline.original_cols == 2);
@@ -218,7 +218,7 @@ void test_equitable_partition_and_original_kkt() {
   double* x = copy_to_device<double>({1.0});
   double* y = copy_to_device<double>({4.0 / 3.0});
   double* z = copy_to_device<double>({0.0});
-  auto solution = gpu_presolver::folding::postsolve_and_unfold_to_host(x, y, z, pipeline, &lp);
+  auto solution = gpu_preprocessor::folding::postsolve_and_unfold_to_host(x, y, z, pipeline, &lp);
   for (int j = 0; j < 2; ++j) {
     assert(std::fabs(solution.x[j] - 1.0) < 1e-12);
     const double aty = values[j] * solution.y[0] + values[2+j] * solution.y[1];
@@ -227,24 +227,24 @@ void test_equitable_partition_and_original_kkt() {
   }
   assert(std::fabs(2 * (solution.x[0] + solution.x[1]) + 7 - 11) < 1e-12);
   cudaFree(x); cudaFree(y); cudaFree(z);
-  gpu_presolver::presolve::free_gpu_presolve_reduced_lp(pipeline.presolve);
-  gpu_presolver::folding::free_folded_lp(pipeline.folding);
+  gpu_preprocessor::presolve::free_gpu_presolve_reduced_lp(pipeline.presolve);
+  gpu_preprocessor::folding::free_folded_lp(pipeline.folding);
 
   // The same folding input followed by the current default presolve collapses
   // completely. Restore without any reduced vectors, including the row duals.
   params.max_iters = 10;
-  pipeline = gpu_presolver::folding::run_gpu_presolve_with_folding(lp, params, true, true);
+  pipeline = gpu_preprocessor::folding::run_gpu_presolve_with_folding(lp, params, true, true);
   assert(pipeline.folding_applied);
   assert(pipeline.presolve.reduced_rows == 0 && pipeline.presolve.reduced_cols == 0);
   assert(std::fabs(pipeline.presolve.record.obj_constant_new - 11.0) < 1e-12);
-  solution = gpu_presolver::folding::postsolve_and_unfold_to_host(nullptr, nullptr, nullptr, pipeline, &lp);
+  solution = gpu_preprocessor::folding::postsolve_and_unfold_to_host(nullptr, nullptr, nullptr, pipeline, &lp);
   // Compare against the current presolver run directly on the folded LP.
   // Full elimination inherits its dual recovery behavior; unfolding must not
   // change it. Original KKT is checked above for a supplied optimal solution.
-  auto direct = gpu_presolver::presolve::run_gpu_presolve_with_record(
+  auto direct = gpu_preprocessor::presolve::run_gpu_presolve_with_record(
       pipeline.folding.folded_lp, params);
-  gpu_presolver::presolve::export_recovery_record(direct.record);
-  auto direct_post = gpu_presolver::presolve::postsolve_gpu(
+  gpu_preprocessor::presolve::export_recovery_record(direct.record);
+  auto direct_post = gpu_preprocessor::presolve::postsolve_gpu(
       nullptr, nullptr, nullptr, direct.record, &pipeline.folding.folded_lp);
   const auto direct_x = copy_to_host(direct_post.x_org, 1);
   const auto direct_y = copy_to_host(direct_post.y_org, 1);
@@ -258,34 +258,34 @@ void test_equitable_partition_and_original_kkt() {
     assert(solution.z[j] == direct_z[0] / 2.0);
   }
   cudaFree(direct_post.x_org); cudaFree(direct_post.y_org); cudaFree(direct_post.z_org);
-  gpu_presolver::presolve::free_gpu_presolve_reduced_lp(pipeline.presolve);
-  gpu_presolver::folding::free_folded_lp(pipeline.folding);
+  gpu_preprocessor::presolve::free_gpu_presolve_reduced_lp(pipeline.presolve);
+  gpu_preprocessor::folding::free_folded_lp(pipeline.folding);
   free_lp(lp);
 }
 
 void test_disabled_and_no_reduction_paths() {
   auto lp = make_symmetric_2x2_lp();
-  gpu_presolver::presolve::PresolveParams params;
+  gpu_preprocessor::presolve::PresolveParams params;
   params.enable_folding = false;
-  auto raw = gpu_presolver::presolve::run_gpu_presolve_with_reduced_lp(lp, params);
-  gpu_presolver::presolve::export_recovery_record(raw.record);
-  auto pipeline = gpu_presolver::folding::run_gpu_presolve_with_folding(lp, params, true, true);
-  gpu_presolver::presolve::export_recovery_record(pipeline.presolve.record);
+  auto raw = gpu_preprocessor::presolve::run_gpu_presolve_with_reduced_lp(lp, params);
+  gpu_preprocessor::presolve::export_recovery_record(raw.record);
+  auto pipeline = gpu_preprocessor::folding::run_gpu_presolve_with_folding(lp, params, true, true);
+  gpu_preprocessor::presolve::export_recovery_record(pipeline.presolve.record);
   assert(!pipeline.folding_applied);
   assert(pipeline.presolve.reduced_rows == raw.reduced_rows);
   assert(pipeline.presolve.reduced_cols == raw.reduced_cols);
   assert(pipeline.presolve.record.obj_constant_new == raw.record.obj_constant_new);
   assert(pipeline.presolve.record.row_red2org == raw.record.row_red2org);
   assert(pipeline.presolve.record.col_red2org == raw.record.col_red2org);
-  auto raw_solution = gpu_presolver::presolve::postsolve_gpu(nullptr, nullptr, nullptr, raw.record, &lp);
-  const auto solution = gpu_presolver::folding::postsolve_and_unfold_to_host(nullptr, nullptr, nullptr, pipeline, &lp);
+  auto raw_solution = gpu_preprocessor::presolve::postsolve_gpu(nullptr, nullptr, nullptr, raw.record, &lp);
+  const auto solution = gpu_preprocessor::folding::postsolve_and_unfold_to_host(nullptr, nullptr, nullptr, pipeline, &lp);
   assert(solution.x == copy_to_host(raw_solution.x_org, 2));
   assert(solution.y == copy_to_host(raw_solution.y_org, 2));
   assert(solution.z == copy_to_host(raw_solution.z_org, 2));
   cudaFree(raw_solution.x_org); cudaFree(raw_solution.y_org); cudaFree(raw_solution.z_org);
-  gpu_presolver::presolve::free_gpu_presolve_reduced_lp(raw);
-  gpu_presolver::presolve::free_gpu_presolve_reduced_lp(pipeline.presolve);
-  gpu_presolver::folding::free_folded_lp(pipeline.folding);
+  gpu_preprocessor::presolve::free_gpu_presolve_reduced_lp(raw);
+  gpu_preprocessor::presolve::free_gpu_presolve_reduced_lp(pipeline.presolve);
+  gpu_preprocessor::folding::free_folded_lp(pipeline.folding);
 
   // Distinct metadata on both axes makes every color a singleton.
   const std::vector<double> costs{2.0, 3.0}, bounds{4.0, 5.0};
@@ -293,17 +293,17 @@ void test_disabled_and_no_reduction_paths() {
   check(cudaMemcpy(lp.AL, bounds.data(), 2 * sizeof(double), cudaMemcpyHostToDevice), "set bounds");
   params.enable_folding = true;
   params.max_iters = 0;
-  pipeline = gpu_presolver::folding::run_gpu_presolve_with_folding(lp, params, true, true);
+  pipeline = gpu_preprocessor::folding::run_gpu_presolve_with_folding(lp, params, true, true);
   assert(!pipeline.folding_applied);
   assert(pipeline.folded_rows == 2 && pipeline.folded_cols == 2);
   assert(!pipeline.folding.owns_folded_lp && !pipeline.folding.map.owns_buffers);
-  gpu_presolver::presolve::free_gpu_presolve_reduced_lp(pipeline.presolve);
-  gpu_presolver::folding::free_folded_lp(pipeline.folding);
+  gpu_preprocessor::presolve::free_gpu_presolve_reduced_lp(pipeline.presolve);
+  gpu_preprocessor::folding::free_folded_lp(pipeline.folding);
   free_lp(lp);
 }
 
 void test_unequal_color_sizes() {
-  using namespace gpu_presolver;
+  using namespace gpu_preprocessor;
   presolve::LPInfoGpu lp;
   lp.A = {2, 3, 6, copy_to_device<NnzOffset>({0,3,6}),
       copy_to_device<std::int32_t>({0,1,2,0,1,2}), copy_to_device<double>({1,1,1,1,1,1})};
@@ -326,13 +326,13 @@ void test_unequal_color_sizes() {
 
 void test_independent_presolve_switch() {
   auto lp = make_symmetric_2x2_lp();
-  gpu_presolver::presolve::PresolveParams params;
+  gpu_preprocessor::presolve::PresolveParams params;
   params.enable_presolve = false;
   params.enable_folding = true;
 
 
-  auto pipeline = gpu_presolver::folding::run_gpu_presolve_with_folding(lp, params, true, true);
-  gpu_presolver::presolve::export_recovery_record(pipeline.presolve.record);
+  auto pipeline = gpu_preprocessor::folding::run_gpu_presolve_with_folding(lp, params, true, true);
+  gpu_preprocessor::presolve::export_recovery_record(pipeline.presolve.record);
   assert(!pipeline.presolve_enabled && pipeline.folding_applied);
   assert(pipeline.presolve.reduced_rows == 1 && pipeline.presolve.reduced_cols == 1);
   assert(pipeline.presolve.iterations == 0 && pipeline.presolve.elapsed_seconds == 0.0);
@@ -341,72 +341,72 @@ void test_independent_presolve_switch() {
   double* x = copy_to_device<double>({2.0});
   double* y = copy_to_device<double>({2.0});
   double* z = copy_to_device<double>({0.0});
-  auto solution = gpu_presolver::folding::postsolve_and_unfold_to_host(x, y, z, pipeline, &lp);
+  auto solution = gpu_preprocessor::folding::postsolve_and_unfold_to_host(x, y, z, pipeline, &lp);
   assert(solution.x == std::vector<double>({2.0, 2.0}));
   assert(solution.y == std::vector<double>({1.0, 1.0}));
   assert(solution.z == std::vector<double>({0.0, 0.0}));
   cudaFree(x); cudaFree(y); cudaFree(z);
-  gpu_presolver::presolve::free_gpu_presolve_reduced_lp(pipeline.presolve);
-  gpu_presolver::folding::free_folded_lp(pipeline.folding);
+  gpu_preprocessor::presolve::free_gpu_presolve_reduced_lp(pipeline.presolve);
+  gpu_preprocessor::folding::free_folded_lp(pipeline.folding);
 
   params.enable_folding = false;
-  pipeline = gpu_presolver::folding::run_gpu_presolve_with_folding(lp, params, true, true);
+  pipeline = gpu_preprocessor::folding::run_gpu_presolve_with_folding(lp, params, true, true);
   assert(!pipeline.presolve_enabled && !pipeline.folding_applied);
   assert(pipeline.presolve.reduced_lp.A.nzVal == lp.A.nzVal);
   assert(pipeline.presolve.reduced_rows == 2 && pipeline.presolve.reduced_cols == 2);
   x = copy_to_device<double>({2.0, 2.0});
   y = copy_to_device<double>({1.0, 1.0});
   z = copy_to_device<double>({0.0, 0.0});
-  solution = gpu_presolver::folding::postsolve_and_unfold_to_host(x, y, z, pipeline, &lp);
+  solution = gpu_preprocessor::folding::postsolve_and_unfold_to_host(x, y, z, pipeline, &lp);
   assert(solution.x == std::vector<double>({2.0, 2.0}));
   assert(solution.y == std::vector<double>({1.0, 1.0}));
   assert(solution.z == std::vector<double>({0.0, 0.0}));
   cudaFree(x); cudaFree(y); cudaFree(z);
-  gpu_presolver::presolve::free_gpu_presolve_reduced_lp(pipeline.presolve);
-  gpu_presolver::folding::free_folded_lp(pipeline.folding);
+  gpu_preprocessor::presolve::free_gpu_presolve_reduced_lp(pipeline.presolve);
+  gpu_preprocessor::folding::free_folded_lp(pipeline.folding);
   free_lp(lp);
 }
 
 void test_export_retains_borrowed_reduced_lp() {
   auto lp = make_symmetric_2x2_lp();
-  gpu_presolver::presolve::PresolveParams params;
+  gpu_preprocessor::presolve::PresolveParams params;
   params.enable_folding = true;
   params.max_iters = 0;
-  auto pipeline = gpu_presolver::folding::run_gpu_presolve_with_folding(lp, params, true, false);
-  gpu_presolver::presolve::export_recovery_record(pipeline.presolve.record);
+  auto pipeline = gpu_preprocessor::folding::run_gpu_presolve_with_folding(lp, params, true, false);
+  gpu_preprocessor::presolve::export_recovery_record(pipeline.presolve.record);
   assert(pipeline.folding_applied);
   assert(!pipeline.folding.owns_folded_lp);
   assert(pipeline.presolve.owns_reduced_lp);
-  gpu_presolver::folding::free_folded_lp(pipeline.folding);
+  gpu_preprocessor::folding::free_folded_lp(pipeline.folding);
   // Export must still be able to read every reduced allocation.
   assert(copy_to_host(pipeline.presolve.reduced_lp.A.rowPtr, 2) == std::vector<NnzOffset>({0, 1}));
   assert(std::fabs(copy_to_host(pipeline.presolve.reduced_lp.A.nzVal, 1)[0] - 2.0) < 1e-12);
   assert(std::fabs(copy_to_host(pipeline.presolve.reduced_lp.c, 1)[0] - 4.0) < 1e-12);
-  gpu_presolver::presolve::free_gpu_presolve_reduced_lp(pipeline.presolve);
+  gpu_preprocessor::presolve::free_gpu_presolve_reduced_lp(pipeline.presolve);
   free_lp(lp);
 }
 
 void test_empty_and_discarded_folded_model() {
-  gpu_presolver::presolve::LPInfoGpu empty;
-  auto folded = gpu_presolver::folding::run_folding(empty, 1e-8);
+  gpu_preprocessor::presolve::LPInfoGpu empty;
+  auto folded = gpu_preprocessor::folding::run_folding(empty, 1e-8);
   assert(!folded.applied);
-  gpu_presolver::folding::free_folded_lp(folded);
+  gpu_preprocessor::folding::free_folded_lp(folded);
   auto lp = make_symmetric_2x2_lp();
-  gpu_presolver::presolve::PresolveParams params;
+  gpu_preprocessor::presolve::PresolveParams params;
   params.enable_folding = true;
-  auto pipeline = gpu_presolver::folding::run_gpu_presolve_with_folding(lp, params, false, false);
-  gpu_presolver::presolve::export_recovery_record(pipeline.presolve.record);
+  auto pipeline = gpu_preprocessor::folding::run_gpu_presolve_with_folding(lp, params, false, false);
+  gpu_preprocessor::presolve::export_recovery_record(pipeline.presolve.record);
   bool threw = false;
   try {
-    gpu_presolver::folding::postsolve_and_unfold_to_host(nullptr, nullptr, nullptr, pipeline);
+    gpu_preprocessor::folding::postsolve_and_unfold_to_host(nullptr, nullptr, nullptr, pipeline);
   } catch (const std::invalid_argument&) { threw = true; }
   assert(threw);
-  gpu_presolver::folding::free_folded_lp(pipeline.folding);
+  gpu_preprocessor::folding::free_folded_lp(pipeline.folding);
   free_lp(lp);
 }
 
 void test_rejection_preserves_passthrough_model() {
-  using gpu_presolver::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
   LPInfoGpu lp;
   const double inf=std::numeric_limits<double>::infinity();
   lp.A={5,5,5,copy_to_device<NnzOffset>({0,1,2,3,4,5}),
@@ -417,7 +417,7 @@ void test_rejection_preserves_passthrough_model() {
   lp.c=copy_to_device<double>({0,0,0,0,0});lp.l=copy_to_device<double>({0,0,0,0,0});
   lp.u=copy_to_device<double>({inf,inf,inf,inf,inf});
   {
-    auto result=gpu_presolver::folding::run_folding(lp,1e-8,false);
+    auto result=gpu_preprocessor::folding::run_folding(lp,1e-8,false);
     assert(!result.applied && !result.owns_folded_lp);
     assert(result.folded_rows==5 && result.folded_cols==5);
     assert(!result.profile.refinement.refinement_ok);
@@ -425,7 +425,7 @@ void test_rejection_preserves_passthrough_model() {
     assert(result.profile.refinement.final_row_colors==5);
     assert(result.profile.refinement.final_col_colors==5);
     assert(copy_to_host(lp.A.nzVal,5)==std::vector<double>({1,2,3,4,5}));
-    gpu_presolver::folding::free_folded_lp(result);
+    gpu_preprocessor::folding::free_folded_lp(result);
   }
   free_lp(lp);
 }
@@ -434,13 +434,13 @@ void test_rejection_preserves_passthrough_model() {
 // can contain unequal members, and even uniform decimal values may round during
 // ordered accumulation. The certified kernels must match independent ordered sums bitwise.
 void test_constant_reduction_matches_ordered_fallback() {
-  using namespace gpu_presolver::folding;
+  using namespace gpu_preprocessor::folding;
   const double inf = std::numeric_limits<double>::infinity();
   const int n = 4097;
   const std::vector<double> constants = {0.0, -0.0, 1.25, 0.1, inf, -inf,
       std::numeric_limits<double>::denorm_min(), std::numeric_limits<double>::max()};
   for (double value : constants) for (bool varied : {false, true}) {
-    gpu_presolver::presolve::LPInfoGpu lp;
+    gpu_preprocessor::presolve::LPInfoGpu lp;
     lp.A = {3, n, 0, copy_to_device<NnzOffset>({0,0,0,0}), nullptr, nullptr};
     std::vector<double> c(n,value), lower(n,value), upper(n,inf);
     if(varied) { c[n/2] = std::nextafter(value, inf); lower[n/3] = std::nextafter(value, -inf); }

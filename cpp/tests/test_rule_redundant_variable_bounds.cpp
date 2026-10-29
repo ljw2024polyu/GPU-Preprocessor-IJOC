@@ -1,8 +1,8 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/offset.hpp"
-#include "gpu_presolver/presolve/rules/rule_redundant_variable_bounds.hpp"
+#include "gpu_preprocessor/offset.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_redundant_variable_bounds.hpp"
 
 #include <cuda_runtime.h>
 
@@ -40,7 +40,7 @@ std::vector<T> copy_to_host(T* device, std::size_t size) {
   return values;
 }
 
-void free_lp(gpu_presolver::presolve::LPInfoGpu& lp) {
+void free_lp(gpu_preprocessor::presolve::LPInfoGpu& lp) {
   cudaFree(lp.A.rowPtr);
   cudaFree(lp.A.colVal);
   cudaFree(lp.A.nzVal);
@@ -52,10 +52,10 @@ void free_lp(gpu_presolver::presolve::LPInfoGpu& lp) {
 }  // namespace
 
 void test_drops_redundant_upper_bound() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
   const double inf = std::numeric_limits<double>::infinity();
 
   LPInfoGpu lp;
@@ -77,7 +77,7 @@ void test_drops_redundant_upper_bound() {
   PresolveParams params;
   params.enable_redundant_variable_bounds = true;
 
-  gpu_presolver::presolve::apply_rule_redundant_variable_bounds(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_redundant_variable_bounds(plan, lp, stats, params);
   const std::vector<double> u = copy_to_host(plan.new_u, 2);
   assert(std::isinf(u[0]) && u[0] > 0.0);
   assert(plan.has_col_action);
@@ -91,10 +91,10 @@ void test_drops_redundant_upper_bound() {
 }
 
 void test_drops_redundant_lower_bound() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
   const double inf = std::numeric_limits<double>::infinity();
 
   LPInfoGpu lp;
@@ -116,7 +116,7 @@ void test_drops_redundant_lower_bound() {
   PresolveParams params;
   params.enable_redundant_variable_bounds = true;
 
-  gpu_presolver::presolve::apply_rule_redundant_variable_bounds(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_redundant_variable_bounds(plan, lp, stats, params);
   const std::vector<double> l = copy_to_host(plan.new_l, 2);
   assert(std::isinf(l[0]) && l[0] < 0.0);
   assert(plan.has_col_action);
@@ -130,10 +130,10 @@ void test_drops_redundant_lower_bound() {
 }
 
 void test_drops_both_redundant_finite_bounds() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
   const double inf = std::numeric_limits<double>::infinity();
 
   // With y fixed at zero, x + y <= 5 implies x <= 5 and
@@ -156,7 +156,7 @@ void test_drops_both_redundant_finite_bounds() {
   PresolveStatsGpu stats;
   PresolveParams params;
 
-  gpu_presolver::presolve::apply_rule_redundant_variable_bounds(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_redundant_variable_bounds(plan, lp, stats, params);
   const std::vector<double> l = copy_to_host(plan.new_l, 2);
   const std::vector<double> u = copy_to_host(plan.new_u, 2);
   assert(std::isinf(l[0]) && l[0] < 0.0);

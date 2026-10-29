@@ -7,7 +7,7 @@
 #include <cstring>
 #include <limits>
 
-namespace gpu_presolver::presolve::postsolve::parallel {
+namespace gpu_preprocessor::presolve::postsolve::parallel {
 
 // Internal controls for paired replay checks; no public parameter or tape change.
 struct Options {
@@ -32,4 +32,4 @@ inline bool enabled(bool value, const char* name) {
   return value && (!setting || (std::strcmp(setting, "0") && std::strcmp(setting, "false")));
 }
 
-} // namespace gpu_presolver::presolve::postsolve::parallel
+} // namespace gpu_preprocessor::presolve::postsolve::parallel

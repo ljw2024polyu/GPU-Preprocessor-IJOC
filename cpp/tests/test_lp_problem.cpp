@@ -1,14 +1,14 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/model/lp_problem.hpp"
+#include "gpu_preprocessor/model/lp_problem.hpp"
 
 #include <cassert>
 #include <iostream>
 #include <vector>
 
 int main() {
-  const gpu_presolver::model::CscMatrix matrix{
+  const gpu_preprocessor::model::CscMatrix matrix{
       3,
       4,
       {0, 2, 3, 3, 5},
@@ -16,7 +16,7 @@ int main() {
       {1.0, 3.0, -2.0, 4.0, 5.0},
   };
 
-  const gpu_presolver::model::LpProblem problem{
+  const gpu_preprocessor::model::LpProblem problem{
       matrix,
       {1.0, 2.0, 3.0, 4.0},
       {0.0, -1.0, 2.0},

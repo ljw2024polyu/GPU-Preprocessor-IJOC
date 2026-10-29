@@ -1,16 +1,16 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/offset.hpp"
-#include "gpu_presolver/presolve/live_matrix.cuh"
-#include "gpu_presolver/presolve/cleanup_support.cuh"
-#include "gpu_presolver/presolve/device_recovery.hpp"
-#include "gpu_presolver/presolve/rules/rule_singleton_columns.hpp"
+#include "gpu_preprocessor/offset.hpp"
+#include "gpu_preprocessor/presolve/live_matrix.cuh"
+#include "gpu_preprocessor/presolve/cleanup_support.cuh"
+#include "gpu_preprocessor/presolve/device_recovery.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_singleton_columns.hpp"
 
 #include <cub/cub.cuh>
 #include <cuda_runtime.h>
 #include <algorithm>
-#include "gpu_presolver/presolve/gpu_presolve_kernels.hpp"
+#include "gpu_preprocessor/presolve/gpu_presolve_kernels.hpp"
 
 #include <climits>
 #include <cmath>
@@ -18,7 +18,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace gpu_presolver::presolve {
+namespace gpu_preprocessor::presolve {
 namespace {
 
 constexpr int GPU_PRESOLVE_THREADS = 256;
@@ -1830,4 +1830,4 @@ void release_singleton_columns_workspace() noexcept {
   singleton_columns_tls_cache_storage().release();
 }
 
-}  // namespace gpu_presolver::presolve
+}  // namespace gpu_preprocessor::presolve

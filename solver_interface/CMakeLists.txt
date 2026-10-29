@@ -98,7 +98,7 @@ if(BUILD_TESTING)
   # Unmodified official CLI for comparison against the external no-presolve path.
   add_executable(hprlp_release_reference "${HPRLP_SOURCE}/src/cli/solve_mps_file.cpp")
   target_link_libraries(hprlp_release_reference PRIVATE ijoc_hprlp_release)
-  foreach(test IN ITEMS pslp0011_integration_test gpu_presolver_integration_test)
+  foreach(test IN ITEMS pslp0011_integration_test gpu_preprocessor_integration_test)
     add_executable(hprlp_${test} "tests/${test}.cpp")
     target_link_libraries(hprlp_${test} PRIVATE ijoc_hprlp_pipeline)
     target_compile_options(hprlp_${test} PRIVATE -UNDEBUG)

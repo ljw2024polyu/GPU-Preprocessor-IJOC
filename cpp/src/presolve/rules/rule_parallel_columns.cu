@@ -2,17 +2,17 @@
 // SPDX-License-Identifier: MIT
 
 #include "parallel_signature_common.cuh"
-#include "gpu_presolver/detail/runtime_options.hpp"
-#include "gpu_presolver/offset.hpp"
-#include "gpu_presolver/presolve/device_recovery.hpp"
-#include "gpu_presolver/presolve/duplicate_rule_workspace.hpp"
-#include "gpu_presolver/presolve/rules/rule_parallel_columns.hpp"
+#include "gpu_preprocessor/detail/runtime_options.hpp"
+#include "gpu_preprocessor/offset.hpp"
+#include "gpu_preprocessor/presolve/device_recovery.hpp"
+#include "gpu_preprocessor/presolve/duplicate_rule_workspace.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_parallel_columns.hpp"
 
-#include "gpu_presolver/presolve/fixed_variable_tape.hpp"
+#include "gpu_preprocessor/presolve/fixed_variable_tape.hpp"
 
 #include <cuda_runtime.h>
 #include <cub/block/block_reduce.cuh>
-#include "gpu_presolver/presolve/gpu_presolve_kernels.hpp"
+#include "gpu_preprocessor/presolve/gpu_presolve_kernels.hpp"
 #include <thrust/copy.h>
 #include <thrust/device_ptr.h>
 #include <thrust/count.h>
@@ -36,7 +36,7 @@
 #include <string>
 #include <vector>
 
-namespace gpu_presolver::presolve {
+namespace gpu_preprocessor::presolve {
 namespace {
 
 constexpr int GPU_PRESOLVE_THREADS = 256;
@@ -1126,4 +1126,4 @@ void apply_rule_parallel_columns(PresolvePlanGpu& plan,
   profile_stage("total", rule_start);
 }
 
-}  // namespace gpu_presolver::presolve
+}  // namespace gpu_preprocessor::presolve

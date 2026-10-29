@@ -1,8 +1,8 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/offset.hpp"
-#include "gpu_presolver/presolve/rules/rule_doubleton_equations.hpp"
+#include "gpu_preprocessor/offset.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_doubleton_equations.hpp"
 
 #include <cuda_runtime.h>
 
@@ -43,10 +43,10 @@ std::vector<T> copy_to_host(T* device, std::size_t size) {
 }  // namespace
 
 void test_eliminates_doubleton_equation_row() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
   const double inf = std::numeric_limits<double>::infinity();
 
   LPInfoGpu lp;
@@ -74,7 +74,7 @@ void test_eliminates_doubleton_equation_row() {
   params.doubleton_equations_scan = false;
   params.doubleton_equations_max_fill_in_proxy = 10;
 
-  gpu_presolver::presolve::apply_rule_doubleton_equations(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_doubleton_equations(plan, lp, stats, params);
   const std::vector<std::uint8_t> keep_row = copy_to_host(plan.keep_row_mask, 1);
   const std::vector<std::uint8_t> keep_col = copy_to_host(plan.keep_col_mask, 2);
   const std::vector<double> c = copy_to_host(plan.new_c, 2);
@@ -103,12 +103,12 @@ void test_eliminates_doubleton_equation_row() {
 }
 
 void test_batch_records_exact_doubleton_tape() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PostsolveDualMode;
-  using gpu_presolver::presolve::PostsolveReductionType;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PostsolveDualMode;
+  using gpu_preprocessor::presolve::PostsolveReductionType;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
   const double inf = std::numeric_limits<double>::infinity();
 
   LPInfoGpu lp;
@@ -137,7 +137,7 @@ void test_batch_records_exact_doubleton_tape() {
   params.doubleton_equations_min_selected_ratio = 0.0;
   params.doubleton_equations_max_batch_rounds = 1;
 
-  gpu_presolver::presolve::apply_rule_doubleton_equations(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_doubleton_equations(plan, lp, stats, params);
 
   assert(plan.tape.types.size() == 1);
   assert(plan.tape.types[0] == static_cast<std::int32_t>(PostsolveReductionType::DoubletonEquation));
@@ -179,10 +179,10 @@ void test_batch_records_exact_doubleton_tape() {
 }
 
 bool run_doubleton_fill_cap_case(int max_fill_in_proxy) {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
   const double inf = std::numeric_limits<double>::infinity();
   constexpr std::int32_t m = 26;
   constexpr std::int32_t n = 2;
@@ -248,7 +248,7 @@ bool run_doubleton_fill_cap_case(int max_fill_in_proxy) {
   params.doubleton_equations_min_selected_per_batch = 1;
   params.doubleton_equations_min_selected_ratio = 0.0;
   params.doubleton_equations_max_batch_rounds = 1;
-  gpu_presolver::presolve::apply_rule_doubleton_equations(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_doubleton_equations(plan, lp, stats, params);
 
   const bool changed = plan.has_change;
   if (changed) {
@@ -281,17 +281,17 @@ bool run_doubleton_fill_cap_case(int max_fill_in_proxy) {
 }
 
 void test_default_fill_cap_accepts_more_than_ten() {
-  const gpu_presolver::presolve::PresolveParams defaults;
+  const gpu_preprocessor::presolve::PresolveParams defaults;
   assert(defaults.doubleton_equations_max_fill_in_proxy == 96);
   assert(!run_doubleton_fill_cap_case(10));
   assert(run_doubleton_fill_cap_case(defaults.doubleton_equations_max_fill_in_proxy));
 }
 
 void test_one_batch_leaves_conflicting_equation_for_later() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
   const double inf = std::numeric_limits<double>::infinity();
 
   // x0 + x1 = 1 and x1 + x2 = 2 share x1. Only the first
@@ -319,7 +319,7 @@ void test_one_batch_leaves_conflicting_equation_for_later() {
   params.doubleton_equations_min_selected_per_batch = 1;
   params.doubleton_equations_min_selected_ratio = 0.0;
 
-  gpu_presolver::presolve::apply_rule_doubleton_equations(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_doubleton_equations(plan, lp, stats, params);
 
   assert(plan.has_change && !plan.has_infeasible && !plan.has_unbounded);
   assert((copy_to_host(plan.keep_row_mask, 2) == std::vector<std::uint8_t>{0, 1}));

@@ -7,7 +7,7 @@
 #include <iostream>
 #include <sstream>
 
-namespace tools = gpu_presolver::tools;
+namespace tools = gpu_preprocessor::tools;
 
 tools::CommandLine parse(std::initializer_list<const char*> arguments,
                          std::size_t paths = 1, bool checking = false) {

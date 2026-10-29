@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/presolve/rules/rule_empty_rows_and_columns.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_empty_rows_and_columns.hpp"
 
 #include <cuda_runtime.h>
 
@@ -42,10 +42,10 @@ std::vector<T> copy_to_host(T* device, std::size_t size) {
 }  // namespace
 
 void test_fixes_empty_columns() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
   const double inf = std::numeric_limits<double>::infinity();
 
   LPInfoGpu lp;
@@ -65,7 +65,7 @@ void test_fixes_empty_columns() {
   params.bound_tol = 1.0e-9;
   params.zero_tol = 1.0e-12;
 
-  gpu_presolver::presolve::apply_rule_empty_columns(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_empty_columns(plan, lp, stats, params);
   const std::vector<std::uint8_t> keep = copy_to_host(plan.keep_col_mask, 4);
   assert(keep[0] == 0);
   assert(keep[1] == 0);
@@ -84,10 +84,10 @@ void test_fixes_empty_columns() {
 }
 
 void test_marks_unbounded_empty_column() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
   const double inf = std::numeric_limits<double>::infinity();
 
   LPInfoGpu lp;
@@ -101,7 +101,7 @@ void test_marks_unbounded_empty_column() {
   stats.empty_col_mask = copy_to_device<std::uint8_t>({1});
   PresolveParams params;
 
-  gpu_presolver::presolve::apply_rule_empty_columns(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_empty_columns(plan, lp, stats, params);
   assert(plan.has_unbounded);
 
   cudaFree(plan.keep_col_mask);
@@ -112,10 +112,10 @@ void test_marks_unbounded_empty_column() {
 }
 
 void test_marks_infeasible_empty_column() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
 
   LPInfoGpu lp;
   lp.A.cols = 1;
@@ -128,7 +128,7 @@ void test_marks_infeasible_empty_column() {
   stats.empty_col_mask = copy_to_device<std::uint8_t>({1});
   PresolveParams params;
 
-  gpu_presolver::presolve::apply_rule_empty_columns(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_empty_columns(plan, lp, stats, params);
   assert(plan.has_infeasible);
 
   cudaFree(plan.keep_col_mask);

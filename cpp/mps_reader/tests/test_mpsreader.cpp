@@ -3,14 +3,14 @@
 
 #include "test_common.hpp"
 
-#include "cpu_presolve/mpsreader.hpp"
+#include "mps_reader/mpsreader.hpp"
 
 #include <limits>
 #include <sstream>
 
-using cpu_presolve::read_mps;
+using mps_reader::read_mps;
 
-CPU_PRESOLVE_TEST(mpsreader_parses_rows_columns_rhs_and_bounds) {
+MPS_READER_TEST(mpsreader_parses_rows_columns_rhs_and_bounds) {
   const double inf = std::numeric_limits<double>::infinity();
   std::istringstream input(
       "NAME          toy\n"
@@ -36,20 +36,20 @@ CPU_PRESOLVE_TEST(mpsreader_parses_rows_columns_rhs_and_bounds) {
   const auto model = read_mps(input);
   const auto& lp = model.lp;
 
-  CPU_PRESOLVE_REQUIRE(model.name == "toy");
-  CPU_PRESOLVE_REQUIRE(lp.num_rows() == 3);
-  CPU_PRESOLVE_REQUIRE(lp.num_cols() == 2);
-  CPU_PRESOLVE_REQUIRE(lp.objective() == std::vector<double>({3.0, 5.0}));
-  CPU_PRESOLVE_REQUIRE(lp.row_lower() == std::vector<double>({10.0, 7.0, -inf}));
-  CPU_PRESOLVE_REQUIRE(lp.row_upper() == std::vector<double>({10.0, inf, 20.0}));
-  CPU_PRESOLVE_REQUIRE(lp.col_lower() == std::vector<double>({-1.0, -inf}));
-  CPU_PRESOLVE_REQUIRE(lp.col_upper() == std::vector<double>({6.0, inf}));
-  CPU_PRESOLVE_REQUIRE(lp.csc().col_ptr() == std::vector<std::int64_t>({0, 2, 4}));
-  CPU_PRESOLVE_REQUIRE(lp.csc().row_idx() == std::vector<int>({0, 1, 0, 2}));
-  CPU_PRESOLVE_REQUIRE(lp.csc().values() == std::vector<double>({2.0, 1.0, 1.0, -4.0}));
+  MPS_READER_REQUIRE(model.name == "toy");
+  MPS_READER_REQUIRE(lp.num_rows() == 3);
+  MPS_READER_REQUIRE(lp.num_cols() == 2);
+  MPS_READER_REQUIRE(lp.objective() == std::vector<double>({3.0, 5.0}));
+  MPS_READER_REQUIRE(lp.row_lower() == std::vector<double>({10.0, 7.0, -inf}));
+  MPS_READER_REQUIRE(lp.row_upper() == std::vector<double>({10.0, inf, 20.0}));
+  MPS_READER_REQUIRE(lp.col_lower() == std::vector<double>({-1.0, -inf}));
+  MPS_READER_REQUIRE(lp.col_upper() == std::vector<double>({6.0, inf}));
+  MPS_READER_REQUIRE(lp.csc().col_ptr() == std::vector<std::int64_t>({0, 2, 4}));
+  MPS_READER_REQUIRE(lp.csc().row_idx() == std::vector<int>({0, 1, 0, 2}));
+  MPS_READER_REQUIRE(lp.csc().values() == std::vector<double>({2.0, 1.0, 1.0, -4.0}));
 }
 
-CPU_PRESOLVE_TEST(mpsreader_supports_ranges_binary_bounds_and_duplicate_entries) {
+MPS_READER_TEST(mpsreader_supports_ranges_binary_bounds_and_duplicate_entries) {
   std::istringstream input(
       "NAME ranged\n"
       "ROWS\n"
@@ -77,20 +77,20 @@ CPU_PRESOLVE_TEST(mpsreader_supports_ranges_binary_bounds_and_duplicate_entries)
   const auto model = read_mps(input);
   const auto& lp = model.lp;
 
-  CPU_PRESOLVE_REQUIRE(model.name == "ranged");
-  CPU_PRESOLVE_REQUIRE(lp.num_rows() == 3);
-  CPU_PRESOLVE_REQUIRE(lp.num_cols() == 2);
-  CPU_PRESOLVE_REQUIRE(lp.objective() == std::vector<double>({1.0, 2.0}));
-  CPU_PRESOLVE_REQUIRE(lp.row_lower() == std::vector<double>({10.0, 14.0, 5.0}));
-  CPU_PRESOLVE_REQUIRE(lp.row_upper() == std::vector<double>({14.0, 20.0, 12.0}));
-  CPU_PRESOLVE_REQUIRE(lp.col_lower() == std::vector<double>({0.0, 0.0}));
-  CPU_PRESOLVE_REQUIRE(lp.col_upper() == std::vector<double>({1.0, 9.0}));
-  CPU_PRESOLVE_REQUIRE(lp.csc().col_ptr() == std::vector<std::int64_t>({0, 2, 3}));
-  CPU_PRESOLVE_REQUIRE(lp.csc().row_idx() == std::vector<int>({0, 1, 2}));
-  CPU_PRESOLVE_REQUIRE(lp.csc().values() == std::vector<double>({1.0, 5.0, -1.0}));
+  MPS_READER_REQUIRE(model.name == "ranged");
+  MPS_READER_REQUIRE(lp.num_rows() == 3);
+  MPS_READER_REQUIRE(lp.num_cols() == 2);
+  MPS_READER_REQUIRE(lp.objective() == std::vector<double>({1.0, 2.0}));
+  MPS_READER_REQUIRE(lp.row_lower() == std::vector<double>({10.0, 14.0, 5.0}));
+  MPS_READER_REQUIRE(lp.row_upper() == std::vector<double>({14.0, 20.0, 12.0}));
+  MPS_READER_REQUIRE(lp.col_lower() == std::vector<double>({0.0, 0.0}));
+  MPS_READER_REQUIRE(lp.col_upper() == std::vector<double>({1.0, 9.0}));
+  MPS_READER_REQUIRE(lp.csc().col_ptr() == std::vector<std::int64_t>({0, 2, 3}));
+  MPS_READER_REQUIRE(lp.csc().row_idx() == std::vector<int>({0, 1, 2}));
+  MPS_READER_REQUIRE(lp.csc().values() == std::vector<double>({1.0, 5.0, -1.0}));
 }
 
-CPU_PRESOLVE_TEST(mpsreader_matches_julia_decimal_rounding_for_micro_bounds) {
+MPS_READER_TEST(mpsreader_matches_julia_decimal_rounding_for_micro_bounds) {
   std::istringstream input(
       "NAME micro\n"
       "ROWS\n"
@@ -107,11 +107,11 @@ CPU_PRESOLVE_TEST(mpsreader_matches_julia_decimal_rounding_for_micro_bounds) {
   const auto model = read_mps(input);
   const auto& upper = model.lp.col_upper();
 
-  CPU_PRESOLVE_REQUIRE(upper.size() == 1);
-  CPU_PRESOLVE_REQUIRE(upper[0] > 1.0e-6);
+  MPS_READER_REQUIRE(upper.size() == 1);
+  MPS_READER_REQUIRE(upper[0] > 1.0e-6);
 }
 
-CPU_PRESOLVE_TEST(mpsreader_auto_falls_back_to_fixed_format) {
+MPS_READER_TEST(mpsreader_auto_falls_back_to_fixed_format) {
   std::istringstream input(
       "NAME          fixed\n"
       "ROWS\n"
@@ -126,10 +126,10 @@ CPU_PRESOLVE_TEST(mpsreader_auto_falls_back_to_fixed_format) {
   const auto model = read_mps(input);
   const auto& lp = model.lp;
 
-  CPU_PRESOLVE_REQUIRE(model.name == "fixed");
-  CPU_PRESOLVE_REQUIRE(lp.num_rows() == 1);
-  CPU_PRESOLVE_REQUIRE(lp.num_cols() == 1);
-  CPU_PRESOLVE_REQUIRE(lp.objective() == std::vector<double>({1.0}));
-  CPU_PRESOLVE_REQUIRE(lp.row_upper() == std::vector<double>({3.0}));
-  CPU_PRESOLVE_REQUIRE(lp.csc().values() == std::vector<double>({2.0}));
+  MPS_READER_REQUIRE(model.name == "fixed");
+  MPS_READER_REQUIRE(lp.num_rows() == 1);
+  MPS_READER_REQUIRE(lp.num_cols() == 1);
+  MPS_READER_REQUIRE(lp.objective() == std::vector<double>({1.0}));
+  MPS_READER_REQUIRE(lp.row_upper() == std::vector<double>({3.0}));
+  MPS_READER_REQUIRE(lp.csc().values() == std::vector<double>({2.0}));
 }

@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/offset.hpp"
+#include "gpu_preprocessor/offset.hpp"
 #include "folding_internal.cuh"
 
 #include <cuda_runtime.h>
@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 
-namespace gpu_presolver::folding {
+namespace gpu_preprocessor::folding {
 namespace {
 
 constexpr int kFoldingThreads = 256;
@@ -425,4 +425,4 @@ void free_lp_device(presolve::LPInfoGpu& lp) {
   lp = presolve::LPInfoGpu{};
 }
 
-}  // namespace gpu_presolver::folding
+}  // namespace gpu_preprocessor::folding

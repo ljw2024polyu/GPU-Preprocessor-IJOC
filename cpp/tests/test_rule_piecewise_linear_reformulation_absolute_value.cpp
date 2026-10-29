@@ -1,11 +1,11 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/detail/runtime_options.hpp"
-#include "gpu_presolver/offset.hpp"
-#include "gpu_presolver/presolve/gpu_postsolve.hpp"
-#include "gpu_presolver/presolve/gpu_presolve.hpp"
-#include "gpu_presolver/presolve/rules/rule_piecewise_linear_reformulation_absolute_value.hpp"
+#include "gpu_preprocessor/detail/runtime_options.hpp"
+#include "gpu_preprocessor/offset.hpp"
+#include "gpu_preprocessor/presolve/gpu_postsolve.hpp"
+#include "gpu_preprocessor/presolve/gpu_presolve.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_piecewise_linear_reformulation_absolute_value.hpp"
 
 #include <cuda_runtime.h>
 
@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 
-namespace runtime = gpu_presolver::runtime;
+namespace runtime = gpu_preprocessor::runtime;
 
 #ifdef NDEBUG
 #error "test_rule_piecewise_linear_reformulation_absolute_value requires active assert() checks"
@@ -86,13 +86,13 @@ HostCsr transpose(const HostCsr& matrix) {
   return result;
 }
 
-gpu_presolver::presolve::DeviceCsrMatrix upload(const HostCsr& matrix) {
+gpu_preprocessor::presolve::DeviceCsrMatrix upload(const HostCsr& matrix) {
   return {matrix.rows, matrix.cols, static_cast<std::int32_t>(matrix.col_val.size()),
           copy_to_device(matrix.row_ptr), copy_to_device(matrix.col_val),
           copy_to_device(matrix.nz_val)};
 }
 
-void free_matrix(gpu_presolver::presolve::DeviceCsrMatrix& matrix) {
+void free_matrix(gpu_preprocessor::presolve::DeviceCsrMatrix& matrix) {
   cudaFree(matrix.rowPtr);
   cudaFree(matrix.colVal);
   cudaFree(matrix.nzVal);
@@ -118,8 +118,8 @@ enum class OuterFixtureVariant {
 };
 
 struct OuterFixture {
-  using LPInfoGpu = gpu_presolver::presolve::LPInfoGpu;
-  using PresolvePlanGpu = gpu_presolver::presolve::PresolvePlanGpu;
+  using LPInfoGpu = gpu_preprocessor::presolve::LPInfoGpu;
+  using PresolvePlanGpu = gpu_preprocessor::presolve::PresolvePlanGpu;
 
   const double inf = std::numeric_limits<double>::infinity();
   std::vector<double> cost = {1.0, 2.0, 3.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0};
@@ -288,8 +288,8 @@ struct OuterFixture {
 };
 
 struct OuterMappedDenseSortFixture {
-  using LPInfoGpu = gpu_presolver::presolve::LPInfoGpu;
-  using PresolvePlanGpu = gpu_presolver::presolve::PresolvePlanGpu;
+  using LPInfoGpu = gpu_preprocessor::presolve::LPInfoGpu;
+  using PresolvePlanGpu = gpu_preprocessor::presolve::PresolvePlanGpu;
 
   const double inf = std::numeric_limits<double>::infinity();
   std::vector<double> cost = {
@@ -371,8 +371,8 @@ enum class L1SplitFixtureVariant {
 };
 
 struct L1SplitFixture {
-  using LPInfoGpu = gpu_presolver::presolve::LPInfoGpu;
-  using PresolvePlanGpu = gpu_presolver::presolve::PresolvePlanGpu;
+  using LPInfoGpu = gpu_preprocessor::presolve::LPInfoGpu;
+  using PresolvePlanGpu = gpu_preprocessor::presolve::PresolvePlanGpu;
 
   const double inf = std::numeric_limits<double>::infinity();
   std::vector<double> cost;
@@ -518,8 +518,8 @@ struct L1SplitFixture {
 };
 
 struct TwoGraphBlockFixture {
-  using LPInfoGpu = gpu_presolver::presolve::LPInfoGpu;
-  using PresolvePlanGpu = gpu_presolver::presolve::PresolvePlanGpu;
+  using LPInfoGpu = gpu_preprocessor::presolve::LPInfoGpu;
+  using PresolvePlanGpu = gpu_preprocessor::presolve::PresolvePlanGpu;
 
   const double inf = std::numeric_limits<double>::infinity();
   std::vector<double> cost = {0.5, 2.0, 0.0, 0.75, 1.25, 0.0};
@@ -583,9 +583,9 @@ struct TwoGraphBlockFixture {
 
 void apply_l1_split_fixture(
     L1SplitFixture& fixture,
-    const gpu_presolver::presolve::PresolveParams& params) {
-  gpu_presolver::presolve::PresolveStatsGpu stats;
-  gpu_presolver::presolve::apply_rule_piecewise_linear_reformulation_absolute_value(
+    const gpu_preprocessor::presolve::PresolveParams& params) {
+  gpu_preprocessor::presolve::PresolveStatsGpu stats;
+  gpu_preprocessor::presolve::apply_rule_piecewise_linear_reformulation_absolute_value(
       fixture.plan, fixture.lp, stats, params);
 }
 
@@ -670,7 +670,7 @@ void assert_two_graph_block_match_fails_closed(const TwoGraphBlockFixture& fixtu
 }
 
 void assert_csr_rows_strictly_sorted(
-    const gpu_presolver::presolve::DeviceCsrMatrix& matrix) {
+    const gpu_preprocessor::presolve::DeviceCsrMatrix& matrix) {
   const std::vector<NnzOffset> row_ptr =
       copy_to_host(matrix.rowPtr, static_cast<std::size_t>(matrix.rows + 1));
   const std::vector<std::int32_t> col_val =
@@ -685,7 +685,7 @@ void assert_csr_rows_strictly_sorted(
 }
 
 void test_l1_split_default_preserves_finite_residual_bounds_exactly() {
-  using gpu_presolver::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolveParams;
 
   L1SplitFixture fixture(L1SplitFixtureVariant::kValid, -2.0, 2.0);
   PresolveParams params;
@@ -710,9 +710,9 @@ void test_l1_split_default_preserves_finite_residual_bounds_exactly() {
   // losing the finite residual-box semantics retained by p-n in row 1.
   double* x_org = copy_to_device<double>({3.0, 1.0, 2.5});
   double* original_l = copy_to_device(fixture.lower);
-  gpu_presolver::presolve::postsolve_restore_piecewise_linear_reformulation_absolute_value_gpu(
+  gpu_preprocessor::presolve::postsolve_restore_piecewise_linear_reformulation_absolute_value_gpu(
       x_org,
-      std::vector<gpu_presolver::presolve::PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep>{
+      std::vector<gpu_preprocessor::presolve::PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep>{
           fixture.plan.piecewise_linear_reformulation_absolute_value_recovery},
       original_l);
   const std::vector<double> restored = copy_to_host(x_org, 3);
@@ -722,7 +722,7 @@ void test_l1_split_default_preserves_finite_residual_bounds_exactly() {
 }
 
 void test_l1_split_true_free_residual_uses_three_to_one_reduction() {
-  using gpu_presolver::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolveParams;
 
   const double inf = std::numeric_limits<double>::infinity();
   L1SplitFixture fixture(L1SplitFixtureVariant::kValid, -inf, inf);
@@ -740,7 +740,7 @@ void test_l1_split_true_free_residual_uses_three_to_one_reduction() {
 }
 
 void test_l1_split_default_preserves_one_sided_residual_bound_exactly() {
-  using gpu_presolver::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolveParams;
 
   const double inf = std::numeric_limits<double>::infinity();
   L1SplitFixture fixture(L1SplitFixtureVariant::kValid, -inf, 5.0);
@@ -764,8 +764,8 @@ void test_l1_split_default_preserves_one_sided_residual_bound_exactly() {
 }
 
 void test_l1_split_strict_free_only_rejects_finite_bounds_without_mutation() {
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PiecewiseLinearReformulationAbsoluteValueResidualBoundMode;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PiecewiseLinearReformulationAbsoluteValueResidualBoundMode;
 
   L1SplitFixture fixture(L1SplitFixtureVariant::kValid, -2.0, 2.0);
   PresolveParams params;
@@ -777,8 +777,8 @@ void test_l1_split_strict_free_only_rejects_finite_bounds_without_mutation() {
 }
 
 void test_l1_split_legacy_wide_mode_retains_old_three_to_one_behavior() {
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PiecewiseLinearReformulationAbsoluteValueResidualBoundMode;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PiecewiseLinearReformulationAbsoluteValueResidualBoundMode;
 
   L1SplitFixture fixture(L1SplitFixtureVariant::kValid, -1.0e9, 1.0e9);
   PresolveParams params;
@@ -796,7 +796,7 @@ void test_l1_split_legacy_wide_mode_retains_old_three_to_one_behavior() {
 }
 
 void test_l1_split_illegal_t_incidence_fails_closed() {
-  using gpu_presolver::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolveParams;
 
   L1SplitFixture fixture(L1SplitFixtureVariant::kTInEquality, -2.0, 2.0);
   PresolveParams params;
@@ -806,7 +806,7 @@ void test_l1_split_illegal_t_incidence_fails_closed() {
 }
 
 void test_l1_split_shared_roles_across_blocks_fail_closed() {
-  using gpu_presolver::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolveParams;
 
   L1SplitFixture fixture(L1SplitFixtureVariant::kSharedRoles, -2.0, 2.0);
   PresolveParams params;
@@ -816,7 +816,7 @@ void test_l1_split_shared_roles_across_blocks_fail_closed() {
 }
 
 void test_l1_split_mixed_validation_fails_before_any_block_commit() {
-  using gpu_presolver::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolveParams;
 
   L1SplitFixture fixture(
       L1SplitFixtureVariant::kTwoIndependentSecondInvalidTBound, -2.0, 2.0);
@@ -829,7 +829,7 @@ void test_l1_split_mixed_validation_fails_before_any_block_commit() {
 }
 
 void test_l1_split_near_epigraph_coefficient_fails_closed() {
-  using gpu_presolver::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolveParams;
 
   L1SplitFixture fixture(
       L1SplitFixtureVariant::kNearEpigraphCoefficient, -2.0, 2.0);
@@ -840,7 +840,7 @@ void test_l1_split_near_epigraph_coefficient_fails_closed() {
 }
 
 void test_l1_split_tiny_nonzero_epigraph_rhs_fails_closed() {
-  using gpu_presolver::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolveParams;
 
   L1SplitFixture fixture(
       L1SplitFixtureVariant::kTinyNonzeroEpigraphRhs, -2.0, 2.0);
@@ -851,7 +851,7 @@ void test_l1_split_tiny_nonzero_epigraph_rhs_fails_closed() {
 }
 
 void test_l1_split_wrong_sign_infinity_row_bound_fails_closed() {
-  using gpu_presolver::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolveParams;
 
   L1SplitFixture fixture(
       L1SplitFixtureVariant::kWrongSignInfinityRowBound, -2.0, 2.0);
@@ -862,7 +862,7 @@ void test_l1_split_wrong_sign_infinity_row_bound_fails_closed() {
 }
 
 void test_l1_split_duplicate_e_in_equality_fails_closed() {
-  using gpu_presolver::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolveParams;
 
   L1SplitFixture fixture(
       L1SplitFixtureVariant::kDuplicateEInEquality, -2.0, 2.0);
@@ -873,7 +873,7 @@ void test_l1_split_duplicate_e_in_equality_fails_closed() {
 }
 
 void test_l1_split_a_side_certificate_rejects_forged_legal_at() {
-  using gpu_presolver::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolveParams;
 
   L1SplitFixture fixture(L1SplitFixtureVariant::kTInEquality, -2.0, 2.0);
 
@@ -896,7 +896,7 @@ void test_l1_split_a_side_certificate_rejects_forged_legal_at() {
 }
 
 void test_l1_split_preserves_nonzero_fixed_residual_exactly() {
-  using gpu_presolver::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolveParams;
 
   L1SplitFixture fixture(L1SplitFixtureVariant::kValid, 1.25, 1.25);
   PresolveParams params;
@@ -917,8 +917,8 @@ void test_l1_split_preserves_nonzero_fixed_residual_exactly() {
 }
 
 void test_l1_split_strict_free_only_accepts_true_free_residual() {
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PiecewiseLinearReformulationAbsoluteValueResidualBoundMode;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PiecewiseLinearReformulationAbsoluteValueResidualBoundMode;
 
   const double inf = std::numeric_limits<double>::infinity();
   L1SplitFixture fixture(L1SplitFixtureVariant::kValid, -inf, inf);
@@ -936,8 +936,8 @@ void test_l1_split_strict_free_only_accepts_true_free_residual() {
 }
 
 void test_l1_split_invalid_residual_bound_mode_fails_closed() {
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PiecewiseLinearReformulationAbsoluteValueResidualBoundMode;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PiecewiseLinearReformulationAbsoluteValueResidualBoundMode;
 
   const double inf = std::numeric_limits<double>::infinity();
   L1SplitFixture fixture(L1SplitFixtureVariant::kValid, -inf, inf);
@@ -950,7 +950,7 @@ void test_l1_split_invalid_residual_bound_mode_fails_closed() {
 }
 
 void test_l1_split_reverse_role_order_emits_strictly_sorted_csr() {
-  using gpu_presolver::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolveParams;
 
   L1SplitFixture fixture(
       L1SplitFixtureVariant::kReverseRoleColumnOrder, -2.0, 2.0);
@@ -998,23 +998,23 @@ void test_l1_split_reverse_role_order_emits_strictly_sorted_csr() {
 }
 
 void test_graph_l1_mixed_validity_fails_closed_before_any_block_commit() {
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
 
   TwoGraphBlockFixture fixture;
   PresolveStatsGpu stats;
   PresolveParams params;
-  gpu_presolver::presolve::apply_rule_piecewise_linear_reformulation_absolute_value(
+  gpu_preprocessor::presolve::apply_rule_piecewise_linear_reformulation_absolute_value(
       fixture.plan, fixture.lp, stats, params);
 
   assert_two_graph_block_match_fails_closed(fixture);
 }
 
 void test_graph_l1_forged_at_missing_required_r3_fails_closed() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
 
   const double inf = std::numeric_limits<double>::infinity();
   const std::vector<double> cost = {0.5, 2.0, 0.0};
@@ -1047,7 +1047,7 @@ void test_graph_l1_forged_at_missing_required_r3_fails_closed() {
 
   PresolveStatsGpu stats;
   PresolveParams params;
-  gpu_presolver::presolve::apply_rule_piecewise_linear_reformulation_absolute_value(
+  gpu_preprocessor::presolve::apply_rule_piecewise_linear_reformulation_absolute_value(
       plan, lp, stats, params);
 
   assert(!plan.has_change);
@@ -1078,10 +1078,10 @@ void test_graph_l1_forged_at_missing_required_r3_fails_closed() {
 }
 
 void test_graph_l1_rewrites_four_row_block_and_records_postsolve() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
 
   const double inf = std::numeric_limits<double>::infinity();
 
@@ -1106,7 +1106,7 @@ void test_graph_l1_rewrites_four_row_block_and_records_postsolve() {
 
   PresolveStatsGpu stats;
   PresolveParams params;
-  gpu_presolver::presolve::apply_rule_piecewise_linear_reformulation_absolute_value(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_piecewise_linear_reformulation_absolute_value(plan, lp, stats, params);
 
   assert(plan.has_change);
   assert(plan.has_row_action);
@@ -1146,8 +1146,8 @@ void test_graph_l1_rewrites_four_row_block_and_records_postsolve() {
 
   double* x_org = copy_to_device<double>({4.0, 1.0, 0.0});
   double* original_l = copy_to_device<double>({0.0, -inf, 0.0});
-  gpu_presolver::presolve::postsolve_restore_piecewise_linear_reformulation_absolute_value_gpu(
-      x_org, std::vector<gpu_presolver::presolve::PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep>{plan.piecewise_linear_reformulation_absolute_value_recovery},
+  gpu_preprocessor::presolve::postsolve_restore_piecewise_linear_reformulation_absolute_value_gpu(
+      x_org, std::vector<gpu_preprocessor::presolve::PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep>{plan.piecewise_linear_reformulation_absolute_value_recovery},
       original_l);
   const std::vector<double> x = copy_to_host(x_org, 3);
   assert(std::fabs(x[0] - 5.0) < 1.0e-12);
@@ -1175,10 +1175,10 @@ void test_graph_l1_rewrites_four_row_block_and_records_postsolve() {
 }
 
 void test_graph_l1_shared_auxiliary_uses_targeted_dual_fix() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
 
   const double inf = std::numeric_limits<double>::infinity();
   // Two independent three-row epigraph blocks share s=4 in their fourth rows:
@@ -1224,7 +1224,7 @@ void test_graph_l1_shared_auxiliary_uses_targeted_dual_fix() {
 
     PresolveStatsGpu stats;
     PresolveParams params;
-    gpu_presolver::presolve::apply_rule_piecewise_linear_reformulation_absolute_value(
+    gpu_preprocessor::presolve::apply_rule_piecewise_linear_reformulation_absolute_value(
         plan, lp, stats, params);
     if (invalid != 0) {
       assert(!plan.has_change);
@@ -1256,7 +1256,7 @@ void test_graph_l1_shared_auxiliary_uses_targeted_dual_fix() {
       assert((recovery.factors == std::vector<double>{2.0, 3.0}));
       double* x = copy_to_device<double>({4.0, 1.0, 2.0, 1.0, 0.0});
       double* original_l = copy_to_device<double>({0.0, -inf, 0.0, -inf, 0.0});
-      gpu_presolver::presolve::postsolve_restore_piecewise_linear_reformulation_absolute_value_gpu(
+      gpu_preprocessor::presolve::postsolve_restore_piecewise_linear_reformulation_absolute_value_gpu(
           x, {plan.piecewise_linear_reformulation_absolute_value_recovery}, original_l);
       assert((copy_to_host(x, 5) ==
               std::vector<double>{5.0, 3.0, 3.0, 1.0, 10.0}));
@@ -1278,13 +1278,13 @@ void test_graph_l1_shared_auxiliary_uses_targeted_dual_fix() {
 }
 
 void test_outer_shared_bound_accumulates_objective_and_restores_primal() {
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
 
   OuterFixture fixture(OuterFixtureVariant::kSharedBound);
   PresolveStatsGpu stats;
   PresolveParams params;
-  gpu_presolver::presolve::apply_rule_piecewise_linear_reformulation_absolute_value(
+  gpu_preprocessor::presolve::apply_rule_piecewise_linear_reformulation_absolute_value(
       fixture.plan, fixture.lp, stats, params);
 
   assert(fixture.plan.has_change);
@@ -1332,9 +1332,9 @@ void test_outer_shared_bound_accumulates_objective_and_restores_primal() {
   reduced_primal[0] = a_value;
   double* x_org = copy_to_device(reduced_primal);
   double* original_l = copy_to_device(fixture.lower);
-  gpu_presolver::presolve::postsolve_restore_piecewise_linear_reformulation_absolute_value_gpu(
+  gpu_preprocessor::presolve::postsolve_restore_piecewise_linear_reformulation_absolute_value_gpu(
       x_org,
-      std::vector<gpu_presolver::presolve::PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep>{
+      std::vector<gpu_preprocessor::presolve::PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep>{
           fixture.plan.piecewise_linear_reformulation_absolute_value_recovery},
       original_l);
   const std::vector<double> restored = copy_to_host(x_org, reduced_primal.size());
@@ -1346,13 +1346,13 @@ void test_outer_shared_bound_accumulates_objective_and_restores_primal() {
 }
 
 void test_outer_mapped_dense_row_is_sorted_with_exact_coefficients() {
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
 
   OuterMappedDenseSortFixture fixture;
   PresolveStatsGpu stats;
   PresolveParams params;
-  gpu_presolver::presolve::apply_rule_piecewise_linear_reformulation_absolute_value(
+  gpu_preprocessor::presolve::apply_rule_piecewise_linear_reformulation_absolute_value(
       fixture.plan, fixture.lp, stats, params);
 
   assert(fixture.plan.has_change);
@@ -1400,13 +1400,13 @@ void test_outer_mapped_dense_row_is_sorted_with_exact_coefficients() {
 }
 
 void test_outer_two_block_control_is_accepted() {
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
 
   OuterFixture fixture(OuterFixtureVariant::kTwoBlockValid);
   PresolveStatsGpu stats;
   PresolveParams params;
-  gpu_presolver::presolve::apply_rule_piecewise_linear_reformulation_absolute_value(
+  gpu_preprocessor::presolve::apply_rule_piecewise_linear_reformulation_absolute_value(
       fixture.plan, fixture.lp, stats, params);
 
   assert(fixture.plan.has_change);
@@ -1417,13 +1417,13 @@ void test_outer_two_block_control_is_accepted() {
 }
 
 void assert_outer_match_fails_closed(OuterFixtureVariant variant) {
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
 
   OuterFixture fixture(variant);
   PresolveStatsGpu stats;
   PresolveParams params;
-  gpu_presolver::presolve::apply_rule_piecewise_linear_reformulation_absolute_value(
+  gpu_preprocessor::presolve::apply_rule_piecewise_linear_reformulation_absolute_value(
       fixture.plan, fixture.lp, stats, params);
 
   assert(!fixture.plan.has_change);
@@ -1466,7 +1466,7 @@ void test_outer_invalid_variable_ownership_fails_closed() {
 // later cleanup is not retried: this rule runs only during Startup.
 void test_absolute_value_schedule(bool needs_cleanup, int max_iters,
                                   bool enable_startup = true) {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   L1SplitFixture fixture(needs_cleanup ? L1SplitFixtureVariant::kTrailingEmptyRow :
                                        L1SplitFixtureVariant::kValid, -5.0, 5.0);
   // Rule fixtures own their input vectors through plan; the full pipeline
@@ -1526,7 +1526,7 @@ void test_absolute_value_schedule(bool needs_cleanup, int max_iters,
 }
 
 void test_absolute_value_startup_schedule() {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   OuterFixture fixture(OuterFixtureVariant::kSharedBound);
   fixture.lp.c = fixture.plan.new_c;
   fixture.lp.l = fixture.plan.new_l;

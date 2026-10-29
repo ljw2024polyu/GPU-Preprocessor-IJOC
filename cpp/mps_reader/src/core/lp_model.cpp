@@ -1,13 +1,13 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "cpu_presolve/lp_model.hpp"
+#include "mps_reader/lp_model.hpp"
 
 #include <stdexcept>
 #include <string>
 #include <utility>
 
-namespace cpu_presolve {
+namespace mps_reader {
 namespace {
 
 void require_size(const char* name, std::size_t actual, std::size_t expected) {
@@ -205,4 +205,4 @@ LpModel LpModel::with_col_bounds(std::vector<double> col_lower,
       obj_constant);
 }
 
-}  // namespace cpu_presolve
+}  // namespace mps_reader

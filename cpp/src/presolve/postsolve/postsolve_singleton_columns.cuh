@@ -5,7 +5,7 @@
 
 #include "postsolve_common.cuh"
 
-namespace gpu_presolver::presolve::postsolve {
+namespace gpu_preprocessor::presolve::postsolve {
 
 __device__ __forceinline__ void replay_singleton_column_substitution(
     double* x_org,
@@ -49,4 +49,4 @@ __device__ __forceinline__ void replay_singleton_column_substitution(
   }
 }
 
-}  // namespace gpu_presolver::presolve::postsolve
+}  // namespace gpu_preprocessor::presolve::postsolve

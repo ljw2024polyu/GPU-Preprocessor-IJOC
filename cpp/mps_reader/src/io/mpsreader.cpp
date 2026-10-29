@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 #include <cstdint>
-#include "cpu_presolve/mpsreader.hpp"
+#include "mps_reader/mpsreader.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -15,7 +15,7 @@
 #include <utility>
 #include <vector>
 
-namespace cpu_presolve {
+namespace mps_reader {
 namespace {
 
 enum class Section {
@@ -585,7 +585,7 @@ RawModel parse_lines(const std::vector<std::string>& lines, Format format) {
       }
       section = header_to_section(header);
       if (section == Section::kUnsupportedQuadratic) {
-        throw std::invalid_argument("quadratic MPS sections are not supported by cpu_presolve reader");
+        throw std::invalid_argument("quadratic MPS sections are not supported by the MPS reader");
       }
       continue;
     }
@@ -593,7 +593,7 @@ RawModel parse_lines(const std::vector<std::string>& lines, Format format) {
     switch (section) {
       case Section::kObjSense:
         if (!card.fields.empty() && card.fields[0] == "MAX") {
-          throw std::invalid_argument("MPS OBJSENSE MAX is not supported by cpu_presolve reader");
+          throw std::invalid_argument("MPS OBJSENSE MAX is not supported by the MPS reader");
         }
         break;
       case Section::kRows:
@@ -708,4 +708,4 @@ MpsModel read_mps(std::istream& input) {
   }
 }
 
-}  // namespace cpu_presolve
+}  // namespace mps_reader

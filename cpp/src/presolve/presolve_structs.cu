@@ -1,14 +1,14 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/presolve/presolve_structs.hpp"
+#include "gpu_preprocessor/presolve/presolve_structs.hpp"
 
 #include <cuda_runtime.h>
 
 #include <stdexcept>
 #include <utility>
 
-namespace gpu_presolver::presolve {
+namespace gpu_preprocessor::presolve {
 
 PostsolveTape::PostsolveTape(const PostsolveTape &other) { *this = other; }
 PostsolveTape &PostsolveTape::operator=(const PostsolveTape &other) {
@@ -90,4 +90,4 @@ static_assert(sizeof(std::uint8_t) == 1, "Julia UInt8 masks must map to one-byte
 static_assert(sizeof(std::int32_t) == 4, "Julia Int32 indices must map to four-byte C++ indices");
 static_assert(sizeof(double) == 8, "Julia Float64 values must map to eight-byte C++ doubles");
 
-}  // namespace gpu_presolver::presolve
+}  // namespace gpu_preprocessor::presolve

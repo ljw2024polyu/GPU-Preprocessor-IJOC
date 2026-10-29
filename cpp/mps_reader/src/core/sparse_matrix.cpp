@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: MIT
 
 #include <cstdint>
-#include "cpu_presolve/sparse_matrix.hpp"
+#include "mps_reader/sparse_matrix.hpp"
 
 #include <stdexcept>
 #include <string>
 #include <utility>
 
-namespace cpu_presolve {
+namespace mps_reader {
 namespace {
 
 void validate_shape(int rows, int cols) {
@@ -135,4 +135,4 @@ CsrMatrix CscMatrix::to_csr() const {
   return CsrMatrix(rows_, cols_, std::move(row_ptr), std::move(col_idx), std::move(csr_values));
 }
 
-}  // namespace cpu_presolve
+}  // namespace mps_reader

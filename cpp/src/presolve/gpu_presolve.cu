@@ -1,33 +1,33 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/detail/runtime_options.hpp"
-#include "gpu_presolver/presolve/cleanup_workspace.hpp"
-#include "gpu_presolver/offset.hpp"
-#include "gpu_presolver/presolve/device_recovery.hpp"
-#include "gpu_presolver/presolve/duplicate_rule_workspace.hpp"
-#include "gpu_presolver/presolve/gpu_presolve.hpp"
-#include "gpu_presolver/presolve/identity_plan.hpp"
-#include "gpu_presolver/presolve/gpu_presolve_kernels.hpp"
-#include "gpu_presolver/presolve/stable_mapping.hpp"
-#include "gpu_presolver/presolve/transpose64.hpp"
+#include "gpu_preprocessor/detail/runtime_options.hpp"
+#include "gpu_preprocessor/presolve/cleanup_workspace.hpp"
+#include "gpu_preprocessor/offset.hpp"
+#include "gpu_preprocessor/presolve/device_recovery.hpp"
+#include "gpu_preprocessor/presolve/duplicate_rule_workspace.hpp"
+#include "gpu_preprocessor/presolve/gpu_presolve.hpp"
+#include "gpu_preprocessor/presolve/identity_plan.hpp"
+#include "gpu_preprocessor/presolve/gpu_presolve_kernels.hpp"
+#include "gpu_preprocessor/presolve/stable_mapping.hpp"
+#include "gpu_preprocessor/presolve/transpose64.hpp"
 
-#include "gpu_presolver/presolve/rules/rule_piecewise_linear_reformulation_variable_pair.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_piecewise_linear_reformulation_variable_pair.hpp"
 #include "plan_storage.hpp"
-#include "gpu_presolver/presolve/rules/rule_two_row_variable_elimination.hpp"
-#include "gpu_presolver/presolve/rules/rule_column_domination.hpp"
-#include "gpu_presolver/presolve/rules/rule_infeasible_and_redundant_rows.hpp"
-#include "gpu_presolver/presolve/rules/rule_infeasible_and_fixed_variables.hpp"
-#include "gpu_presolver/presolve/rules/rule_doubleton_equations.hpp"
-#include "gpu_presolver/presolve/rules/rule_dual_fix.hpp"
-#include "gpu_presolver/presolve/rules/rule_empty_rows_and_columns.hpp"
-#include "gpu_presolver/presolve/rules/rule_parallel_columns.hpp"
-#include "gpu_presolver/presolve/rules/rule_parallel_rows.hpp"
-#include "gpu_presolver/presolve/rules/rule_zero_cost_product_variables.hpp"
-#include "gpu_presolver/presolve/rules/rule_bound_strengthening.hpp"
-#include "gpu_presolver/presolve/rules/rule_singleton_columns.hpp"
-#include "gpu_presolver/presolve/rules/rule_singleton_rows.hpp"
-#include "gpu_presolver/presolve/rules/rule_piecewise_linear_reformulation_absolute_value.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_two_row_variable_elimination.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_column_domination.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_infeasible_and_redundant_rows.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_infeasible_and_fixed_variables.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_doubleton_equations.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_dual_fix.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_empty_rows_and_columns.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_parallel_columns.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_parallel_rows.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_zero_cost_product_variables.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_bound_strengthening.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_singleton_columns.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_singleton_rows.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_piecewise_linear_reformulation_absolute_value.hpp"
 
 #include <cub/cub.cuh>
 #include <cuda_runtime.h>
@@ -48,7 +48,7 @@
 #include <utility>
 #include <vector>
 
-namespace gpu_presolver::presolve {
+namespace gpu_preprocessor::presolve {
 namespace {
 
 constexpr std::int32_t SPARSE_FIXED_BOUND_RECORD_THRESHOLD = 65536;
@@ -1787,7 +1787,7 @@ void update_record_from_plan(PresolveRecordGpu &record, PresolvePlanGpu &plan,
 }
 
 DeviceCsrMatrix transpose_csr_gpu(const DeviceCsrMatrix& A) {
-  return gpu_presolver::presolve::transpose_csr64(A);
+  return gpu_preprocessor::presolve::transpose_csr64(A);
 }
 
 DeviceCsrMatrix compact_csr_by_masks_gpu(const DeviceCsrMatrix& A,
@@ -2676,4 +2676,4 @@ void free_gpu_presolve_reduced_lp(GpuPresolveSummary& summary) {
   summary.owns_reduced_lp = false;
 }
 
-}  // namespace gpu_presolver::presolve
+}  // namespace gpu_preprocessor::presolve

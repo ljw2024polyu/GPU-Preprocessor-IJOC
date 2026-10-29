@@ -1,9 +1,9 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/detail/runtime_options.hpp"
-#include "gpu_presolver/offset.hpp"
-#include "gpu_presolver/presolve/rules/rule_parallel_rows.hpp"
+#include "gpu_preprocessor/detail/runtime_options.hpp"
+#include "gpu_preprocessor/offset.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_parallel_rows.hpp"
 
 #include <cuda_runtime.h>
 
@@ -18,7 +18,7 @@
 #include <string>
 #include <vector>
 
-namespace runtime = gpu_presolver::runtime;
+namespace runtime = gpu_preprocessor::runtime;
 
 namespace {
 
@@ -45,13 +45,13 @@ std::vector<T> copy_to_host(T* device, std::size_t size) {
   return values;
 }
 
-void free_plan(gpu_presolver::presolve::PresolvePlanGpu& plan) {
+void free_plan(gpu_preprocessor::presolve::PresolvePlanGpu& plan) {
   cudaFree(plan.keep_row_mask);
   cudaFree(plan.new_AL);
   cudaFree(plan.new_AU);
 }
 
-void free_matrix(gpu_presolver::presolve::LPInfoGpu& lp) {
+void free_matrix(gpu_preprocessor::presolve::LPInfoGpu& lp) {
   cudaFree(lp.A.rowPtr);
   cudaFree(lp.A.colVal);
   cudaFree(lp.A.nzVal);
@@ -60,12 +60,12 @@ void free_matrix(gpu_presolver::presolve::LPInfoGpu& lp) {
 }  // namespace
 
 void test_deletes_parallel_row_and_tightens_representative() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PostsolveDualMode;
-  using gpu_presolver::presolve::PostsolveReductionType;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PostsolveDualMode;
+  using gpu_preprocessor::presolve::PostsolveReductionType;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
 
   LPInfoGpu lp;
   lp.A = {2, 2, 4,
@@ -80,7 +80,7 @@ void test_deletes_parallel_row_and_tightens_representative() {
   PresolveStatsGpu stats;
   PresolveParams params;
 
-  gpu_presolver::presolve::apply_rule_parallel_rows(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_parallel_rows(plan, lp, stats, params);
   const std::vector<std::uint8_t> keep = copy_to_host(plan.keep_row_mask, 2);
   const std::vector<double> AL = copy_to_host(plan.new_AL, 2);
   const std::vector<double> AU = copy_to_host(plan.new_AU, 2);
@@ -105,10 +105,10 @@ void test_deletes_parallel_row_and_tightens_representative() {
 }
 
 void test_detects_disjoint_parallel_row_intervals() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
 
   LPInfoGpu lp;
   lp.A = {2, 2, 4,
@@ -123,7 +123,7 @@ void test_detects_disjoint_parallel_row_intervals() {
   PresolveStatsGpu stats;
   PresolveParams params;
 
-  gpu_presolver::presolve::apply_rule_parallel_rows(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_parallel_rows(plan, lp, stats, params);
   assert(plan.has_infeasible);
 
   free_plan(plan);
@@ -134,7 +134,7 @@ void test_detects_disjoint_parallel_row_intervals() {
 // block dispatch. Masked physical row lengths deliberately differ while the
 // live rows remain identical; cancellation and tiny pivots exercise fallback.
 void test_signature_preserves_plan_and_tape() {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   for (int hash_mode : {0, 1}) for (bool adaptive : {false, true}) {
     for (bool uncertain_case : {false, true}) for (int width : {2, 8, 31, 1024, 1100}) {
       std::vector<NnzOffset> ptr{0};
@@ -216,7 +216,7 @@ void test_signature_preserves_plan_and_tape() {
 }
 
 void test_signature_retains_legacy_sign_collision_representative() {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   // Both legacy hashes collide for these three rows. The original seed is
   // row 0, which is not parallel to rows 1/2, so the baseline makes no change.
   // A signed sketch would drop row 0 and newly merge rows 1/2, changing the path.

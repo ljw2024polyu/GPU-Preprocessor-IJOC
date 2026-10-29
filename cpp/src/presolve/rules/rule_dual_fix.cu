@@ -1,12 +1,12 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/presolve/cleanup_support.cuh"
-#include "gpu_presolver/offset.hpp"
-#include "gpu_presolver/presolve/device_recovery.hpp"
-#include "gpu_presolver/presolve/rules/rule_dual_fix.hpp"
+#include "gpu_preprocessor/presolve/cleanup_support.cuh"
+#include "gpu_preprocessor/offset.hpp"
+#include "gpu_preprocessor/presolve/device_recovery.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_dual_fix.hpp"
 
-#include "gpu_presolver/presolve/fixed_variable_tape.hpp"
+#include "gpu_preprocessor/presolve/fixed_variable_tape.hpp"
 
 #include <cub/cub.cuh>
 #include <cuda_runtime.h>
@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 
-namespace gpu_presolver::presolve {
+namespace gpu_preprocessor::presolve {
 namespace {
 
 constexpr int GPU_PRESOLVE_THREADS = 256;
@@ -642,4 +642,4 @@ void apply_rule_dual_fix(PresolvePlanGpu& plan,
 
 }
 
-}  // namespace gpu_presolver::presolve
+}  // namespace gpu_preprocessor::presolve

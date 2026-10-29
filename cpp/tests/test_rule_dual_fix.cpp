@@ -1,9 +1,9 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/offset.hpp"
-#include "gpu_presolver/presolve/device_recovery.hpp"
-#include "gpu_presolver/presolve/rules/rule_dual_fix.hpp"
+#include "gpu_preprocessor/offset.hpp"
+#include "gpu_preprocessor/presolve/device_recovery.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_dual_fix.hpp"
 
 #include <cuda_runtime.h>
 
@@ -44,11 +44,11 @@ std::vector<T> copy_to_host(T* device, std::size_t size) {
 }  // namespace
 
 void test_fixes_improving_unlocked_column() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PostsolveReductionType;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PostsolveReductionType;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
   const double inf = std::numeric_limits<double>::infinity();
 
   LPInfoGpu lp;
@@ -71,7 +71,7 @@ void test_fixes_improving_unlocked_column() {
   PresolveParams params;
   params.record_postsolve_tape_cpu = true;
 
-  gpu_presolver::presolve::apply_rule_dual_fix(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_dual_fix(plan, lp, stats, params);
   const std::vector<std::uint8_t> keep_col = copy_to_host(plan.keep_col_mask, 1);
   const std::vector<double> AU = copy_to_host(plan.new_AU, 1);
   assert(keep_col[0] == 0);
@@ -99,10 +99,10 @@ void test_fixes_improving_unlocked_column() {
 }
 
 void test_marks_unbounded_improving_column() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
   const double inf = std::numeric_limits<double>::infinity();
 
   LPInfoGpu lp;
@@ -123,7 +123,7 @@ void test_marks_unbounded_improving_column() {
   PresolveStatsGpu stats;
   PresolveParams params;
 
-  gpu_presolver::presolve::apply_rule_dual_fix(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_dual_fix(plan, lp, stats, params);
   assert(plan.has_unbounded);
 
   cudaFree(lp.AT.rowPtr);
@@ -134,10 +134,10 @@ void test_marks_unbounded_improving_column() {
 }
 
 void test_degree_guard_keeps_dense_nonzero_cost_column() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
   const double inf = std::numeric_limits<double>::infinity();
 
   LPInfoGpu lp;
@@ -160,7 +160,7 @@ void test_degree_guard_keeps_dense_nonzero_cost_column() {
   PresolveParams params;
   params.dual_fix_max_nonzero_cost_col_degree = 0;
 
-  gpu_presolver::presolve::apply_rule_dual_fix(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_dual_fix(plan, lp, stats, params);
   const std::vector<std::uint8_t> keep_col = copy_to_host(plan.keep_col_mask, 1);
   assert(keep_col[0] == 1);
   assert(!plan.has_col_action);
@@ -180,12 +180,12 @@ void test_degree_guard_keeps_dense_nonzero_cost_column() {
 }
 
 void test_records_infinite_zero_objective_fix(bool resident) {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PostsolveDualMode;
-  using gpu_presolver::presolve::PostsolveReductionType;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PostsolveDualMode;
+  using gpu_preprocessor::presolve::PostsolveReductionType;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
   const double inf = std::numeric_limits<double>::infinity();
 
   LPInfoGpu lp;
@@ -210,7 +210,7 @@ void test_records_infinite_zero_objective_fix(bool resident) {
   PresolveStatsGpu stats;
   PresolveParams params;
 
-  gpu_presolver::presolve::apply_rule_dual_fix(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_dual_fix(plan, lp, stats, params);
   const std::vector<std::uint8_t> keep_col = copy_to_host(plan.keep_col_mask, 1);
   const std::vector<std::uint8_t> keep_row = copy_to_host(plan.keep_row_mask, 1);
   assert(keep_col[0] == 0);
@@ -218,7 +218,7 @@ void test_records_infinite_zero_objective_fix(bool resident) {
   assert(plan.has_row_action);
   assert(plan.has_col_action);
   assert(plan.has_change);
-  gpu_presolver::presolve::export_local_recovery_tape(plan.tape);
+  gpu_preprocessor::presolve::export_local_recovery_tape(plan.tape);
   assert((plan.tape.types == std::vector<std::int32_t>{
                                  static_cast<std::int32_t>(PostsolveReductionType::InfiniteBoundDualFix)}));
   assert((plan.tape.index_starts == std::vector<NnzOffset>{0, 5}));

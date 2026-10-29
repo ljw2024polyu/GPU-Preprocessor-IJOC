@@ -3,7 +3,7 @@
 
 #pragma once
 #include "parallel_replay_control.hpp"
-#include "gpu_presolver/presolve/presolve_structs.hpp"
+#include "gpu_preprocessor/presolve/presolve_structs.hpp"
 // Isolate radix-sort kernels from other CUB instantiations in the application.
 #ifndef CUB_WRAPPED_NAMESPACE
 #define CUB_WRAPPED_NAMESPACE gpu_preprocessor_postsolve_cub
@@ -15,7 +15,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace gpu_presolver::presolve::postsolve::parallel {
+namespace gpu_preprocessor::presolve::postsolve::parallel {
 
 constexpr NnzOffset min_records = 1024;
 using Key = std::uint64_t;
@@ -252,9 +252,9 @@ struct Context {
   Buffer<Key> keys, ordered;
   Buffer<std::uint8_t> temporary;
   std::size_t allocated = 0;
-  bool fixed = enabled(config.fixed, "GPUPRESOLVER_PARALLEL_FIXED_COLS");
-  bool subcol = enabled(config.subcol, "GPUPRESOLVER_PARALLEL_SUBCOL");
-  bool components = enabled(config.components, "GPUPRESOLVER_PARALLEL_COMPONENTS");
+  bool fixed = enabled(config.fixed, "GPUPREPROCESSOR_PARALLEL_FIXED_COLS");
+  bool subcol = enabled(config.subcol, "GPUPREPROCESSOR_PARALLEL_SUBCOL");
+  bool components = enabled(config.components, "GPUPREPROCESSOR_PARALLEL_COMPONENTS");
 
   template<class T> bool ensure(Buffer<T>& buffer, std::size_t count) {
     if (count <= buffer.capacity) return true;
@@ -321,4 +321,4 @@ struct Context {
   }
 };
 
-} // namespace gpu_presolver::presolve::postsolve::parallel
+} // namespace gpu_preprocessor::presolve::postsolve::parallel

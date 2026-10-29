@@ -1,9 +1,9 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/detail/runtime_options.hpp"
+#include "gpu_preprocessor/detail/runtime_options.hpp"
 #include "../src/folding/folding_internal.cuh"
-#include "gpu_presolver/folding/folding.hpp"
+#include "gpu_preprocessor/folding/folding.hpp"
 #include <cuda_runtime.h>
 #include <algorithm>
 #include <cmath>
@@ -14,9 +14,9 @@
 #include <stdexcept>
 #include <vector>
 
-namespace runtime = gpu_presolver::runtime;
+namespace runtime = gpu_preprocessor::runtime;
 
-using namespace gpu_presolver::folding;
+using namespace gpu_preprocessor::folding;
 
 void ck(cudaError_t s) { if (s != cudaSuccess) throw std::runtime_error(cudaGetErrorString(s)); }
 void require(bool b, const char* message) { if (!b) throw std::runtime_error(message); }
@@ -108,7 +108,7 @@ void test_updates(int rows, int cols, double tol) {
 }
 
 void test_shared_map(bool grow) {
-  gpu_presolver::presolve::LPInfoGpu lp;
+  gpu_preprocessor::presolve::LPInfoGpu lp;
   lp.A={3,4,0,device<NnzOffset>({0,0,0,0}),nullptr,nullptr};
   lp.c=device<double>({2,3,2,3});lp.l=device<double>({0,1,0,1});lp.u=device<double>({10,20,10,20});
   lp.AL=device<double>({1,2,1});lp.AU=device<double>({3,4,3});

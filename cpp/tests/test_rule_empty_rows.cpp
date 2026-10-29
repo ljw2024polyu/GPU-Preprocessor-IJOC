@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/presolve/rules/rule_empty_rows_and_columns.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_empty_rows_and_columns.hpp"
 
 #include <cuda_runtime.h>
 
@@ -40,10 +40,10 @@ std::vector<T> copy_to_host(T* device, std::size_t size) {
 }  // namespace
 
 void test_removes_feasible_empty_rows() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
 
   LPInfoGpu lp;
   lp.A.rows = 3;
@@ -60,7 +60,7 @@ void test_removes_feasible_empty_rows() {
   PresolveParams params;
   params.feasibility_tol = 1.0e-9;
 
-  gpu_presolver::presolve::apply_rule_empty_rows(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_empty_rows(plan, lp, stats, params);
   std::vector<std::uint8_t> keep = copy_to_host(plan.keep_row_mask, 3);
   assert(keep[0] == 0);
   assert(keep[1] == 0);
@@ -76,10 +76,10 @@ void test_removes_feasible_empty_rows() {
 }
 
 void test_marks_infeasible_empty_row_without_applying_removals() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
 
   LPInfoGpu lp;
   lp.A.rows = 2;
@@ -96,7 +96,7 @@ void test_marks_infeasible_empty_row_without_applying_removals() {
   PresolveParams params;
   params.feasibility_tol = 1.0e-9;
 
-  gpu_presolver::presolve::apply_rule_empty_rows(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_empty_rows(plan, lp, stats, params);
   std::vector<std::uint8_t> keep = copy_to_host(plan.keep_row_mask, 2);
   assert(keep[0] == 1);
   assert(keep[1] == 1);

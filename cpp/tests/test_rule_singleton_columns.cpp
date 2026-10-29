@@ -1,10 +1,10 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/detail/runtime_options.hpp"
-#include "gpu_presolver/offset.hpp"
-#include "gpu_presolver/presolve/device_recovery.hpp"
-#include "gpu_presolver/presolve/rules/rule_singleton_columns.hpp"
+#include "gpu_preprocessor/detail/runtime_options.hpp"
+#include "gpu_preprocessor/offset.hpp"
+#include "gpu_preprocessor/presolve/device_recovery.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_singleton_columns.hpp"
 
 #include <cuda_runtime.h>
 
@@ -19,7 +19,7 @@
 #include <string>
 #include <vector>
 
-namespace runtime = gpu_presolver::runtime;
+namespace runtime = gpu_preprocessor::runtime;
 
 namespace {
 
@@ -49,11 +49,11 @@ std::vector<T> copy_to_host(T* device, std::size_t size) {
 }  // namespace
 
 void test_eliminates_eq_singleton_column() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PostsolveReductionType;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PostsolveReductionType;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
 
   LPInfoGpu lp;
   lp.A = {1, 2, 2,
@@ -79,7 +79,7 @@ void test_eliminates_eq_singleton_column() {
   stats.singleton_column_val = copy_to_device<double>({1.0, 0.0});
   PresolveParams params;
 
-  gpu_presolver::presolve::apply_rule_singleton_columns(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_singleton_columns(plan, lp, stats, params);
   const std::vector<std::uint8_t> keep_row = copy_to_host(plan.keep_row_mask, 1);
   const std::vector<std::uint8_t> keep_col = copy_to_host(plan.keep_col_mask, 2);
   const std::vector<double> c = copy_to_host(plan.new_c, 2);
@@ -122,10 +122,10 @@ void test_eliminates_eq_singleton_column() {
 }
 
 void test_eq_objective_updates_are_bitwise_deterministic() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
   const double inf = std::numeric_limits<double>::infinity();
 
   std::uint64_t reference_bits = 0;
@@ -155,7 +155,7 @@ void test_eq_objective_updates_are_bitwise_deterministic() {
     stats.singleton_column_val = copy_to_device<double>({3.0, 7.0, 0.0});
     PresolveParams params;
 
-    gpu_presolver::presolve::apply_rule_singleton_columns(plan, lp, stats, params);
+    gpu_preprocessor::presolve::apply_rule_singleton_columns(plan, lp, stats, params);
     const std::vector<double> c = copy_to_host(plan.new_c, 3);
     std::uint64_t current_bits = 0;
     std::memcpy(&current_bits, &c[2], sizeof(current_bits));
@@ -192,10 +192,10 @@ void test_eq_objective_updates_are_bitwise_deterministic() {
 }
 
 void test_dual_infer_marks_direct_unbounded() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
   const double inf = std::numeric_limits<double>::infinity();
 
   LPInfoGpu lp;
@@ -217,7 +217,7 @@ void test_dual_infer_marks_direct_unbounded() {
   stats.singleton_column_val = copy_to_device<double>({1.0, 0.0});
   PresolveParams params;
 
-  gpu_presolver::presolve::apply_rule_singleton_columns(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_singleton_columns(plan, lp, stats, params);
   assert(plan.has_unbounded);
 
   cudaFree(lp.A.rowPtr);
@@ -236,12 +236,12 @@ void test_dual_infer_marks_direct_unbounded() {
 }
 
 void test_dual_infer_records_row_dual_shift_tape() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PostsolveDualMode;
-  using gpu_presolver::presolve::PostsolveReductionType;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PostsolveDualMode;
+  using gpu_preprocessor::presolve::PostsolveReductionType;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
   const double inf = std::numeric_limits<double>::infinity();
 
   LPInfoGpu lp;
@@ -263,7 +263,7 @@ void test_dual_infer_records_row_dual_shift_tape() {
   stats.singleton_column_val = copy_to_device<double>({1.0, 0.0});
   PresolveParams params;
 
-  gpu_presolver::presolve::apply_rule_singleton_columns(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_singleton_columns(plan, lp, stats, params);
   const std::vector<std::uint8_t> keep_col = copy_to_host(plan.keep_col_mask, 2);
   const std::vector<double> AL = copy_to_host(plan.new_AL, 1);
   const std::vector<double> AU = copy_to_host(plan.new_AU, 1);
@@ -310,12 +310,12 @@ struct OneSidedSingletonCase {
 
 void check_dual_infer_tightens_one_sided_implied_free_row(
     const OneSidedSingletonCase& test_case) {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PostsolveDualMode;
-  using gpu_presolver::presolve::PostsolveReductionType;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PostsolveDualMode;
+  using gpu_preprocessor::presolve::PostsolveReductionType;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
 
   LPInfoGpu lp;
   lp.A = {1, 2, 2,
@@ -336,7 +336,7 @@ void check_dual_infer_tightens_one_sided_implied_free_row(
   stats.singleton_column_val = copy_to_device<double>({test_case.coefficient, 0.0});
   PresolveParams params;
 
-  gpu_presolver::presolve::apply_rule_singleton_columns(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_singleton_columns(plan, lp, stats, params);
   const std::vector<std::uint8_t> keep_col = copy_to_host(plan.keep_col_mask, 2);
   const std::vector<double> AL = copy_to_host(plan.new_AL, 1);
   const std::vector<double> AU = copy_to_host(plan.new_AU, 1);
@@ -387,7 +387,7 @@ void test_dual_infer_tightens_one_sided_implied_free_row() {
 }
 
 void test_long_column_objective_order() {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   const double inf=std::numeric_limits<double>::infinity();
   const auto saved = runtime::options().gather_live_rows;
   for(int m:{9,1025}) for (bool flag : {false,true}) {
@@ -435,7 +435,7 @@ void test_long_column_objective_order() {
 // the GPU prefix sums. Include both sides of the long-row threshold, mask holes,
 // signed zero coefficients, negative pivots, and append into a nonempty tape.
 void test_batched_singleton_column_substitution_tape_matches_cpu_oracle() {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   const double inf = std::numeric_limits<double>::infinity();
   const std::vector<int> lengths{1, 2, 1024, 1025, 2051, 3};
   const int m = static_cast<int>(lengths.size());
@@ -551,7 +551,7 @@ void test_batched_singleton_column_substitution_tape_matches_cpu_oracle() {
 // The first singleton is ineligible, the next two compete for one row.
 // This also checks that selective commit preserves inactive entries bitwise.
 void test_action_owner_and_selective_commit(bool resident) {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   const double inf = std::numeric_limits<double>::infinity();
   std::vector<void*> allocations;
   auto upload = [&](const auto& values) {
@@ -598,7 +598,7 @@ void test_action_owner_and_selective_commit(bool resident) {
 
 // A valid action on one row must not commit if any other candidate is unbounded.
 void test_unbounded_proposal_suppresses_batch() {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   const double inf = std::numeric_limits<double>::infinity();
   std::vector<void*> allocations;
   auto upload = [&](const auto& values) {
@@ -635,7 +635,7 @@ void test_unbounded_proposal_suppresses_batch() {
 // Check feature switches, the closure's skip-precheck path, and both tape backends.
 void test_unified_mixed_batch(bool resident, bool skip_precheck, bool enabled,
                               bool unbounded = false) {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   const double inf = std::numeric_limits<double>::infinity();
   std::vector<void*> allocations;
   auto upload = [&](const auto& values) {

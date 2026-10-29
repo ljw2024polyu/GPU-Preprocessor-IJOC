@@ -1,10 +1,10 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/detail/runtime_options.hpp"
-#include "gpu_presolver/presolve/device_recovery.hpp"
-#include "gpu_presolver/presolve/cleanup_workspace.hpp"
-#include "gpu_presolver/presolve/gpu_postsolve.hpp"
+#include "gpu_preprocessor/detail/runtime_options.hpp"
+#include "gpu_preprocessor/presolve/device_recovery.hpp"
+#include "gpu_preprocessor/presolve/cleanup_workspace.hpp"
+#include "gpu_preprocessor/presolve/gpu_postsolve.hpp"
 #include <cassert>
 #include <cstring>
 #include <cuda_runtime.h>
@@ -12,8 +12,8 @@
 #include <stdexcept>
 #include <vector>
 
-namespace runtime = gpu_presolver::runtime;
-using namespace gpu_presolver::presolve;
+namespace runtime = gpu_preprocessor::runtime;
+using namespace gpu_preprocessor::presolve;
 static void check(cudaError_t e) {
   if (e != cudaSuccess)
     throw std::runtime_error(cudaGetErrorString(e));

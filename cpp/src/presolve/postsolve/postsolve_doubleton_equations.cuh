@@ -5,7 +5,7 @@
 
 #include "postsolve_common.cuh"
 
-namespace gpu_presolver::presolve::postsolve {
+namespace gpu_preprocessor::presolve::postsolve {
 
 __device__ __forceinline__ void _doubleton_equations_recover_z_split(double x_keep,
                                               double z_keep_hat,
@@ -172,4 +172,4 @@ __device__ __forceinline__ void replay_doubleton_equation(
   }
 }
 
-}  // namespace gpu_presolver::presolve::postsolve
+}  // namespace gpu_preprocessor::presolve::postsolve

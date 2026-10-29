@@ -1,12 +1,12 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/detail/runtime_options.hpp"
-#include "gpu_presolver/offset.hpp"
-#include "gpu_presolver/presolve/device_recovery.hpp"
-#include "gpu_presolver/presolve/gpu_postsolve.hpp"
-#include "gpu_presolver/presolve/gpu_presolve.hpp"
-#include "gpu_presolver/presolve/stable_mapping.hpp"
+#include "gpu_preprocessor/detail/runtime_options.hpp"
+#include "gpu_preprocessor/offset.hpp"
+#include "gpu_preprocessor/presolve/device_recovery.hpp"
+#include "gpu_preprocessor/presolve/gpu_postsolve.hpp"
+#include "gpu_preprocessor/presolve/gpu_presolve.hpp"
+#include "gpu_preprocessor/presolve/stable_mapping.hpp"
 
 #include <cuda_runtime.h>
 
@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 
-namespace runtime = gpu_presolver::runtime;
+namespace runtime = gpu_preprocessor::runtime;
 
 namespace {
 
@@ -49,7 +49,7 @@ std::vector<T> copy_to_host(T* device, std::size_t size) {
 }
 
 void test_parallel_nonidentity_mapping() {
-  using gpu_presolver::presolve::detail::compact_mapping_stable;
+  using gpu_preprocessor::presolve::detail::compact_mapping_stable;
   constexpr int n=2100003;
   std::vector<std::int32_t> old(n),expected,dropped{-7},actual,removed{-7};
   std::vector<std::uint8_t> keep(n);
@@ -69,7 +69,7 @@ void test_parallel_nonidentity_mapping() {
 // Independent stable-filter oracle, including long rows in a small sparse
 // matrix (the former 10M gate), zero coefficients and duplicate coordinates.
 void test_compact_long_rows_oracle() {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   constexpr int m = 32768, n = 9000;
   const int lengths[] = {0, 1, 8, 9, 31, 32, 33, 1024, 1025, 4097, 8193};
   std::vector<int> rp{0}, ci, expected_rp{0}, expected_ci, row_map, col_map(n, -1);
@@ -123,7 +123,7 @@ void test_compact_long_rows_oracle() {
     runtime::options().warp_compaction = warp;
     runtime::options().long_row_compaction = flag;
     auto result=run_gpu_presolve_with_reduced_lp(lp,params);
-    gpu_presolver::presolve::export_recovery_record(result.record);
+    gpu_preprocessor::presolve::export_recovery_record(result.record);
     assert(!result.has_infeasible && !result.has_unbounded);
     assert(result.record.row_red2org==row_map && result.record.col_red2org==expected_cols);
     const auto& A=result.reduced_lp.A;
@@ -147,7 +147,7 @@ void test_compact_long_rows_oracle() {
 // Two large deletion epochs exercise appended fixed records and nonidentity
 // column maps. Compare the complete fixed record sequence against legacy apply.
 void test_fixed_record_direct_equivalence() {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   constexpr int m=1100000, n=2*m;
   std::vector<int> rp(m+1),ci(n),trp(n+1),tci(n);
   std::vector<double> upper(n,10.0);
@@ -175,7 +175,7 @@ void test_fixed_record_direct_equivalence() {
   for (bool flag : {false,true}) {
     runtime::options().direct_fixed_values = flag;
     auto result=run_gpu_presolve_with_reduced_lp(lp,params);
-    gpu_presolver::presolve::export_recovery_record(result.record);
+    gpu_preprocessor::presolve::export_recovery_record(result.record);
     assert(!result.has_infeasible && !result.has_unbounded);
     assert(result.record.fixed_idx.size()==n);
     if(!flag){indices=result.record.fixed_idx;values=result.record.fixed_val;}
@@ -193,7 +193,7 @@ void test_fixed_record_direct_equivalence() {
 }
 
 void test_large_apply_record_equivalence() {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   constexpr int m = 350000, n = 2 * m;
   std::vector<std::int32_t> rp(m + 1), ci(n), trp(n + 1), tci(n);
   std::vector<double> av(n), cost(n), lower(n), upper(n, 10.0);
@@ -238,12 +238,12 @@ void test_large_apply_record_equivalence() {
   runtime::options().reserve_tape_headroom = false;
   runtime::options().chunked_tape = false;
   auto serial = run_gpu_presolve_with_record(lp, params);
-  gpu_presolver::presolve::export_recovery_record(serial.record);
+  gpu_preprocessor::presolve::export_recovery_record(serial.record);
   runtime::options().parallel_tape_build = true;
   runtime::options().reserve_tape_headroom = true;
   runtime::options().chunked_tape = true;
   auto parallel = run_gpu_presolve_with_record(lp, params);
-  gpu_presolver::presolve::export_recovery_record(parallel.record);
+  gpu_preprocessor::presolve::export_recovery_record(parallel.record);
   assert(!serial.has_infeasible && !parallel.has_infeasible);
   assert(!serial.has_unbounded && !parallel.has_unbounded);
   assert(serial.record.tape.indices.size() >= (1U << 20));
@@ -267,11 +267,11 @@ void test_large_apply_record_equivalence() {
 }
 
 void test_post_propagation_activity_closure(bool record_activity_tape) {
-  using gpu_presolver::presolve::GpuPostsolveResult;
-  using gpu_presolver::presolve::GpuPresolveSummary;
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PostsolveReductionType;
-  using gpu_presolver::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::GpuPostsolveResult;
+  using gpu_preprocessor::presolve::GpuPresolveSummary;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PostsolveReductionType;
+  using gpu_preprocessor::presolve::PresolveParams;
 
   const double inf = std::numeric_limits<double>::infinity();
   LPInfoGpu lp;
@@ -306,8 +306,8 @@ void test_post_propagation_activity_closure(bool record_activity_tape) {
   params.enable_parallel_columns = false;
   params.enable_piecewise_linear_reformulation_absolute_value = false;
 
-  GpuPresolveSummary summary = gpu_presolver::presolve::run_gpu_presolve_with_record(lp, params);
-  gpu_presolver::presolve::export_recovery_record(summary.record);
+  GpuPresolveSummary summary = gpu_preprocessor::presolve::run_gpu_presolve_with_record(lp, params);
+  gpu_preprocessor::presolve::export_recovery_record(summary.record);
   assert(!summary.has_infeasible);
   assert(!summary.has_unbounded);
   // Bound strengthening makes the second row redundant within this round.
@@ -332,7 +332,7 @@ void test_post_propagation_activity_closure(bool record_activity_tape) {
   double* x_red = copy_to_device<double>({1.0, 1.0, 0.0});
   double* y_red = copy_to_device<double>(std::vector<double>(summary.reduced_rows, 0.0));
   double* z_red = copy_to_device<double>({0.0, 0.0, 0.0});
-  GpuPostsolveResult post = gpu_presolver::presolve::postsolve_gpu(
+  GpuPostsolveResult post = gpu_preprocessor::presolve::postsolve_gpu(
       x_red, y_red, z_red, summary.record, &lp);
   const std::vector<double> x = copy_to_host(post.x_org, 3);
   const std::vector<double> y = copy_to_host(post.y_org, 2);
@@ -368,9 +368,9 @@ void test_post_propagation_activity_closure(bool record_activity_tape) {
 }
 
 void test_bound_strengthening_defers_dependency_chain() {
-  using gpu_presolver::presolve::GpuPresolveSummary;
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::GpuPresolveSummary;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
 
   const double inf = std::numeric_limits<double>::infinity();
   LPInfoGpu lp;
@@ -407,8 +407,8 @@ void test_bound_strengthening_defers_dependency_chain() {
   // One phase fixes x1, leaving the dependent x2 for a later outer phase.
   params.bound_strengthening_bound_only_nnz_round_budget = 1;
 
-  GpuPresolveSummary summary = gpu_presolver::presolve::run_gpu_presolve_with_record(lp, params);
-  gpu_presolver::presolve::export_recovery_record(summary.record);
+  GpuPresolveSummary summary = gpu_preprocessor::presolve::run_gpu_presolve_with_record(lp, params);
+  gpu_preprocessor::presolve::export_recovery_record(summary.record);
   assert(!summary.has_infeasible);
   assert(!summary.has_unbounded);
   assert(summary.reduced_rows == 2);
@@ -416,8 +416,8 @@ void test_bound_strengthening_defers_dependency_chain() {
   assert(summary.reduced_nnz == 3);
 
   params.max_iters = 2;
-  auto repeated = gpu_presolver::presolve::run_gpu_presolve_with_record(lp, params);
-  gpu_presolver::presolve::export_recovery_record(repeated.record);
+  auto repeated = gpu_preprocessor::presolve::run_gpu_presolve_with_record(lp, params);
+  gpu_preprocessor::presolve::export_recovery_record(repeated.record);
   assert(!repeated.has_infeasible && !repeated.has_unbounded);
   assert(repeated.reduced_rows == 2 && repeated.reduced_cols == 2);
   assert(repeated.reduced_nnz == 2);
@@ -436,9 +436,9 @@ void test_bound_strengthening_defers_dependency_chain() {
 }
 
 std::vector<double> run_pure_bound_dependency_chain(std::int64_t nnz_round_budget) {
-  using gpu_presolver::presolve::GpuPresolveSummary;
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::GpuPresolveSummary;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
 
   const double inf = std::numeric_limits<double>::infinity();
   LPInfoGpu lp;
@@ -479,15 +479,15 @@ std::vector<double> run_pure_bound_dependency_chain(std::int64_t nnz_round_budge
   params.bound_strengthening_bound_only_nnz_round_budget = nnz_round_budget;
 
   GpuPresolveSummary summary =
-      gpu_presolver::presolve::run_gpu_presolve_with_reduced_lp(lp, params);
-  gpu_presolver::presolve::export_recovery_record(summary.record);
+      gpu_preprocessor::presolve::run_gpu_presolve_with_reduced_lp(lp, params);
+  gpu_preprocessor::presolve::export_recovery_record(summary.record);
   assert(!summary.has_infeasible);
   assert(!summary.has_unbounded);
   assert(summary.reduced_rows == 2);
   assert(summary.reduced_cols == 3);
   assert(summary.reduced_nnz == 4);
   const std::vector<double> upper = copy_to_host(summary.reduced_lp.u, 3);
-  gpu_presolver::presolve::free_gpu_presolve_reduced_lp(summary);
+  gpu_preprocessor::presolve::free_gpu_presolve_reduced_lp(summary);
 
   cudaFree(lp.A.rowPtr);
   cudaFree(lp.A.colVal);
@@ -527,7 +527,7 @@ int main() {
   test_bound_strengthening_single_pass_ignores_legacy_budget();
 
   const double inf = std::numeric_limits<double>::infinity();
-  gpu_presolver::presolve::LPInfoGpu sched_lp;
+  gpu_preprocessor::presolve::LPInfoGpu sched_lp;
   sched_lp.A = {3, 3, 2,
                 copy_to_device<NnzOffset>({0, 1, 2, 2}),
                 copy_to_device<std::int32_t>({0, 1}),
@@ -542,11 +542,11 @@ int main() {
   sched_lp.AL = copy_to_device<double>({5.0, -inf, -1.0});
   sched_lp.AU = copy_to_device<double>({5.0, inf, 1.0});
 
-  gpu_presolver::presolve::PresolveParams params;
+  gpu_preprocessor::presolve::PresolveParams params;
   params.max_iters = 4;
-  gpu_presolver::presolve::GpuPresolveSummary summary =
-      gpu_presolver::presolve::run_gpu_presolve_with_record(sched_lp, params);
-  gpu_presolver::presolve::export_recovery_record(summary.record);
+  gpu_preprocessor::presolve::GpuPresolveSummary summary =
+      gpu_preprocessor::presolve::run_gpu_presolve_with_record(sched_lp, params);
+  gpu_preprocessor::presolve::export_recovery_record(summary.record);
   assert(!summary.has_infeasible);
   assert(!summary.has_unbounded);
   assert(summary.reduced_rows == 0);
@@ -583,7 +583,7 @@ int main() {
   }
   doubleton_at_row_ptr[static_cast<std::size_t>(doubleton_cols)] = doubleton_cols;
 
-  gpu_presolver::presolve::LPInfoGpu doubleton_only_lp;
+  gpu_preprocessor::presolve::LPInfoGpu doubleton_only_lp;
   doubleton_only_lp.A = {doubleton_rows, doubleton_cols, doubleton_rows * 2,
                          copy_to_device<NnzOffset>(doubleton_row_ptr),
                          copy_to_device<std::int32_t>(doubleton_col_val),
@@ -598,7 +598,7 @@ int main() {
   doubleton_only_lp.AL = copy_to_device<double>(std::vector<double>(static_cast<std::size_t>(doubleton_rows), 1.0));
   doubleton_only_lp.AU = copy_to_device<double>(std::vector<double>(static_cast<std::size_t>(doubleton_rows), 1.0));
 
-  gpu_presolver::presolve::PresolveParams doubleton_only_params;
+  gpu_preprocessor::presolve::PresolveParams doubleton_only_params;
   doubleton_only_params.max_iters = 4;
   doubleton_only_params.enable_infeasible_and_fixed_variables = false;
   doubleton_only_params.enable_empty_rows = false;
@@ -613,10 +613,10 @@ int main() {
   doubleton_only_params.enable_parallel_columns = false;
   doubleton_only_params.enable_piecewise_linear_reformulation_absolute_value = false;
 
-  gpu_presolver::presolve::GpuPresolveSummary doubleton_only_summary =
-      gpu_presolver::presolve::run_gpu_presolve_with_record(doubleton_only_lp,
+  gpu_preprocessor::presolve::GpuPresolveSummary doubleton_only_summary =
+      gpu_preprocessor::presolve::run_gpu_presolve_with_record(doubleton_only_lp,
                                                             doubleton_only_params);
-  gpu_presolver::presolve::export_recovery_record(doubleton_only_summary.record);
+  gpu_preprocessor::presolve::export_recovery_record(doubleton_only_summary.record);
   assert(!doubleton_only_summary.has_infeasible);
   assert(!doubleton_only_summary.has_unbounded);
   assert(doubleton_only_summary.reduced_rows == 0);

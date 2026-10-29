@@ -224,7 +224,7 @@ def execute_jobs(jobs, output, completed, resume):
             previous.parent.mkdir(parents=True, exist_ok=True)
             log.rename(previous)
         env = {k: v for k, v in os.environ.items()
-               if not k.startswith(('HPRLP_', 'GPUPRESOLVER_'))}
+               if not k.startswith(('HPRLP_', 'GPUPREPROCESSOR_'))}
         env.update(job['environment'])
         print(f"[{index}/{len(jobs)}] {job['dataset']} / {job['method']} / {job['instance']}", flush=True)
         with log.open('x') as handle:

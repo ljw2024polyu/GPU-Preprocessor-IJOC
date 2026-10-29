@@ -9,18 +9,10 @@ project(GPUPreprocessor LANGUAGES CXX CUDA)
 find_package(CUDAToolkit 12 REQUIRED)
 find_package(Threads REQUIRED)
 
-# Accept the former configuration names when the new name is not specified.
-macro(gpu_preprocessor_option name description default_value)
-  if(DEFINED GPUPRESOLVER_${name} AND NOT DEFINED GPUPREPROCESSOR_${name})
-    set(GPUPREPROCESSOR_${name} "${GPUPRESOLVER_${name}}" CACHE BOOL "${description}")
-  endif()
-  option(GPUPREPROCESSOR_${name} "${description}" ${default_value})
-  set(GPUPRESOLVER_${name} "${GPUPREPROCESSOR_${name}}")
-endmacro()
-gpu_preprocessor_option(BUILD_TOOLS "Build standalone MPS tools" ${PROJECT_IS_TOP_LEVEL})
-gpu_preprocessor_option(BUILD_TESTS "Build numerical regression tests" OFF)
-gpu_preprocessor_option(BUILD_EXAMPLES "Build the integration example" ${PROJECT_IS_TOP_LEVEL})
-gpu_preprocessor_option(USE_INT64_NNZ "Use int64 nnz and offsets; dimensions stay int32" OFF)
+option(GPUPREPROCESSOR_BUILD_TOOLS "Build standalone MPS tools" ${PROJECT_IS_TOP_LEVEL})
+option(GPUPREPROCESSOR_BUILD_TESTS "Build numerical regression tests" OFF)
+option(GPUPREPROCESSOR_BUILD_EXAMPLES "Build the integration example" ${PROJECT_IS_TOP_LEVEL})
+option(GPUPREPROCESSOR_USE_INT64_NNZ "Use int64 nnz and offsets; dimensions stay int32" OFF)
 option(GPUPREPROCESSOR_BUILD_HPRLP "Build official HPR-LP-C v0.1.3 with external preprocessing adapters" OFF)
 if(GPUPREPROCESSOR_BUILD_HPRLP)
   enable_language(C)
@@ -50,7 +42,7 @@ endif()
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
-install(TARGETS gpu_presolver_core EXPORT GPUPreprocessorTargets
+install(TARGETS gpu_preprocessor_core EXPORT GPUPreprocessorTargets
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
@@ -62,11 +54,6 @@ configure_package_config_file(cmake/GPUPreprocessorConfig.cmake.in
   INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GPUPreprocessor)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/GPUPreprocessorConfig.cmake
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GPUPreprocessor)
-configure_package_config_file(cmake/GPUPresolverCConfig.cmake.in
-  ${CMAKE_CURRENT_BINARY_DIR}/GPUPresolverCConfig.cmake
-  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GPUPresolverC)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/GPUPresolverCConfig.cmake
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GPUPresolverC)
 install(FILES LICENSE
   DESTINATION ${CMAKE_INSTALL_DATADIR}/GPUPreprocessor)
 install(DIRECTORY examples/ DESTINATION ${CMAKE_INSTALL_DATADIR}/GPUPreprocessor/examples)

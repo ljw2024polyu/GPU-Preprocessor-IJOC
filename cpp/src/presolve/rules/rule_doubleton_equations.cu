@@ -1,15 +1,15 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/detail/runtime_options.hpp"
-#include "gpu_presolver/offset.hpp"
-#include "gpu_presolver/presolve/device_recovery.hpp"
-#include "gpu_presolver/presolve/rules/rule_doubleton_equations.hpp"
+#include "gpu_preprocessor/detail/runtime_options.hpp"
+#include "gpu_preprocessor/offset.hpp"
+#include "gpu_preprocessor/presolve/device_recovery.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_doubleton_equations.hpp"
 
 #include "doubleton_long_rows.cuh"
 #include <cub/cub.cuh>
 #include <cuda_runtime.h>
-#include "gpu_presolver/presolve/gpu_presolve_kernels.hpp"
+#include "gpu_preprocessor/presolve/gpu_presolve_kernels.hpp"
 #include <cusparse.h>
 #include <thrust/device_ptr.h>
 #include <thrust/system/cuda/execution_policy.h>
@@ -25,7 +25,7 @@
 #include <string>
 #include <vector>
 
-namespace gpu_presolver::presolve {
+namespace gpu_preprocessor::presolve {
 namespace {
 
 constexpr int GPU_PRESOLVE_THREADS = 256;
@@ -2127,4 +2127,4 @@ void apply_rule_doubleton_equations(PresolvePlanGpu& plan,
   doubleton_cuda_free(obj_delta_device);
 }
 
-}  // namespace gpu_presolver::presolve
+}  // namespace gpu_preprocessor::presolve

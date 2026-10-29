@@ -4,7 +4,7 @@
 #include "postsolve_piecewise_linear_reformulation_variable_pair.hpp"
 #include "postsolve_common.cuh"
 
-namespace gpu_presolver::presolve::postsolve {
+namespace gpu_preprocessor::presolve::postsolve {
 
 __global__ void _kernel_cache_variable_pair_root_values(
     double* plus_cache,
@@ -133,4 +133,4 @@ void validate_piecewise_linear_reformulation_variable_pair_recovery(
   }
 }
 
-}  // namespace gpu_presolver::presolve::postsolve
+}  // namespace gpu_preprocessor::presolve::postsolve

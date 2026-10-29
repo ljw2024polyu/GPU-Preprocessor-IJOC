@@ -1,9 +1,9 @@
 // Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 // SPDX-License-Identifier: MIT
 
-#include "gpu_presolver/detail/runtime_options.hpp"
-#include "gpu_presolver/offset.hpp"
-#include "gpu_presolver/presolve/rules/rule_bound_strengthening.hpp"
+#include "gpu_preprocessor/detail/runtime_options.hpp"
+#include "gpu_preprocessor/offset.hpp"
+#include "gpu_preprocessor/presolve/rules/rule_bound_strengthening.hpp"
 
 #include <cuda_runtime.h>
 
@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 
-namespace runtime = gpu_presolver::runtime;
+namespace runtime = gpu_preprocessor::runtime;
 
 namespace {
 
@@ -44,7 +44,7 @@ std::vector<T> copy_to_host(T* device, std::size_t size) {
   return values;
 }
 
-void free_lp(gpu_presolver::presolve::LPInfoGpu& lp) {
+void free_lp(gpu_preprocessor::presolve::LPInfoGpu& lp) {
   cudaFree(lp.A.rowPtr);
   cudaFree(lp.A.colVal);
   cudaFree(lp.A.nzVal);
@@ -56,12 +56,12 @@ void free_lp(gpu_presolver::presolve::LPInfoGpu& lp) {
 }  // namespace
 
 void test_tightens_bounds_from_row_activity() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PostsolveDualMode;
-  using gpu_presolver::presolve::PostsolveReductionType;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PostsolveDualMode;
+  using gpu_preprocessor::presolve::PostsolveReductionType;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
   const double inf = std::numeric_limits<double>::infinity();
 
   LPInfoGpu lp;
@@ -90,7 +90,7 @@ void test_tightens_bounds_from_row_activity() {
   params.feasibility_tol = 1.0e-9;
   params.zero_tol = 1.0e-12;
 
-  gpu_presolver::presolve::apply_rule_bound_strengthening(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_bound_strengthening(plan, lp, stats, params);
   const std::vector<double> l = copy_to_host(plan.new_l, 3);
   const std::vector<double> u = copy_to_host(plan.new_u, 3);
   assert(std::fabs(l[0] - 3.0) < 1.0e-12);
@@ -129,11 +129,11 @@ void test_tightens_bounds_from_row_activity() {
 }
 
 void test_records_fixed_variable_from_row_activity() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PostsolveReductionType;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PostsolveReductionType;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
   const double inf = std::numeric_limits<double>::infinity();
 
   LPInfoGpu lp;
@@ -161,7 +161,7 @@ void test_records_fixed_variable_from_row_activity() {
   params.feasibility_tol = 1.0e-9;
   params.zero_tol = 1.0e-12;
 
-  gpu_presolver::presolve::apply_rule_bound_strengthening(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_bound_strengthening(plan, lp, stats, params);
   const std::vector<std::uint8_t> keep_col = copy_to_host(plan.keep_col_mask, 2);
   const std::vector<double> l = copy_to_host(plan.new_l, 2);
   const std::vector<double> u = copy_to_host(plan.new_u, 2);
@@ -188,10 +188,10 @@ void test_records_fixed_variable_from_row_activity() {
 }
 
 void test_detects_infeasible_tightening() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
   const double inf = std::numeric_limits<double>::infinity();
 
   LPInfoGpu lp;
@@ -217,7 +217,7 @@ void test_detects_infeasible_tightening() {
   stats.row_nnz = copy_to_device<std::int32_t>({2});
   PresolveParams params;
 
-  gpu_presolver::presolve::apply_rule_bound_strengthening(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_bound_strengthening(plan, lp, stats, params);
   assert(plan.has_infeasible);
 
   free_lp(lp);
@@ -232,10 +232,10 @@ void test_detects_infeasible_tightening() {
 }
 
 void test_preserves_wide_box_on_free_zero_cost_column() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
   const double inf = std::numeric_limits<double>::infinity();
 
   LPInfoGpu lp;
@@ -263,7 +263,7 @@ void test_preserves_wide_box_on_free_zero_cost_column() {
   params.feasibility_tol = 1.0e-9;
   params.zero_tol = 1.0e-12;
 
-  gpu_presolver::presolve::apply_rule_bound_strengthening(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_bound_strengthening(plan, lp, stats, params);
   std::vector<double> l = copy_to_host(plan.new_l, 2);
   std::vector<double> u = copy_to_host(plan.new_u, 2);
   assert(std::isinf(l[0]) && l[0] < 0.0);
@@ -272,7 +272,7 @@ void test_preserves_wide_box_on_free_zero_cost_column() {
   assert(plan.tape.types.empty());
 
   params.bound_strengthening_preserve_free_zero_cost = false;
-  gpu_presolver::presolve::apply_rule_bound_strengthening(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_bound_strengthening(plan, lp, stats, params);
   l = copy_to_host(plan.new_l, 2);
   u = copy_to_host(plan.new_u, 2);
   assert(std::fabs(l[0] + 5.0) < 1.0e-12);
@@ -291,10 +291,10 @@ void test_preserves_wide_box_on_free_zero_cost_column() {
 }
 
 void test_preserves_free_zero_cost_state_across_propagation_rounds() {
-  using gpu_presolver::presolve::LPInfoGpu;
-  using gpu_presolver::presolve::PresolveParams;
-  using gpu_presolver::presolve::PresolvePlanGpu;
-  using gpu_presolver::presolve::PresolveStatsGpu;
+  using gpu_preprocessor::presolve::LPInfoGpu;
+  using gpu_preprocessor::presolve::PresolveParams;
+  using gpu_preprocessor::presolve::PresolvePlanGpu;
+  using gpu_preprocessor::presolve::PresolveStatsGpu;
   const double inf = std::numeric_limits<double>::infinity();
 
   // Round one derives x >= 0 from 0 <= x-z and z <= 1 from z+w <= 1.
@@ -327,7 +327,7 @@ void test_preserves_free_zero_cost_state_across_propagation_rounds() {
   params.feasibility_tol = 1.0e-9;
   params.zero_tol = 1.0e-12;
 
-  gpu_presolver::presolve::apply_rule_bound_strengthening(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_bound_strengthening(plan, lp, stats, params);
   std::vector<double> l = copy_to_host(plan.new_l, 3);
   std::vector<double> u = copy_to_host(plan.new_u, 3);
   assert(std::fabs(l[0]) < 1.0e-12);
@@ -335,7 +335,7 @@ void test_preserves_free_zero_cost_state_across_propagation_rounds() {
   assert(std::fabs(u[1] - 1.0) < 1.0e-12);
 
   plan.has_change = false;
-  gpu_presolver::presolve::apply_rule_bound_strengthening(plan, lp, stats, params);
+  gpu_preprocessor::presolve::apply_rule_bound_strengthening(plan, lp, stats, params);
   l = copy_to_host(plan.new_l, 3);
   u = copy_to_host(plan.new_u, 3);
   assert(std::fabs(l[0]) < 1.0e-12);
@@ -356,7 +356,7 @@ void test_preserves_free_zero_cost_state_across_propagation_rounds() {
 }
 
 void test_long_column_support_minimum() {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   const auto saved = runtime::options().gather_live_rows;
   for(int m:{9,1025}) for (bool flag : {false,true}) {
     runtime::options().gather_live_rows = flag;
@@ -391,7 +391,7 @@ void test_long_column_support_minimum() {
 // Increasing the upper margin must weaken only the upper bound; the lower
 // margin and integral-upper shortcut retain the existing policy.
 void test_upper_margin_preserves_lower_and_integral_bounds() {
-  using namespace gpu_presolver::presolve;
+  using namespace gpu_preprocessor::presolve;
   for (double upper_target : {2.499999, -2.499999, 2.0}) {
     for (double factor : {0.5, 1.0, 2.0}) {
       const double lower_target = upper_target - 1.500001;
