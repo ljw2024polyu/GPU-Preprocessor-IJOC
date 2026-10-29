@@ -23,6 +23,14 @@ spec.loader.exec_module(runner)
 
 
 class ExperimentRunnerTests(unittest.TestCase):
+    def setUp(self):
+        environment = patch.dict(os.environ, {'WITH_GUROBI': 'AUTO', 'GUROBI_HOME': '/SDK'})
+        environment.start()
+        self.addCleanup(environment.stop)
+        probe = patch.object(runner.check_gurobi, 'available', return_value=(False, 'unavailable'))
+        self.probe = probe.start()
+        self.addCleanup(probe.stop)
+
     def plan(self, *options):
         output = io.StringIO()
         with contextlib.redirect_stdout(output), contextlib.redirect_stderr(io.StringIO()):
@@ -30,7 +38,9 @@ class ExperimentRunnerTests(unittest.TestCase):
         return json.loads(output.getvalue())
 
     def test_full_plan_matches_every_archived_log(self):
-        jobs = self.plan('--suite', 'all', '--methods', 'none', 'folding', 'gpu', 'pslp', 'gurobi')
+        self.probe.return_value = (True, 'ready')
+        jobs = self.plan()
+        self.assertEqual(jobs, self.plan('--suite', 'all', '--methods', 'none', 'folding', 'gpu', 'pslp', 'gurobi'))
         actual = [job['log'] for job in jobs]
         expected = {str(path.relative_to(ROOT)) for path in (ROOT / 'results/raw').rglob('*.log')}
         self.assertEqual(len(actual), 450)
@@ -41,17 +51,49 @@ class ExperimentRunnerTests(unittest.TestCase):
             if job['method'] == 'pslp':
                 self.assertEqual(job['command'][job['command'].index('--presolver') + 1], 'pslp0011')
 
-    def test_default_excludes_gurobi_and_subset_has_recorded_options(self):
-        jobs = self.plan('--suite', 'all')
+    def test_default_runs_all_groups_without_gurobi_when_unavailable(self):
+        jobs = self.plan()
         self.assertEqual(len(jobs), 358)
         self.assertNotIn('gurobi', {job['method'] for job in jobs})
-        subset = self.plan('--datasets', 'qap20', '--instances', 'tho40',
+        self.assertEqual({job['dataset'] for job in jobs},
+                         {'Mittelmann', 'MIPLIB Large', 'QAP20', 'QAP scalability'})
+        self.assertEqual(jobs, self.plan('--suite', 'all', '--methods', 'none', 'folding', 'gpu', 'pslp'))
+
+    def test_benchmark_subset_has_recorded_options_and_does_not_probe_gurobi(self):
+        subset = self.plan('--suite', 'benchmarks', '--datasets', 'qap20', '--instances', 'tho40',
                            '--methods', 'folding', '--device', '1')
         self.assertEqual(len(subset), 1)
+        self.probe.assert_not_called()
         command = subset[0]['command']
         for flag, expected in [('--presolver', 'gpu'), ('--gpu-folding', 'true'),
                                ('--gpu-presolve', 'false'), ('--device', '1')]:
             self.assertEqual(command[command.index(flag) + 1], expected)
+
+    def test_explicit_gurobi_selection_is_checked_and_skipped_when_unavailable(self):
+        jobs = self.plan('--methods', 'gpu', 'gurobi')
+        self.assertEqual(len(jobs), 92)
+        self.assertEqual({job['method'] for job in jobs}, {'gpu'})
+        with self.assertRaises(SystemExit):
+            self.plan('--methods', 'gurobi')
+
+    def test_gurobi_off_disables_the_probe_for_default_and_explicit_selection(self):
+        with patch.dict(os.environ, {'WITH_GUROBI': 'OFF'}):
+            self.assertEqual(len(self.plan()), 358)
+            jobs = self.plan('--methods', 'gpu', 'gurobi')
+        self.assertEqual({job['method'] for job in jobs}, {'gpu'})
+        self.probe.assert_not_called()
+
+    def test_explicit_gurobi_requirement_and_invalid_mode_fail_before_execution(self):
+        for mode in ['ON', 'invalid']:
+            with self.subTest(mode=mode), patch.dict(os.environ, {'WITH_GUROBI': mode}), \
+                 patch.object(runner, 'run_jobs') as execute, \
+                 contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                runner.main(['--input-root', '/unused', '--output-dir', '/unused-output'])
+            execute.assert_not_called()
+
+    def test_gurobi_probe_uses_the_selected_solver_build(self):
+        self.plan('--solver', '/custom build/bin/hprlp_solve')
+        self.probe.assert_called_once_with('/SDK', Path('/custom build'))
 
     def test_existing_collections_are_read_in_place_without_changing_experiment_options(self):
         options = ('--suite', 'all', '--instances', 'FOME13', 'a2864-99blp_relax',

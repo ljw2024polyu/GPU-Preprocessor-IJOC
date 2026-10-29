@@ -73,6 +73,7 @@ class RebuildResultsTests(unittest.TestCase):
         plan = json.loads(subprocess.check_output(
             [sys.executable, str(ROOT / 'scripts/run_experiments.py'),
              '--input-root', '/unused', '--suite', 'all', '--dry-run',
+             '--methods', 'none', 'folding', 'gpu', 'pslp',
              '--instances', 'FOME13', 'scpn2_relax', 'tho40', '--sizes', '20'],
             text=True, stderr=subprocess.DEVNULL))
         directory.joinpath('commands.json').write_text(json.dumps(plan))

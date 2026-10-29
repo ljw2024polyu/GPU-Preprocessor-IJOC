@@ -140,8 +140,8 @@ class ReproduceTests(unittest.TestCase):
         call, = self.run_stage(stage='resume')
         self.assertEqual(call['args'][0], 'scripts/run_experiments.py')
         self.assertIn('--resume', call['args'])
-        methods = call['args'].index('--methods')
-        self.assertEqual(call['args'][methods + 1:methods + 5], ['none', 'folding', 'gpu', 'pslp'])
+        self.assertNotIn('--methods', call['args'])
+        self.assertEqual(call['args'][call['args'].index('--suite') + 1], 'all')
 
     def test_auto_gurobi_build_requires_a_successful_sdk_and_license_probe(self):
         for status, enabled in [('0', 'ON'), ('1', 'OFF')]:
@@ -154,28 +154,26 @@ class ReproduceTests(unittest.TestCase):
                 self.assertEqual('-DGUROBI_ROOT=/SDK with spaces' in configure['args'], enabled == 'ON')
                 self.assertIn('--build', build['args'])
 
-    def test_auto_run_includes_gurobi_only_when_probe_and_build_are_usable(self):
-        for status in ['0', '1']:
-            with self.subTest(status=status):
-                probe, run = self.run_stage(stage='run', overrides={'GUROBI_HOME': '/SDK',
-                                                 'TEST_GUROBI_PROBE_EXIT': status})
-                self.assertEqual(probe['args'][0], 'scripts/check_gurobi.py')
-                self.assertIn('--build-dir', probe['args'])
-                selected = run['args'][run['args'].index('--methods') + 1:run['args'].index('--output-dir')]
-                self.assertEqual(selected, ['none', 'folding', 'gpu', 'pslp'] + (['gurobi'] if status == '0' else []))
+    def test_run_resume_and_smoke_delegate_method_selection_to_the_python_runner(self):
+        for stage in ['run', 'resume', 'smoke']:
+            with self.subTest(stage=stage):
+                calls = self.run_stage(stage=stage, overrides={'GUROBI_HOME': '/SDK'})
+                run, = [call for call in calls if call['args'][0] == 'scripts/run_experiments.py']
+                self.assertNotIn('--methods', run['args'])
+                self.assertEqual(run['args'][run['args'].index('--suite') + 1], 'all')
+                self.assertFalse(any(call['args'][0] == 'scripts/check_gurobi.py' for call in calls))
 
     def test_gurobi_off_skips_the_probe_even_with_an_sdk(self):
         configure, build = self.run_stage(overrides={'GUROBI_HOME': '/SDK', 'WITH_GUROBI': 'OFF'})
         self.assertIn('-DHPRLP_GUROBI=OFF', configure['args'])
         self.assertIn('--build', build['args'])
 
-    def test_explicit_gurobi_requirement_fails_before_build_or_experiments(self):
-        for stage in ['setup', 'run']:
-            for settings in [{'WITH_GUROBI': 'ON'},
-                             {'WITH_GUROBI': 'ON', 'GUROBI_HOME': '/SDK', 'TEST_GUROBI_PROBE_EXIT': '1'}]:
-                with self.subTest(stage=stage, settings=settings), self.assertRaises(subprocess.CalledProcessError) as failure:
-                    self.run_stage(stage=stage, overrides=settings)
-                self.assertIn('WITH_GUROBI=ON requires', failure.exception.stderr)
+    def test_explicit_gurobi_requirement_fails_before_build(self):
+        for settings in [{'WITH_GUROBI': 'ON'},
+                         {'WITH_GUROBI': 'ON', 'GUROBI_HOME': '/SDK', 'TEST_GUROBI_PROBE_EXIT': '1'}]:
+            with self.subTest(settings=settings), self.assertRaises(subprocess.CalledProcessError) as failure:
+                self.run_stage(overrides=settings)
+            self.assertIn('WITH_GUROBI=ON requires', failure.exception.stderr)
 
     def test_data_preparation_does_not_check_the_benchmark_license(self):
         calls = self.run_stage(stage='data', overrides={'GUROBI_HOME': '/SDK', 'TEST_GUROBI_PROBE_EXIT': '1'})

@@ -79,8 +79,8 @@ WITH_GUROBI=ON bash scripts/reproduce.sh setup
 
 `GRB_LICENSE_FILE` is optional when your license is in Gurobi's standard search
 locations; see the [license-file instructions](https://support.gurobi.com/hc/en-us/articles/360013417211-Where-do-I-place-the-Gurobi-license-file-gurobi-lic).
-Provide your own license outside this repository. The reproduction script defaults
-to `WITH_GUROBI=AUTO`: it checks the SDK header/runtime version and starts an isolated,
+Provide your own license outside this repository. Both reproduction entry points
+default to `WITH_GUROBI=AUTO`: they check the SDK header/runtime version and start an isolated,
 quiet license probe with a trivial 2,001-variable LP. This rejects the
 [size-limited license](https://support.gurobi.com/hc/en-us/articles/360051597492-How-do-I-resolve-a-Model-too-large-for-size-limited-Gurobi-license-error)
 that is insufficient for these benchmarks. The check has a 30-second timeout and
@@ -90,6 +90,8 @@ Without a usable SDK/license, automatic mode prints a skip reason and continues
 with the other four methods. `WITH_GUROBI=OFF` disables Gurobi without probing;
 `WITH_GUROBI=ON` requires it and fails early if preflight fails. The `run`, `resume`,
 `smoke` and `test` stages also check that the build was configured with the adapter.
+The Python entry point applies these same checks when `gurobi` is explicitly
+listed in `--methods`; selections without `gurobi` do not probe its license.
 If the license is unavailable at test time, automatic mode skips Gurobi-specific
 CTest checks while retaining the other regression tests. Data preparation and
 result reconstruction do not activate the benchmark license probe.
@@ -102,15 +104,20 @@ reports reduced-LP results and does not recover original-space solutions.
 
 Follow [REPRODUCING.md](REPRODUCING.md) to prepare the data and run the complete
 experiment set. For a smaller selection, choose the datasets, instances, and
-methods explicitly. This example runs GPU-Preprocessor and PSLP on tho40:
+methods explicitly. The Python entry point defaults to all experiment groups
+and automatically checks Gurobi, just like `reproduce.sh run`.
+This example runs only GPU-Preprocessor and PSLP on tho40:
 
 ```sh
 python3 scripts/run_experiments.py --input-root runs/reproduction/inputs \
-  --datasets qap20 --instances tho40 --methods gpu pslp \
+  --suite benchmarks --datasets qap20 --instances tho40 --methods gpu pslp \
   --output-dir runs/qap20-check
 ```
 
-Add `--dry-run` to preview the commands. For scalability, omit `--datasets`
+Add `--dry-run` to preview the commands. Gurobi preflight still runs for previews
+that select it, and skip reasons are written to stderr so stdout remains JSON.
+`--datasets` and `--instances` filter only benchmarks; use `--suite benchmarks`
+to exclude the QAP scalability group. For scalability, omit `--datasets`
 and `--instances` and select the scale with `--suite scalability --sizes 20`.
 Each run needs a new output directory. Generate its table rows with:
 

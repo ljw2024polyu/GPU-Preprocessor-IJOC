@@ -120,13 +120,14 @@ folders may use the prepared names (`Mittelmann`, `MIPLIB_Large`, `QAP20`,
 bash scripts/reproduce.sh run
 ```
 
-The reproduction script defaults to `WITH_GUROBI=AUTO`. With the Gurobi 12.0.2
-C SDK, a usable full-size license, and a Gurobi-enabled build, it runs all five
+Both `reproduce.sh run` and `run_experiments.py` default to all experiment groups
+and `WITH_GUROBI=AUTO`. With the Gurobi 12.0.2 C SDK, a usable full-size license,
+and a Gurobi-enabled build, they run all five
 methods: 435 benchmark calls and 15 scalability calls (450 total). Without those
-requirements it reports why Gurobi is skipped and runs no preprocessing, folding
+requirements they report why Gurobi is skipped and run no preprocessing, folding
 only, GPU-Preprocessor, and PSLP: 348 benchmark calls and 10 scalability calls
 (358 total). Every method uses HPR-LP to solve the resulting LP.
-It uses one visible GPU (logical device 0), a tolerance of 1e-6, a solve time
+Both use one visible GPU (logical device 0), a tolerance of 1e-6, a solve time
 limit of 1000 seconds per call, and a check interval of 150.
 The shared [experiment configuration](../scripts/experiment_config.json)
 defines the command arguments, output paths, and recorded environment settings.
@@ -140,6 +141,22 @@ licenses do not enable Gurobi comparisons. No license is downloaded or bundled.
 If a license is configured after an earlier build without Gurobi, rerun `setup`.
 Set `WITH_GUROBI=OFF` to skip it explicitly, or `WITH_GUROBI=ON` to require it;
 the latter stops before the build or experiments if its requirements are unmet.
+
+After building and preparing the inputs, the equivalent Python entry point is:
+
+```sh
+python3 scripts/run_experiments.py --input-root runs/reproduction/inputs \
+  --output-dir runs/reproduction/experiment
+```
+
+This also includes the QAP scalability experiments. Use `--suite benchmarks`
+to run only Hans49, MIPLIB Large, and QAP20, or `--suite scalability` for only
+the five QAP scales. The Python entry point uses the same Gurobi preflight and
+`WITH_GUROBI` policy, including for an explicit `--methods` selection containing
+`gurobi`. Its selected solver must have a Gurobi-enabled CMake build; the check
+reads `CMakeCache.txt` in the parent of the executable's `bin/` directory.
+`--dry-run` prints the selected command plan without running benchmark models;
+the small CPU-only license probe still runs when Gurobi is a candidate.
 
 A run writes to a new `runs/reproduction/experiment/` directory and can take
 several hours. For another run, set `RUN_DIR` to a new directory before steps
@@ -163,6 +180,8 @@ Keep the same Gurobi selection when resuming. For a saved four-method run,
 `WITH_GUROBI=OFF` preserves its plan even if a license has since become available.
 A saved five-method run needs the Gurobi SDK and license again. A changed selection
 is rejected before any saved experiment output is overwritten.
+When resuming a Python run originally limited to benchmarks, retain
+`--suite benchmarks` as well as its original methods and other arguments.
 
 ## 5. Generate the results
 

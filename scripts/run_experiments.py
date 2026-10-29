@@ -16,6 +16,7 @@ import subprocess
 import sys
 
 from input_paths import model_path
+import check_gurobi
 
 ROOT = Path(__file__).resolve().parents[1]
 DATASETS = {'hans': 'Mittelmann', 'miplib-large': 'MIPLIB Large', 'qap20': 'QAP20'}
@@ -36,10 +37,32 @@ def instance_stem(name):
     return re.sub(r'\.mps(?:\.gz)?$', '', name, flags=re.I)
 
 
+def select_methods(args):
+    methods = list(args.methods) if args.methods is not None else list(METHODS.values())
+    mode = os.environ.get('WITH_GUROBI') or 'AUTO'
+    if mode not in {'AUTO', 'ON', 'OFF'}:
+        raise ValueError('WITH_GUROBI must be AUTO, ON, or OFF')
+    if 'gurobi' not in methods:
+        return methods
+    if mode == 'OFF':
+        if args.methods is not None:
+            print('Gurobi skipped: WITH_GUROBI=OFF', file=sys.stderr)
+        return [method for method in methods if method != 'gurobi']
+    # hprlp_solve is installed in BUILD_DIR/bin by the CMake build.
+    enabled, reason = check_gurobi.available(os.environ.get('GUROBI_HOME'),
+                                           args.solver.parent.parent)
+    print(('Gurobi enabled: ' if enabled else 'Gurobi skipped: ') + reason, file=sys.stderr)
+    if not enabled:
+        if mode == 'ON':
+            raise ValueError('WITH_GUROBI=ON requires a usable SDK, license, and adapter build; no experiments were started')
+        methods = [method for method in methods if method != 'gurobi']
+    return methods
+
+
 def jobs_for(args):
     inventory = read_csv(ROOT / 'data/section_4_input_inventory.csv')
     config = json.loads((ROOT / 'scripts/experiment_config.json').read_text())
-    methods = set(args.methods or ['none', 'folding', 'gpu', 'pslp'])
+    methods = set(args.methods)
     jobs = []
     if args.suite in {'benchmarks', 'all'}:
         selected = {DATASETS[key] for key in args.datasets}
@@ -224,23 +247,27 @@ def execute_jobs(jobs, output, completed, resume):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--suite', choices=['benchmarks', 'scalability', 'all'], default='benchmarks')
+    parser.add_argument('--suite', choices=['benchmarks', 'scalability', 'all'], default='all',
+                        help='Experiment groups to run (default: all)')
     parser.add_argument('--input-root', type=Path, required=True)
     parser.add_argument('--output-dir', type=Path, help='New output directory, or an existing one with --resume')
     parser.add_argument('--resume', action='store_true', help='Reuse completed logs in the same saved command plan')
     parser.add_argument('--solver', type=Path, default=ROOT / 'build-experiments/bin/hprlp_solve')
     parser.add_argument('--datasets', nargs='+', choices=list(DATASETS), default=list(DATASETS))
-    parser.add_argument('--methods', nargs='+', choices=list(METHODS.values()))
-    parser.add_argument('--instances', nargs='+', help='Benchmark names without .mps.gz')
+    parser.add_argument('--methods', nargs='+', choices=list(METHODS.values()),
+                        help='Methods to compare (default: all; Gurobi requires SDK/license preflight)')
+    parser.add_argument('--instances', nargs='+', help='Benchmark names without .mps.gz; does not filter scalability')
     parser.add_argument('--sizes', nargs='+', type=int, choices=[20, 40, 60, 80, 100], default=[20, 40, 60, 80, 100])
     parser.add_argument('--device', type=int, default=0, help='Index among visible CUDA devices')
-    parser.add_argument('--dry-run', action='store_true', help='Print commands without opening inputs or running solvers')
+    parser.add_argument('--dry-run', action='store_true',
+                        help='Print commands without running benchmark models; Gurobi preflight still runs')
     args = parser.parse_args(argv)
     try:
         if args.device < 0:
             raise ValueError('--device must be nonnegative')
         args.input_root = args.input_root.expanduser().resolve()
         args.solver = args.solver.expanduser().resolve()
+        args.methods = select_methods(args)
         jobs = jobs_for(args)
         if args.dry_run:
             reused = {}

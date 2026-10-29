@@ -16,7 +16,6 @@ BUILD_DIR=${BUILD_DIR:-"$PWD/build-experiments"}
 SOLVER="$BUILD_DIR/bin/hprlp_solve"
 WITH_GUROBI=${WITH_GUROBI:-AUTO}
 GUROBI_ENABLED=OFF
-methods=(none folding gpu pslp)
 
 select_gurobi() {
   GUROBI_ENABLED=OFF
@@ -29,7 +28,6 @@ select_gurobi() {
   if [[ "${1:-}" == built ]]; then probe_args+=(--build-dir "$BUILD_DIR"); fi
   if [[ -n "${GUROBI_HOME:-}" ]] && "$PYTHON" "${probe_args[@]}"; then
     GUROBI_ENABLED=ON
-    methods+=(gurobi)
   else
     if [[ -z "${GUROBI_HOME:-}" ]]; then
       printf '%s\n' 'Gurobi skipped: set GUROBI_HOME to the Gurobi 12.0.2 C SDK and configure a full license.' >&2
@@ -92,20 +90,18 @@ case "$stage" in
     "${CTEST:-ctest}" "${test_args[@]}"
     ;;
   smoke)
-    select_gurobi built
     prepare hans --instances FOME13
     prepare miplib-large --instances scpn2_relax
     prepare qap20 --instances tho40
     prepare qap-scale --instances qap-wil100-n020
     "$PYTHON" scripts/run_experiments.py --input-root "$INPUT_ROOT" --solver "$SOLVER" \
-      --suite all --methods "${methods[@]}" --instances FOME13 scpn2_relax tho40 \
+      --suite all --instances FOME13 scpn2_relax tho40 \
       --sizes 20 --output-dir "$RUN_DIR"
     summarize
     ;;
   run|resume)
-    select_gurobi built
     run_args=(scripts/run_experiments.py --input-root "$INPUT_ROOT" --solver "$SOLVER"
-      --suite all --methods "${methods[@]}" --output-dir "$RUN_DIR")
+      --suite all --output-dir "$RUN_DIR")
     if [[ "$stage" == resume ]]; then run_args+=(--resume); fi
     "$PYTHON" "${run_args[@]}"
     ;;
