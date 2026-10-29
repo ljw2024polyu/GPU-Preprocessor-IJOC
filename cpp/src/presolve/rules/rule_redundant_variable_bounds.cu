@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #include "gpu_presolver/offset.hpp"
 #include "gpu_presolver/presolve/device_recovery.hpp"
 #include "gpu_presolver/presolve/rules/rule_redundant_variable_bounds.hpp"
@@ -406,7 +409,7 @@ void apply_rule_redundant_variable_bounds(PresolvePlanGpu& plan,
                 host_selected_lower[idx] != std::uint8_t{0} ? -INFINITY : host_old_l[idx];
             const double new_u =
                 host_selected_upper[idx] != std::uint8_t{0} ? INFINITY : host_old_u[idx];
-            append_postsolve_record(plan.tape, PostsolveReductionType::BoundChangeNoRow, {col},
+            append_postsolve_record(plan.tape, PostsolveReductionType::VariableBoundChange, {col},
                                     {host_old_l[idx], host_old_u[idx], new_l, new_u},
                                     PostsolveDualMode::Minimal);
           }

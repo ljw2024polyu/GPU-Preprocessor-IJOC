@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #include "gpu_presolver/offset.hpp"
 #include "gpu_presolver/presolve/live_matrix.cuh"
 #include "gpu_presolver/presolve/cleanup_support.cuh"
@@ -83,8 +86,8 @@ struct SingletonColumnsWorkspace {
   std::int32_t* row_owner = nullptr;
   std::uint8_t* col_delete = nullptr;
   std::uint8_t* row_delete = nullptr;
-  std::uint8_t* row_lhs_change = nullptr;
-  std::uint8_t* row_rhs_change = nullptr;
+  std::uint8_t* row_lower_bound_change = nullptr;
+  std::uint8_t* row_upper_bound_change = nullptr;
   SingletonAction* actions = nullptr;
   double* chosen_side = nullptr;
   double* c_new = nullptr;
@@ -117,8 +120,8 @@ struct SingletonColumnsWorkspace {
     row_capacity = 0;
     free_device_pointer(row_owner);
     free_device_pointer(row_delete);
-    free_device_pointer(row_lhs_change);
-    free_device_pointer(row_rhs_change);
+    free_device_pointer(row_lower_bound_change);
+    free_device_pointer(row_upper_bound_change);
     free_device_pointer(AL_new);
     free_device_pointer(AU_new);
     free_device_pointer(activity_finite_min);
@@ -170,12 +173,12 @@ struct SingletonColumnsWorkspace {
         allocate_device_pointer(row_delete,
                                 required_rows,
                                 "cudaMalloc singleton workspace row_delete");
-        allocate_device_pointer(row_lhs_change,
+        allocate_device_pointer(row_lower_bound_change,
                                 required_rows,
-                                "cudaMalloc singleton workspace row_lhs_change");
-        allocate_device_pointer(row_rhs_change,
+                                "cudaMalloc singleton workspace row_lower_bound_change");
+        allocate_device_pointer(row_upper_bound_change,
                                 required_rows,
-                                "cudaMalloc singleton workspace row_rhs_change");
+                                "cudaMalloc singleton workspace row_upper_bound_change");
         allocate_device_pointer(AL_new,
                                 required_rows,
                                 "cudaMalloc singleton workspace AL_new");
@@ -453,14 +456,14 @@ void append_singleton_tape_segment(PostsolveTape &tape, PostsolveTapeGpu &segmen
   download(tape.vals.data() + old_values, segment.vals, segment.value_count);
 }
 
-__global__ void _kernel_singleton_eq_to_ineq_counts(
-    std::int32_t* selected_scan, const std::uint8_t* lhs_change,
-    const std::uint8_t* rhs_change, std::int32_t m) {
+__global__ void _kernel_singleton_row_dual_shift_counts(
+    std::int32_t* selected_scan, const std::uint8_t* lower_bound_change,
+    const std::uint8_t* upper_bound_change, std::int32_t m) {
   const NnzOffset row = NnzOffset(blockIdx.x) * blockDim.x + threadIdx.x;
-  if (row < m) selected_scan[row] = lhs_change[row] != 0 || rhs_change[row] != 0;
+  if (row < m) selected_scan[row] = lower_bound_change[row] != 0 || upper_bound_change[row] != 0;
 }
 
-__global__ void _kernel_singleton_pack_eq_to_ineq_tape(
+__global__ void _kernel_singleton_pack_row_dual_shift_tape(
     std::int32_t* types, std::uint8_t* dual_modes,
     NnzOffset* index_starts, NnzOffset* value_starts,
     std::int32_t* indices, double* vals, const std::int32_t* selected_scan,
@@ -468,7 +471,7 @@ __global__ void _kernel_singleton_pack_eq_to_ineq_tape(
   const NnzOffset row = NnzOffset(blockIdx.x) * blockDim.x + threadIdx.x;
   if (row >= m || selected_scan[row] == (row == 0 ? 0 : selected_scan[row - 1])) return;
   const NnzOffset record = selected_scan[row] - 1;
-  types[record] = static_cast<std::int32_t>(PostsolveReductionType::EqToIneq);
+  types[record] = static_cast<std::int32_t>(PostsolveReductionType::RowDualShift);
   dual_modes[record] = static_cast<std::uint8_t>(PostsolveDualMode::Minimal);
   index_starts[record + 1] = index_base + record + 1;
   value_starts[record + 1] = value_base + record + 1;
@@ -476,9 +479,9 @@ __global__ void _kernel_singleton_pack_eq_to_ineq_tape(
   vals[record] = 0.0;
 }
 
-void append_eq_to_ineq_tape_from_device(PostsolveTape& tape,
-                                        const std::uint8_t* row_lhs_change,
-                                        const std::uint8_t* row_rhs_change,
+void append_row_dual_shift_tape_from_device(PostsolveTape& tape,
+                                        const std::uint8_t* row_lower_bound_change,
+                                        const std::uint8_t* row_upper_bound_change,
                                         std::int32_t m,
                                         const char* context) {
   if (m <= 0) return;
@@ -487,9 +490,9 @@ void append_eq_to_ineq_tape_from_device(PostsolveTape& tape,
   auto* selected_scan = static_cast<std::int32_t*>(scan_storage.data);
   const int blocks = static_cast<int>((NnzOffset(m) + GPU_PRESOLVE_THREADS - 1) /
                                       GPU_PRESOLVE_THREADS);
-  _kernel_singleton_eq_to_ineq_counts<<<blocks, GPU_PRESOLVE_THREADS>>>(
-      selected_scan, row_lhs_change, row_rhs_change, m);
-  throw_if_cuda_error(cudaGetLastError(), "_kernel_singleton_eq_to_ineq_counts");
+  _kernel_singleton_row_dual_shift_counts<<<blocks, GPU_PRESOLVE_THREADS>>>(
+      selected_scan, row_lower_bound_change, row_upper_bound_change, m);
+  throw_if_cuda_error(cudaGetLastError(), "_kernel_singleton_row_dual_shift_counts");
   inclusive_scan_i32(selected_scan, m, context);
   std::int32_t records = 0;
   throw_if_cuda_error(cudaMemcpy(&records, selected_scan + m - 1,
@@ -497,11 +500,11 @@ void append_eq_to_ineq_tape_from_device(PostsolveTape& tape,
   if (records == 0) return;
   PostsolveTapeGpu packed;
   allocate_singleton_tape_segment(packed, records, records, records, context);
-  _kernel_singleton_pack_eq_to_ineq_tape<<<blocks, GPU_PRESOLVE_THREADS>>>(
+  _kernel_singleton_pack_row_dual_shift_tape<<<blocks, GPU_PRESOLVE_THREADS>>>(
       packed.types, packed.dual_modes, packed.index_starts, packed.value_starts, packed.indices,
       packed.vals, selected_scan, static_cast<NnzOffset>(tape.resident ? 0 : tape.indices.size()),
       static_cast<NnzOffset>(tape.resident ? 0 : tape.vals.size()), m);
-  throw_if_cuda_error(cudaGetLastError(), "_kernel_singleton_pack_eq_to_ineq_tape");
+  throw_if_cuda_error(cudaGetLastError(), "_kernel_singleton_pack_row_dual_shift_tape");
   append_singleton_tape_segment(tape, packed, context);
 }
 
@@ -1017,7 +1020,7 @@ __global__ void _kernel_propose_singleton_column_actions(std::int32_t* status_fl
 // recovery packing and objective gathering complete before the common commit.
 __global__ void _kernel_stage_singleton_column_actions(
     std::int32_t* status_flag,
-    std::uint8_t* row_delete, std::uint8_t* row_lhs_change, std::uint8_t* row_rhs_change,
+    std::uint8_t* row_delete, std::uint8_t* row_lower_bound_change, std::uint8_t* row_upper_bound_change,
     std::uint8_t* col_delete, double* AL_new, double* AU_new, double* obj_contrib,
     std::int32_t* row_owner, const SingletonAction* actions, const double* chosen_side,
     const double* support_val, const double* c_cur, const double* l_cur, const double* u_cur,
@@ -1055,15 +1058,15 @@ __global__ void _kernel_stage_singleton_column_actions(
 
   if (action == SingletonAction::SetRowSide) {
     const double side = chosen_side[j];
-    if (!isfinite(lhs) || fabs(lhs - side) > tol) row_lhs_change[row] = std::uint8_t{1};
-    if (!isfinite(rhs) || fabs(rhs - side) > tol) row_rhs_change[row] = std::uint8_t{1};
+    if (!isfinite(lhs) || fabs(lhs - side) > tol) row_lower_bound_change[row] = std::uint8_t{1};
+    if (!isfinite(rhs) || fabs(rhs - side) > tol) row_upper_bound_change[row] = std::uint8_t{1};
     AL_new[row] = side;
     AU_new[row] = side;
   } else if (action == SingletonAction::TightenLhs) {
-    row_lhs_change[row] = std::uint8_t{1};
+    row_lower_bound_change[row] = std::uint8_t{1};
     AL_new[row] = rhs;
   } else if (action == SingletonAction::TightenRhs) {
-    row_rhs_change[row] = std::uint8_t{1};
+    row_upper_bound_change[row] = std::uint8_t{1};
     AU_new[row] = lhs;
   }
   atomicMax(&status_flag[2], 1);
@@ -1185,7 +1188,7 @@ __global__ void _kernel_commit_singleton_column_actions(std::uint8_t* keep_row,
   }
 }
 
-__global__ void _kernel_singleton_subcol_tape_counts(std::int32_t* selected_scan,
+__global__ void _kernel_singleton_singleton_column_substitution_tape_counts(std::int32_t* selected_scan,
     NnzOffset* support_scan,
     const std::uint8_t* col_delete,
     const std::int32_t* row_owner,
@@ -1230,7 +1233,7 @@ __global__ void _kernel_singleton_subcol_tape_counts(std::int32_t* selected_scan
   }
 }
 
-__global__ void _kernel_singleton_subcol_long_tape_counts(
+__global__ void _kernel_singleton_singleton_column_substitution_long_tape_counts(
     std::int32_t* selected_scan,
     NnzOffset* support_scan,
     const std::uint8_t* keep_col,
@@ -1275,10 +1278,10 @@ __global__ void _kernel_singleton_subcol_long_tape_counts(
   }
 }
 
-// Final SubCol layout: indices = [col, row, support_count, support columns...],
+// Final SingletonColumnSubstitution layout: indices = [col, row, support_count, support columns...],
 // vals = [pivot, side, lower, upper, cost, row_deleted, support coefficients...].
 // Prefix sums preserve ascending row order and the original CSR support order.
-struct SubcolTapeOutput {
+struct SingletonColumnSubstitutionTapeOutput {
   std::int32_t* types;
   NnzOffset* index_starts;
   NnzOffset* value_starts;
@@ -1289,7 +1292,7 @@ struct SubcolTapeOutput {
   NnzOffset value_base;
 };
 
-__device__ void write_subcol_header(SubcolTapeOutput output,
+__device__ void write_singleton_column_substitution_header(SingletonColumnSubstitutionTapeOutput output,
                                     NnzOffset record,
                                     NnzOffset support_start,
                                     NnzOffset support_stop,
@@ -1299,7 +1302,7 @@ __device__ void write_subcol_header(SubcolTapeOutput output,
                                     double cost, std::uint8_t row_deleted) {
   const NnzOffset i = 3 * record + support_start;
   const NnzOffset v = 6 * record + support_start;
-  output.types[record] = static_cast<std::int32_t>(PostsolveReductionType::SubCol);
+  output.types[record] = static_cast<std::int32_t>(PostsolveReductionType::SingletonColumnSubstitution);
   output.dual_modes[record] = static_cast<std::uint8_t>(PostsolveDualMode::Minimal);
   output.index_starts[record + 1] = output.index_base + 3 * (record + 1) + support_stop;
   output.value_starts[record + 1] = output.value_base + 6 * (record + 1) + support_stop;
@@ -1313,7 +1316,7 @@ __device__ void write_subcol_header(SubcolTapeOutput output,
   output.vals[v + 5] = row_deleted != std::uint8_t{0} ? 1.0 : 0.0;
 }
 
-__global__ void _kernel_singleton_pack_subcol_tape(SubcolTapeOutput output,
+__global__ void _kernel_singleton_pack_singleton_column_substitution_tape(SingletonColumnSubstitutionTapeOutput output,
     const std::int32_t* selected_scan,
     const NnzOffset* support_scan,
     const std::uint8_t* col_delete,
@@ -1349,7 +1352,7 @@ __global__ void _kernel_singleton_pack_subcol_tape(SubcolTapeOutput output,
 
   const NnzOffset support_start = row == 0 ? 0 : support_scan[row - 1];
   const NnzOffset support_stop = support_scan[row];
-  write_subcol_header(output, record, support_start, support_stop, col, row,
+  write_singleton_column_substitution_header(output, record, support_start, support_stop, col, row,
                       chosen_side[col], l[col], u[col], c[col], row_delete[row]);
 
   double pivot = 0.0;
@@ -1368,7 +1371,7 @@ __global__ void _kernel_singleton_pack_subcol_tape(SubcolTapeOutput output,
   output.vals[6 * NnzOffset(record) + support_start] = pivot;
 }
 
-__global__ void _kernel_singleton_pack_long_subcol_tape(SubcolTapeOutput output,
+__global__ void _kernel_singleton_pack_long_singleton_column_substitution_tape(SingletonColumnSubstitutionTapeOutput output,
     const std::int32_t* selected_scan,
     const NnzOffset* support_scan,
     const std::uint8_t* row_delete,
@@ -1393,7 +1396,7 @@ __global__ void _kernel_singleton_pack_long_subcol_tape(SubcolTapeOutput output,
   const NnzOffset support_stop = support_scan[row];
   const std::int32_t tid = static_cast<std::int32_t>(threadIdx.x);
   if (tid == 0) {
-    write_subcol_header(output, record, support_start, support_stop, col, row,
+    write_singleton_column_substitution_header(output, record, support_start, support_stop, col, row,
                         chosen_side[col], l[col], u[col], c[col], row_delete[row]);
   }
   __shared__ std::int32_t scan[GPU_PRESOLVE_THREADS];
@@ -1439,7 +1442,7 @@ __global__ void _kernel_singleton_pack_long_subcol_tape(SubcolTapeOutput output,
   if (tid == 0) output.vals[6 * NnzOffset(record) + support_start] = pivot;
 }
 
-void append_subcol_tape_compacted_from_device(PostsolveTape& tape,
+void append_singleton_column_substitution_tape_compacted_from_device(PostsolveTape& tape,
                                               const std::uint8_t* col_delete,
                                               const std::uint8_t* row_delete,
                                               const std::uint8_t* keep_col,
@@ -1471,7 +1474,7 @@ void append_subcol_tape_compacted_from_device(PostsolveTape& tape,
   throw_if_cuda_error(cudaMemset(long_row_count, 0, sizeof(std::int32_t)), context);
 
   const int blocks_m = (m + GPU_PRESOLVE_THREADS - 1) / GPU_PRESOLVE_THREADS;
-  _kernel_singleton_subcol_tape_counts<<<blocks_m, GPU_PRESOLVE_THREADS>>>(
+  _kernel_singleton_singleton_column_substitution_tape_counts<<<blocks_m, GPU_PRESOLVE_THREADS>>>(
       selected_scan,
       support_scan,
       col_delete,
@@ -1485,19 +1488,19 @@ void append_subcol_tape_compacted_from_device(PostsolveTape& tape,
       long_row_count,
       m,
       n);
-  throw_if_cuda_error(cudaGetLastError(), "_kernel_singleton_subcol_tape_counts");
+  throw_if_cuda_error(cudaGetLastError(), "_kernel_singleton_singleton_column_substitution_tape_counts");
   std::int32_t long_row_count_host = 0;
   throw_if_cuda_error(cudaMemcpy(&long_row_count_host, long_row_count,
                                  sizeof(std::int32_t), cudaMemcpyDeviceToHost),
                       context);
   if (long_row_count_host > 0) {
-    _kernel_singleton_subcol_long_tape_counts
+    _kernel_singleton_singleton_column_substitution_long_tape_counts
         <<<long_row_count_host, GPU_PRESOLVE_THREADS>>>(
             selected_scan, support_scan, keep_col, row_owner, A.rowPtr, A.colVal,
             A.nzVal, zero_tol,
             long_rows, long_row_count_host);
     throw_if_cuda_error(cudaGetLastError(),
-                        "_kernel_singleton_subcol_long_tape_counts");
+                        "_kernel_singleton_singleton_column_substitution_long_tape_counts");
   }
   inclusive_scan_i32(selected_scan, m, context);
   inclusive_scan_i32(support_scan, m, context);
@@ -1526,22 +1529,22 @@ void append_subcol_tape_compacted_from_device(PostsolveTape& tape,
   // per-record host vectors or intermediate host support/metadata arrays remain.
   PostsolveTapeGpu packed;
   allocate_singleton_tape_segment(packed, records, index_count, value_count, context);
-  const SubcolTapeOutput output{packed.types, packed.index_starts,
+  const SingletonColumnSubstitutionTapeOutput output{packed.types, packed.index_starts,
       packed.value_starts, packed.dual_modes, packed.indices, packed.vals,
       static_cast<NnzOffset>(old_indices), static_cast<NnzOffset>(old_values)};
 
-  _kernel_singleton_pack_subcol_tape<<<blocks_m, GPU_PRESOLVE_THREADS>>>(
+  _kernel_singleton_pack_singleton_column_substitution_tape<<<blocks_m, GPU_PRESOLVE_THREADS>>>(
       output, selected_scan, support_scan, col_delete, row_delete, keep_col,
       row_owner, chosen_side, c, l, u, A.rowPtr, A.colVal, A.nzVal,
       SINGLETON_ACTIVITY_LONG_ROW_THRESHOLD, m, n);
-  throw_if_cuda_error(cudaGetLastError(), "_kernel_singleton_pack_subcol_tape");
+  throw_if_cuda_error(cudaGetLastError(), "_kernel_singleton_pack_singleton_column_substitution_tape");
   if (long_row_count_host > 0) {
-    _kernel_singleton_pack_long_subcol_tape
+    _kernel_singleton_pack_long_singleton_column_substitution_tape
         <<<long_row_count_host, GPU_PRESOLVE_THREADS>>>(
             output, selected_scan, support_scan, row_delete, keep_col, row_owner,
             chosen_side, c, l, u, A.rowPtr, A.colVal, A.nzVal,
             long_rows, long_row_count_host);
-    throw_if_cuda_error(cudaGetLastError(), "_kernel_singleton_pack_long_subcol_tape");
+    throw_if_cuda_error(cudaGetLastError(), "_kernel_singleton_pack_long_singleton_column_substitution_tape");
   }
 
   // Transfer the finished segment to the recovery backend in chronological
@@ -1604,8 +1607,8 @@ void apply_rule_singleton_columns(PresolvePlanGpu& plan,
   std::int32_t* row_owner = workspace.row_owner;
   std::uint8_t* col_delete = workspace.col_delete;
   std::uint8_t* row_delete = workspace.row_delete;
-  std::uint8_t* row_lhs_change = workspace.row_lhs_change;
-  std::uint8_t* row_rhs_change = workspace.row_rhs_change;
+  std::uint8_t* row_lower_bound_change = workspace.row_lower_bound_change;
+  std::uint8_t* row_upper_bound_change = workspace.row_upper_bound_change;
   SingletonAction* actions = workspace.actions;
   double* chosen_side = workspace.chosen_side;
   double* c_new = workspace.c_new;
@@ -1629,8 +1632,8 @@ void apply_rule_singleton_columns(PresolvePlanGpu& plan,
   throw_if_cuda_error(cudaMemset(status_flag, 0, sizeof(std::int32_t) * 3), "cudaMemset singleton_columns status_flag");
   throw_if_cuda_error(cudaMemset(col_delete, 0, static_cast<std::size_t>(n)), "cudaMemset singleton_columns col_delete");
   throw_if_cuda_error(cudaMemset(row_delete, 0, static_cast<std::size_t>(m)), "cudaMemset singleton_columns row_delete");
-  throw_if_cuda_error(cudaMemset(row_lhs_change, 0, static_cast<std::size_t>(m)), "cudaMemset singleton_columns row_lhs_change");
-  throw_if_cuda_error(cudaMemset(row_rhs_change, 0, static_cast<std::size_t>(m)), "cudaMemset singleton_columns row_rhs_change");
+  throw_if_cuda_error(cudaMemset(row_lower_bound_change, 0, static_cast<std::size_t>(m)), "cudaMemset singleton_columns row_lower_bound_change");
+  throw_if_cuda_error(cudaMemset(row_upper_bound_change, 0, static_cast<std::size_t>(m)), "cudaMemset singleton_columns row_upper_bound_change");
   throw_if_cuda_error(cudaMemset(obj_contrib, 0, sizeof(double) * static_cast<std::size_t>(n)), "cudaMemset singleton_columns obj_contrib");
   const int blocks_m = (m + GPU_PRESOLVE_THREADS - 1) / GPU_PRESOLVE_THREADS;
   _kernel_fill_i32<<<blocks_m, GPU_PRESOLVE_THREADS>>>(row_owner, INT_MAX, m);
@@ -1733,7 +1736,7 @@ void apply_rule_singleton_columns(PresolvePlanGpu& plan,
   // 2. Stage selected actions without a host round trip between proposal and
   // staging. An unbounded proposal gates staging on device.
   _kernel_stage_singleton_column_actions<<<blocks_m, GPU_PRESOLVE_THREADS>>>(
-      status_flag, row_delete, row_lhs_change, row_rhs_change, col_delete,
+      status_flag, row_delete, row_lower_bound_change, row_upper_bound_change, col_delete,
       AL_new, AU_new, obj_contrib, row_owner, actions, chosen_side,
       stats.singleton_column_val, plan.new_c, plan.new_l, plan.new_u,
       plan.new_AL, plan.new_AU, pparams.bound_tol, m, n);
@@ -1772,7 +1775,7 @@ void apply_rule_singleton_columns(PresolvePlanGpu& plan,
     const std::int32_t max_mn = m > n ? m : n;
     const int blocks_mn = (max_mn + GPU_PRESOLVE_THREADS - 1) / GPU_PRESOLVE_THREADS;
     if (status[1] != 0 && pparams.record_postsolve_tape) {
-      append_subcol_tape_compacted_from_device(plan.tape,
+      append_singleton_column_substitution_tape_compacted_from_device(plan.tape,
                                                col_delete,
                                                row_delete,
                                                plan.keep_col_mask,
@@ -1783,15 +1786,15 @@ void apply_rule_singleton_columns(PresolvePlanGpu& plan,
                                                plan.new_u,
                                                lp.A,
                                                pparams.zero_tol,
-                                               "cudaMemcpy singleton compact SubCol tape");
+                                               "cudaMemcpy singleton compact SingletonColumnSubstitution tape");
     }
     if (status[2] != 0 &&
         pparams.record_postsolve_tape) {
-      append_eq_to_ineq_tape_from_device(plan.tape,
-                                         row_lhs_change,
-                                         row_rhs_change,
+      append_row_dual_shift_tape_from_device(plan.tape,
+                                         row_lower_bound_change,
+                                         row_upper_bound_change,
                                          m,
-                                         "cudaMemcpy singleton eq-to-ineq tape");
+                                         "cudaMemcpy singleton row-dual-shift tape");
     }
     // 3. Commit once, after recovery has captured the original data.
     _kernel_commit_singleton_column_actions<<<blocks_mn, GPU_PRESOLVE_THREADS>>>(

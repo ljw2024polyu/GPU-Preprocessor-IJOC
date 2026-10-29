@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #include "gpu_presolver/detail/runtime_options.hpp"
 #include "gpu_presolver/offset.hpp"
 #include "gpu_presolver/presolve/device_recovery.hpp"
@@ -152,7 +155,7 @@ void test_fixed_parallel_column_records_tape() {
   assert(std::fabs(AU[1] - 14.0) < 1.0e-12);
   assert(std::fabs(plan.obj_constant_delta - 6.0) < 1.0e-12);
   assert((plan.tape.types == std::vector<std::int32_t>{
-                                 static_cast<std::int32_t>(PostsolveReductionType::FixedCol)}));
+                                 static_cast<std::int32_t>(PostsolveReductionType::FixedVariable)}));
   assert((plan.tape.index_starts == std::vector<NnzOffset>{0, 3}));
   assert((plan.tape.value_starts == std::vector<NnzOffset>{0, 4}));
   assert((plan.tape.dual_modes == std::vector<std::uint8_t>{

@@ -1,12 +1,15 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #pragma once
 
 #include "postsolve_common.cuh"
 
 namespace gpu_presolver::presolve::postsolve {
 
-// Fixed-column records shared by fixed-variable, empty-column and dual-fixing reductions.
+// Fixed-variable records shared by fixed-variable, empty-column and dual-fixing reductions.
 
-__device__ __forceinline__ void replay_fixed_column(
+__device__ __forceinline__ void replay_fixed_variable(
     double* x_org,
     double* y_org,
     double* z_org,
@@ -38,7 +41,7 @@ __device__ __forceinline__ void replay_fixed_column(
   }
 }
 
-__device__ __forceinline__ void replay_infinite_fixed_column(
+__device__ __forceinline__ void replay_infinite_bound_dual_fix(
     double* x_org,
     double* z_org,
     std::uint8_t* z_retrieved,

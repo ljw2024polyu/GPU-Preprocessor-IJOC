@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #include "gpu_presolver/detail/runtime_options.hpp"
 #include "gpu_presolver/presolve/device_recovery.hpp"
 #include "gpu_presolver/presolve/cleanup_workspace.hpp"
@@ -28,9 +31,9 @@ static std::vector<double> host(const double *p, int n) {
   check(cudaMemcpy(v.data(), p, sizeof(double) * n, cudaMemcpyDeviceToHost));
   return v;
 }
-static PostsolveTapeGpu subcol(int row, double rhs) {
+static PostsolveTapeGpu singleton_column_substitution(int row, double rhs) {
   PostsolveTape t;
-  t.types = {int(PostsolveReductionType::SubCol)};
+  t.types = {int(PostsolveReductionType::SingletonColumnSubstitution)};
   t.dual_modes = {unsigned(PostsolveDualMode::Minimal)};
   t.index_starts = {0, 4};
   t.value_starts = {0, 7};
@@ -61,7 +64,7 @@ static void apply(PresolveRecordGpu &r, bool structural, int row, double rhs) {
     mask[0] = 0;
     for (int i = 0; i < n; ++i)
       cols[i] = i - 1;
-    append_device_recovery_segment(plan.tape, subcol(row, rhs));
+    append_device_recovery_segment(plan.tape, singleton_column_substitution(row, rhs));
   }
   plan.keep_col_mask = device(mask);
   plan.keep_row_mask = device(std::vector<unsigned char>(m, 1));
@@ -100,14 +103,14 @@ static void long_support_mapping(bool reuse) {
       auto support = [&](bool row) {
         for (int j = 0; j < length; ++j) index(j%31 == 0 ? -1 : (j*17)%size, row);
       };
-      if (type == PostsolveReductionType::FixedCol) { index(11,false); support(true); }
-      if (type == PostsolveReductionType::SubCol) {
+      if (type == PostsolveReductionType::FixedVariable) { index(11,false); support(true); }
+      if (type == PostsolveReductionType::SingletonColumnSubstitution) {
         index(19,false); index(23,true); literal(length); support(false);
       }
       if (type == PostsolveReductionType::DoubletonEquation) {
         index(7,false); index(13,false); index(29,true); literal(length); support(true);
       }
-      if (type == PostsolveReductionType::FixedColInf) {
+      if (type == PostsolveReductionType::InfiniteBoundDualFix) {
         literal(1); index(17,false); literal(length); support(false);
         literal(2); index(31,false); index(size+1,false);
       }
@@ -117,10 +120,10 @@ static void long_support_mapping(bool reuse) {
       tape.index_starts.push_back(tape.indices.size());
       tape.vals.push_back(1.25); tape.value_starts.push_back(tape.vals.size());
     };
-    for (auto type : {PostsolveReductionType::FixedCol, PostsolveReductionType::SubCol,
-                     PostsolveReductionType::DoubletonEquation, PostsolveReductionType::FixedColInf})
+    for (auto type : {PostsolveReductionType::FixedVariable, PostsolveReductionType::SingletonColumnSubstitution,
+                     PostsolveReductionType::DoubletonEquation, PostsolveReductionType::InfiniteBoundDualFix})
       for (int len : {0,1,252,253,254,255,256,257,1024,65536}) add(type,len);
-    for (int i=0;i<300;++i) add(PostsolveReductionType::SubCol,257);
+    for (int i=0;i<300;++i) add(PostsolveReductionType::SingletonColumnSubstitution,257);
     const auto starts=tape.index_starts, value_starts=tape.value_starts;
     const auto types=tape.types; const auto values=tape.vals; const auto modes=tape.dual_modes;
     flush_host_recovery_segment(tape);
@@ -187,7 +190,7 @@ int main() {
     malformed = true;
   }
   assert(malformed);
-  int valid_type = int(PostsolveReductionType::SubCol);
+  int valid_type = int(PostsolveReductionType::SingletonColumnSubstitution);
   check(cudaMemcpy(r.device->segments[0].types, &valid_type, sizeof(int), cudaMemcpyHostToDevice));
   validate_device_recovery(r);
   bool rejected = false;

@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #pragma once
 
 #include "gpu_presolver/offset.hpp"
@@ -263,19 +266,17 @@ struct PrimalRecoveryCheckpoint {
 };
 
 enum class PostsolveReductionType : std::int32_t {
-  FixedCol = 0,
-  FixedColInf = 1,
-  SubCol = 2,
+  FixedVariable = 0,
+  InfiniteBoundDualFix = 1,
+  SingletonColumnSubstitution = 2,
   ParallelColumn = 3,
   ParallelRow = 4,
   DeletedRow = 5,
-  AddedRow = 6,
-  AddedRows = 7,
-  LhsChange = 8,
-  RhsChange = 9,
-  EqToIneq = 10,
-  BoundChangeNoRow = 11,
-  BoundChangeTheRow = 12,
+  RowLowerBoundChange = 8,
+  RowUpperBoundChange = 9,
+  RowDualShift = 10,
+  VariableBoundChange = 11,
+  RowImpliedBoundChange = 12,
   DoubletonEquation = 13,
   FmeCol = 14,
 };

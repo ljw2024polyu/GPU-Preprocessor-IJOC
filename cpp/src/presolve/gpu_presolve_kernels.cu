@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #include "gpu_presolver/detail/runtime_options.hpp"
 #include "gpu_presolver/offset.hpp"
 #include "gpu_presolver/presolve/gpu_presolve_kernels.hpp"

@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #pragma once
 #include "gpu_presolver/presolve/presolve_structs.hpp"
 #include <utility>
@@ -45,7 +48,7 @@ struct DeviceRecoveryState {
   NnzOffset records = 0, indices = 0, values = 0;
   std::size_t host_staged_bytes = 0;
 };
-enum class SimpleRecovery { FixedCol, SingletonRow, DeletedRow, RowSides, ColumnBounds };
+enum class SimpleRecovery { FixedVariable, SingletonRow, DeletedRow, RowSides, ColumnBounds };
 void append_simple_device_recovery(PostsolveTape &, SimpleRecovery, const std::uint8_t *,
                                    const std::uint8_t *, std::int32_t, const std::int32_t *,
                                    const double *, const double *, const double *);

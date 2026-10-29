@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #include "gpu_presolver/offset.hpp"
 #include "gpu_presolver/presolve/device_recovery.hpp"
 #include "gpu_presolver/presolve/gpu_postsolve.hpp"
@@ -120,24 +123,24 @@ __global__ void _kernel_replay_postsolve_tape(double* x_org,
       replay_doubleton_equation(
           x_org, y_org, z_org, z_retrieved, tape_idx, tape_val, AT_rowPtr, AT_colVal, AT_nzVal, c,
           idx0, idx1, val0, val1, has_original_model, replay_primal, replay_dual, tol);
-    } else if (reduction_type == static_cast<std::int32_t>(PostsolveReductionType::SubCol)) {
-      replay_singleton_column(
+    } else if (reduction_type == static_cast<std::int32_t>(PostsolveReductionType::SingletonColumnSubstitution)) {
+      replay_singleton_column_substitution(
           x_org, y_org, z_org, z_retrieved, tape_idx, tape_val, idx0, val0, replay_primal,
           replay_dual);
-    } else if (reduction_type == static_cast<std::int32_t>(PostsolveReductionType::FixedCol)) {
-      replay_fixed_column(
+    } else if (reduction_type == static_cast<std::int32_t>(PostsolveReductionType::FixedVariable)) {
+      replay_fixed_variable(
           x_org, y_org, z_org, z_retrieved, tape_idx, tape_val, idx0, idx1, val0, replay_primal,
           replay_dual);
-    } else if (reduction_type == static_cast<std::int32_t>(PostsolveReductionType::FixedColInf)) {
-      replay_infinite_fixed_column(
+    } else if (reduction_type == static_cast<std::int32_t>(PostsolveReductionType::InfiniteBoundDualFix)) {
+      replay_infinite_bound_dual_fix(
           x_org, z_org, z_retrieved, tape_idx, tape_val, idx0, val0, replay_primal, replay_dual);
     } else if (reduction_type == static_cast<std::int32_t>(PostsolveReductionType::FmeCol)) {
       replay_projected_column(
           x_org, y_org, z_org, z_retrieved, tape_idx, tape_val, idx0, val0, replay_primal,
           replay_dual);
     } else if (replay_dual != 0 &&
-               reduction_type == static_cast<std::int32_t>(PostsolveReductionType::EqToIneq)) {
-      replay_equation_to_inequality(
+               reduction_type == static_cast<std::int32_t>(PostsolveReductionType::RowDualShift)) {
+      replay_row_dual_shift(
           y_org, tape_idx, tape_val, idx0, val0);
     } else if (replay_dual != 0 &&
                reduction_type == static_cast<std::int32_t>(PostsolveReductionType::ParallelRow) &&
@@ -152,9 +155,9 @@ __global__ void _kernel_replay_postsolve_tape(double* x_org,
           x_org, y_org, z_org, z_retrieved, tape_idx, tape_val, AT_rowPtr, AT_colVal, AT_nzVal, c,
           l, u, idx0, val0, tol);
     } else if (replay_dual != 0 &&
-               reduction_type == static_cast<std::int32_t>(PostsolveReductionType::BoundChangeTheRow) &&
+               reduction_type == static_cast<std::int32_t>(PostsolveReductionType::RowImpliedBoundChange) &&
                has_original_model != 0 && idx1 >= idx0 + 1) {
-      replay_row_bound_change(
+      replay_row_implied_bound_change(
           x_org, y_org, z_org, z_retrieved, tape_idx, tape_val, A_rowPtr, A_colVal, A_nzVal, idx0,
           val0, tol);
     }
@@ -308,7 +311,7 @@ std::vector<std::uint8_t> build_exact_replay_column_mask(const PostsolveTape& ta
   for (std::size_t k = 0; k < tape.types.size(); ++k) {
     const NnzOffset idx0 = tape.index_starts[k];
     const auto type = static_cast<PostsolveReductionType>(tape.types[k]);
-    if (type == PostsolveReductionType::SubCol) {
+    if (type == PostsolveReductionType::SingletonColumnSubstitution) {
       const std::int32_t col = tape.indices[idx0];
       if (0 <= col && col < n) {
         protected_cols[static_cast<std::size_t>(col)] = std::uint8_t{1};
@@ -322,7 +325,7 @@ std::vector<std::uint8_t> build_exact_replay_column_mask(const PostsolveTape& ta
       if (0 <= keep_col && keep_col < n) {
         protected_cols[static_cast<std::size_t>(keep_col)] = std::uint8_t{1};
       }
-    } else if (type == PostsolveReductionType::FixedColInf) {
+    } else if (type == PostsolveReductionType::InfiniteBoundDualFix) {
       const std::int32_t col = tape.indices[idx0 + 1];
       if (0 <= col && col < n) {
         protected_cols[static_cast<std::size_t>(col)] = std::uint8_t{1};
@@ -345,13 +348,13 @@ __global__ void mark_protected_device(int *mask, const int *types, const NnzOffs
   int t = types[k];
   NnzOffset p = starts[k];
   int a = -1, b = -1;
-  if (t == int(PostsolveReductionType::SubCol) || t == int(PostsolveReductionType::ParallelColumn))
+  if (t == int(PostsolveReductionType::SingletonColumnSubstitution) || t == int(PostsolveReductionType::ParallelColumn))
     a = indices[p];
   if (t == int(PostsolveReductionType::DoubletonEquation)) {
     a = indices[p];
     b = indices[p + 1];
   }
-  if (t == int(PostsolveReductionType::FixedColInf))
+  if (t == int(PostsolveReductionType::InfiniteBoundDualFix))
     a = indices[p + 1];
   if (a >= 0 && a < n)
     atomicOr(mask + a, 1);
@@ -431,7 +434,7 @@ void validate_postsolve_tape(const PostsolveTape& tape) {
       throw std::runtime_error("postsolve tape offsets are not monotone");
     }
     if (tape.types[k] <
-            static_cast<std::int32_t>(PostsolveReductionType::FixedCol) ||
+            static_cast<std::int32_t>(PostsolveReductionType::FixedVariable) ||
         tape.types[k] >
             static_cast<std::int32_t>(PostsolveReductionType::FmeCol)) {
       throw std::runtime_error("postsolve tape contains an unknown reduction");

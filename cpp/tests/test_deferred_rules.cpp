@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #include "gpu_presolver/detail/runtime_options.hpp"
 #include "gpu_presolver/presolve/gpu_presolve_kernels.hpp"
 #include "gpu_presolver/presolve/device_recovery.hpp"
@@ -93,21 +96,21 @@ std::vector<int> original_indices(const Fixture& f) {
     auto col=[&](NnzOffset p){if(out[p]>=0)out[p]=f.cols.at(out[p]);};
     auto row=[&](NnzOffset p){if(out[p]>=0)out[p]=f.rows.at(out[p]);};
     switch(static_cast<PostsolveReductionType>(f.plan.tape.types[k])) {
-      case PostsolveReductionType::FixedCol:
+      case PostsolveReductionType::FixedVariable:
         col(begin);for(auto p=begin+1;p<end;++p)row(p);break;
-      case PostsolveReductionType::FixedColInf:
+      case PostsolveReductionType::InfiniteBoundDualFix:
         col(begin+1);for(auto p=begin+2;p<end;){int length=out[p++];for(int j=0;j<length;++j)col(p++);}break;
-      case PostsolveReductionType::SubCol:
+      case PostsolveReductionType::SingletonColumnSubstitution:
         col(begin);row(begin+1);for(auto p=begin+3;p<end;++p)col(p);break;
       case PostsolveReductionType::ParallelColumn: col(begin);col(begin+1);break;
       case PostsolveReductionType::ParallelRow: row(begin);row(begin+1);break;
       case PostsolveReductionType::DeletedRow:
         row(begin);if(end-begin>1)col(begin+1);break;
-      case PostsolveReductionType::BoundChangeTheRow: col(begin);row(begin+1);break;
-      case PostsolveReductionType::BoundChangeNoRow: col(begin);break;
-      case PostsolveReductionType::LhsChange:
-      case PostsolveReductionType::RhsChange:
-      case PostsolveReductionType::EqToIneq: row(begin);break;
+      case PostsolveReductionType::RowImpliedBoundChange: col(begin);row(begin+1);break;
+      case PostsolveReductionType::VariableBoundChange: col(begin);break;
+      case PostsolveReductionType::RowLowerBoundChange:
+      case PostsolveReductionType::RowUpperBoundChange:
+      case PostsolveReductionType::RowDualShift: row(begin);break;
       default: assert(false);
     }
   }

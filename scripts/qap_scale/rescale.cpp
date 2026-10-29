@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 // Column rescaling for Hinder's symmetry-reduced Adams-Johnson MPS output.
 // This uses the paper generator's scale: 1/abs(c_j) for nonzero cost, 1 otherwise.
 // Rows have RHS in {0, 1}; variables are nonnegative and have no upper bounds.

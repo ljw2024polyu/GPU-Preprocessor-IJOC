@@ -1,8 +1,11 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #include "gpu_presolver/presolve/cleanup_workspace.hpp"
 #include "gpu_presolver/offset.hpp"
 #include "gpu_presolver/presolve/cleanup_support.cuh"
 #include "gpu_presolver/presolve/device_recovery.hpp"
-#include "gpu_presolver/presolve/fixed_col_tape.hpp"
+#include "gpu_presolver/presolve/fixed_variable_tape.hpp"
 #include "gpu_presolver/presolve/rules/rule_infeasible_and_fixed_variables.hpp"
 
 #include <cub/cub.cuh>
@@ -258,9 +261,9 @@ void apply_rule_infeasible_and_fixed_variables(PresolvePlanGpu& plan,
 
   if (pparams.record_postsolve_tape && pparams.record_postsolve_tape_cpu) {
     if (plan.tape.resident) {
-      (void)append_compact_fixed_col_tape_from_device(&plan.tape, fixed_mask, nullptr, fixed_val,
+      (void)append_compact_fixed_variable_tape_from_device(&plan.tape, fixed_mask, nullptr, fixed_val,
                                                       plan.keep_row_mask, plan.new_c, lp.AT, n,
-                                                      "fixed variable device tape", FixedColObjective::Skip);
+                                                      "fixed variable device tape", FixedVariableObjective::Skip);
     } else {
 
       std::vector<std::uint8_t> host_fixed_mask(static_cast<std::size_t>(n));
@@ -314,7 +317,7 @@ void apply_rule_infeasible_and_fixed_variables(PresolvePlanGpu& plan,
           indices.push_back(row);
           vals.push_back(host_at_nz_val[static_cast<std::size_t>(p)]);
         }
-        append_postsolve_record(plan.tape, PostsolveReductionType::FixedCol, indices, vals,
+        append_postsolve_record(plan.tape, PostsolveReductionType::FixedVariable, indices, vals,
                                 PostsolveDualMode::Minimal);
       }
     }

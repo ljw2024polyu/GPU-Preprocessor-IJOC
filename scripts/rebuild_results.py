@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+# SPDX-License-Identifier: MIT
+
 """Verify archived Section 4 tables or generate CSVs for a new run; no solver is run."""
 from pathlib import Path
 from decimal import Decimal, ROUND_HALF_UP

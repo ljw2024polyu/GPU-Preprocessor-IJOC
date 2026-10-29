@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
 # SPDX-License-Identifier: MIT
+
 # Run from any directory. See docs/REPRODUCING.md for prerequisites and outputs.
 set -euo pipefail
 cd "$(dirname "$0")/.."

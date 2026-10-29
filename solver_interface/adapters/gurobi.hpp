@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #ifndef IJOC_GUROBI_ADAPTER_HPP
 #define IJOC_GUROBI_ADAPTER_HPP
 

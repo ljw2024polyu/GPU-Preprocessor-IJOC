@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #include "gpu_presolver/detail/runtime_options.hpp"
 #include "gpu_presolver/presolve/gpu_presolve.hpp"
 #include "gpu_presolver/presolve/gpu_postsolve.hpp"
@@ -365,7 +368,7 @@ void test_wide_singleton_recovery(bool startup, int coefficient_sign, int variab
   assert(device.summary.reduced_rows == 0 && device.summary.reduced_cols == 0);
   const auto& tape = device.summary.record.tape;
   int substitutions = 0;
-  for (int type : tape.types) substitutions += type == int(PostsolveReductionType::SubCol);
+  for (int type : tape.types) substitutions += type == int(PostsolveReductionType::SingletonColumnSubstitution);
   assert(substitutions == 1);
   assert(tape.indices.size() < 4*n && tape.vals.size() < 8*n);
   auto restored = postsolve_gpu(nullptr,nullptr,nullptr,device.summary.record);

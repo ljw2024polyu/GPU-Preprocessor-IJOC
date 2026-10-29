@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+# SPDX-License-Identifier: MIT
+
 cmake_minimum_required(VERSION 3.24)
 project(GPUPreprocessorMpsReader LANGUAGES CXX)
 enable_testing()

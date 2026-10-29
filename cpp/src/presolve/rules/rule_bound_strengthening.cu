@@ -1,8 +1,11 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #include "gpu_presolver/offset.hpp"
 #include "gpu_presolver/presolve/device_recovery.hpp"
 #include "gpu_presolver/presolve/rules/rule_bound_strengthening.hpp"
 
-#include "gpu_presolver/presolve/fixed_col_tape.hpp"
+#include "gpu_presolver/presolve/fixed_variable_tape.hpp"
 #include "gpu_presolver/presolve/gpu_presolve_kernels.hpp"
 
 #include <cub/cub.cuh>
@@ -994,8 +997,8 @@ __global__ void _kernel_pack_primal_bound_gpu_tape(
   }
   const ImpliedVariableBoundTapeRecord record = records[i];
   types[i] = record.row == INT_MAX
-      ? static_cast<std::int32_t>(PostsolveReductionType::BoundChangeNoRow)
-      : static_cast<std::int32_t>(PostsolveReductionType::BoundChangeTheRow);
+      ? static_cast<std::int32_t>(PostsolveReductionType::VariableBoundChange)
+      : static_cast<std::int32_t>(PostsolveReductionType::RowImpliedBoundChange);
   dual_modes[i] = static_cast<std::uint8_t>(PostsolveDualMode::Minimal);
   const NnzOffset idx = index_starts[i];
   indices[idx] = record.col;
@@ -1467,13 +1470,13 @@ void apply_rule_bound_strengthening(PresolvePlanGpu& plan,
       for (const ImpliedVariableBoundTapeRecord& record : tape_records) {
         if (record.row != INT_MAX) {
           append_postsolve_record(plan.tape,
-                                  PostsolveReductionType::BoundChangeTheRow,
+                                  PostsolveReductionType::RowImpliedBoundChange,
                                   {record.col, record.row},
                                   {record.old_l, record.old_u, record.new_l, record.new_u},
                                   PostsolveDualMode::Minimal);
         } else {
           append_postsolve_record(plan.tape,
-                                  PostsolveReductionType::BoundChangeNoRow,
+                                  PostsolveReductionType::VariableBoundChange,
                                   {record.col},
                                   {record.old_l, record.old_u, record.new_l, record.new_u},
                                   PostsolveDualMode::Minimal);
@@ -1533,7 +1536,7 @@ void apply_rule_bound_strengthening(PresolvePlanGpu& plan,
       plan.has_infeasible = true;
     } else {
       const double obj_delta = flags[2] != 0
-          ? append_compact_fixed_col_tape_from_device(
+          ? append_compact_fixed_variable_tape_from_device(
                 pparams.record_postsolve_tape ? &plan.tape : nullptr,
                 fixed_mask,
                 nullptr,
@@ -1542,7 +1545,7 @@ void apply_rule_bound_strengthening(PresolvePlanGpu& plan,
                 plan.new_c,
                 lp.AT,
                 n,
-                "primal packed fixed-col tape/objective")
+                "primal packed fixed-variable tape/objective")
           : 0.0;
       plan.obj_constant_delta += obj_delta;
       plan.has_row_action = plan.has_row_action || flags[2] != 0;

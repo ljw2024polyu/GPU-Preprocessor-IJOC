@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+# SPDX-License-Identifier: MIT
+
 add_library(gpu_presolver_core STATIC
   src/model/lp_problem.cpp
   src/folding/folding.cu
@@ -8,7 +11,7 @@ add_library(gpu_presolver_core STATIC
   src/presolve/transpose64.cu
   src/presolve/device_recovery.cu
   src/presolve/identity_plan.cu
-  src/presolve/fixed_col_tape.cu
+  src/presolve/fixed_variable_tape.cu
   src/presolve/gpu_postsolve.cu
   src/presolve/postsolve/postsolve_piecewise_linear_reformulation_absolute_value.cu
   src/presolve/postsolve/postsolve_piecewise_linear_reformulation_variable_pair.cu
@@ -84,7 +87,7 @@ if(GPUPRESOLVER_BUILD_TESTS)
     test_cleanup_workspace
     test_startup_rows
     test_cleanup_ordinary
-    test_fixed_col_tape
+    test_fixed_variable_tape
     test_device_recovery
     test_structural_device_recovery
     test_folding

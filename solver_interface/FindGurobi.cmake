@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+# SPDX-License-Identifier: MIT
+
 # The proprietary runtime and license are installed separately.
 set(GUROBI_ROOT "$ENV{GUROBI_HOME}" CACHE PATH "Gurobi 12.0.2 platform directory (e.g. linux64)")
 find_path(GUROBI_INCLUDE_DIR gurobi_c.h HINTS "${GUROBI_ROOT}" ENV GUROBI_HOME

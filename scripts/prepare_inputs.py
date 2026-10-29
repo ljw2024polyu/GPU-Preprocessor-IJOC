@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+# SPDX-License-Identifier: MIT
+
 """Download and prepare the four Section 4 input groups."""
 import argparse
 import bz2

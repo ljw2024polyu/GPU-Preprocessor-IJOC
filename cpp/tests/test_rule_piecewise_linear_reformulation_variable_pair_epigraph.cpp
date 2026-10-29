@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #include "gpu_presolver/presolve/rules/rule_piecewise_linear_reformulation_variable_pair.hpp"
 #include "../src/presolve/plan_storage.hpp"
 #include "gpu_presolver/offset.hpp"

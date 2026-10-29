@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #include "gpu_presolver/offset.hpp"
 #include "gpu_presolver/presolve/rules/rule_dual_fix.hpp"
 
@@ -76,7 +79,7 @@ void test_fixes_improving_unlocked_column() {
   assert(plan.has_col_action);
   assert(plan.has_change);
   assert(plan.tape.types.size() == 1);
-  assert(plan.tape.types[0] == static_cast<std::int32_t>(PostsolveReductionType::FixedCol));
+  assert(plan.tape.types[0] == static_cast<std::int32_t>(PostsolveReductionType::FixedVariable));
   assert((plan.tape.indices == std::vector<std::int32_t>{0, 0}));
   assert(std::fabs(plan.tape.vals[0] - 2.0) < 1.0e-12);
   assert(std::fabs(plan.tape.vals[1] - 3.0) < 1.0e-12);
@@ -214,7 +217,7 @@ void test_records_infinite_zero_objective_fix() {
   assert(plan.has_col_action);
   assert(plan.has_change);
   assert((plan.tape.types == std::vector<std::int32_t>{
-                                 static_cast<std::int32_t>(PostsolveReductionType::FixedColInf)}));
+                                 static_cast<std::int32_t>(PostsolveReductionType::InfiniteBoundDualFix)}));
   assert((plan.tape.index_starts == std::vector<NnzOffset>{0, 4}));
   assert((plan.tape.value_starts == std::vector<NnzOffset>{0, 4}));
   assert((plan.tape.dual_modes == std::vector<std::uint8_t>{

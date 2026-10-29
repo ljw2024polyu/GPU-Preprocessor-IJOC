@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #include "gpu_presolver/offset.hpp"
 #include "gpu_presolver/presolve/cleanup_workspace.hpp"
 #include "gpu_presolver/presolve/live_matrix.cuh"
@@ -294,14 +297,14 @@ void apply_rule_infeasible_and_redundant_rows(PresolvePlanGpu& plan,
         }
         for (std::int32_t row = 0; row < m; ++row) {
           if (host_drop_lower[static_cast<std::size_t>(row)] != std::uint8_t{0}) {
-            append_postsolve_record(plan.tape, PostsolveReductionType::LhsChange, {row},
+            append_postsolve_record(plan.tape, PostsolveReductionType::RowLowerBoundChange, {row},
                                     {host_AL[static_cast<std::size_t>(row)],
                                      host_AU[static_cast<std::size_t>(row)], -INFINITY,
                                      host_AU[static_cast<std::size_t>(row)]},
                                     PostsolveDualMode::Minimal);
           }
           if (host_drop_upper[static_cast<std::size_t>(row)] != std::uint8_t{0}) {
-            append_postsolve_record(plan.tape, PostsolveReductionType::RhsChange, {row},
+            append_postsolve_record(plan.tape, PostsolveReductionType::RowUpperBoundChange, {row},
                                     {host_AL[static_cast<std::size_t>(row)],
                                      host_AU[static_cast<std::size_t>(row)],
                                      host_AL[static_cast<std::size_t>(row)], INFINITY},

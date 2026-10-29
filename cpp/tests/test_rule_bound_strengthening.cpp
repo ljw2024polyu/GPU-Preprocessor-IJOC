@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #include "gpu_presolver/detail/runtime_options.hpp"
 #include "gpu_presolver/offset.hpp"
 #include "gpu_presolver/presolve/rules/rule_bound_strengthening.hpp"
@@ -97,8 +100,8 @@ void test_tightens_bounds_from_row_activity() {
   assert(plan.has_change);
   assert(!plan.has_infeasible);
   assert((plan.tape.types == std::vector<std::int32_t>{
-                                 static_cast<std::int32_t>(PostsolveReductionType::BoundChangeTheRow),
-                                 static_cast<std::int32_t>(PostsolveReductionType::BoundChangeTheRow)}));
+                                 static_cast<std::int32_t>(PostsolveReductionType::RowImpliedBoundChange),
+                                 static_cast<std::int32_t>(PostsolveReductionType::RowImpliedBoundChange)}));
   assert((plan.tape.index_starts == std::vector<NnzOffset>{0, 2, 4}));
   assert((plan.tape.value_starts == std::vector<NnzOffset>{0, 4, 8}));
   assert((plan.tape.dual_modes == std::vector<std::uint8_t>{
@@ -125,7 +128,7 @@ void test_tightens_bounds_from_row_activity() {
   cudaFree(stats.row_nnz);
 }
 
-void test_records_fixed_column_from_row_activity() {
+void test_records_fixed_variable_from_row_activity() {
   using gpu_presolver::presolve::LPInfoGpu;
   using gpu_presolver::presolve::PostsolveReductionType;
   using gpu_presolver::presolve::PresolveParams;
@@ -167,7 +170,7 @@ void test_records_fixed_column_from_row_activity() {
   assert(std::fabs(u[0] - 1.0) < 1.0e-12);
   assert(std::fabs(plan.obj_constant_delta - 4.0) < 1.0e-12);
   assert(plan.tape.types.size() == 1);
-  assert(plan.tape.types[0] == static_cast<std::int32_t>(PostsolveReductionType::FixedCol));
+  assert(plan.tape.types[0] == static_cast<std::int32_t>(PostsolveReductionType::FixedVariable));
   assert((plan.tape.indices == std::vector<std::int32_t>{0, 0}));
   assert(std::fabs(plan.tape.vals[0] - 1.0) < 1.0e-12);
   assert(std::fabs(plan.tape.vals[1] - 4.0) < 1.0e-12);
@@ -378,7 +381,7 @@ void test_long_column_support_minimum() {
     apply_rule_bound_strengthening(plan,lp,stats,params);
     assert(!plan.has_infeasible && copy_to_host(plan.new_l,n)[0]==4);
     assert((plan.tape.indices==std::vector<int>{0,0}));
-    assert((plan.tape.types==std::vector<int>{static_cast<int>(PostsolveReductionType::BoundChangeTheRow)}));
+    assert((plan.tape.types==std::vector<int>{static_cast<int>(PostsolveReductionType::RowImpliedBoundChange)}));
     free_lp(lp);cudaFree(plan.keep_row_mask);cudaFree(plan.keep_col_mask);cudaFree(plan.new_c);
     cudaFree(plan.new_l);cudaFree(plan.new_u);cudaFree(plan.new_AL);cudaFree(plan.new_AU);cudaFree(stats.row_nnz);
   }
@@ -437,7 +440,7 @@ int main() {
   test_upper_margin_preserves_lower_and_integral_bounds();
   test_long_column_support_minimum();
   test_tightens_bounds_from_row_activity();
-  test_records_fixed_column_from_row_activity();
+  test_records_fixed_variable_from_row_activity();
   test_detects_infeasible_tightening();
   test_preserves_wide_box_on_free_zero_cost_column();
   test_preserves_free_zero_cost_state_across_propagation_rounds();

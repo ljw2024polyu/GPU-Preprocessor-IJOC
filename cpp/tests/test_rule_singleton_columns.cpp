@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #include "gpu_presolver/detail/runtime_options.hpp"
 #include "gpu_presolver/offset.hpp"
 #include "gpu_presolver/presolve/device_recovery.hpp"
@@ -89,7 +92,7 @@ void test_eliminates_eq_singleton_column() {
   assert(plan.has_col_action);
   assert(plan.has_change);
   assert((plan.tape.types == std::vector<std::int32_t>{
-                                 static_cast<std::int32_t>(PostsolveReductionType::SubCol)}));
+                                 static_cast<std::int32_t>(PostsolveReductionType::SingletonColumnSubstitution)}));
   assert((plan.tape.indices == std::vector<std::int32_t>{0, 0, 1, 1}));
   assert(plan.tape.vals.size() == 7);
   assert(std::fabs(plan.tape.vals[0] - 1.0) < 1.0e-12);
@@ -232,7 +235,7 @@ void test_dual_infer_marks_direct_unbounded() {
   cudaFree(stats.singleton_column_val);
 }
 
-void test_dual_infer_records_eq_to_ineq_tape() {
+void test_dual_infer_records_row_dual_shift_tape() {
   using gpu_presolver::presolve::LPInfoGpu;
   using gpu_presolver::presolve::PostsolveDualMode;
   using gpu_presolver::presolve::PostsolveReductionType;
@@ -271,7 +274,7 @@ void test_dual_infer_records_eq_to_ineq_tape() {
   assert(!plan.has_col_action);
   assert(plan.has_change);
   assert((plan.tape.types == std::vector<std::int32_t>{
-                                 static_cast<std::int32_t>(PostsolveReductionType::EqToIneq)}));
+                                 static_cast<std::int32_t>(PostsolveReductionType::RowDualShift)}));
   assert((plan.tape.index_starts == std::vector<NnzOffset>{0, 1}));
   assert((plan.tape.value_starts == std::vector<NnzOffset>{0, 1}));
   assert((plan.tape.indices == std::vector<std::int32_t>{0}));
@@ -344,7 +347,7 @@ void check_dual_infer_tightens_one_sided_implied_free_row(
   assert(!plan.has_col_action);
   assert(plan.has_change);
   assert((plan.tape.types == std::vector<std::int32_t>{
-                                 static_cast<std::int32_t>(PostsolveReductionType::EqToIneq)}));
+                                 static_cast<std::int32_t>(PostsolveReductionType::RowDualShift)}));
   assert((plan.tape.index_starts == std::vector<NnzOffset>{0, 1}));
   assert((plan.tape.value_starts == std::vector<NnzOffset>{0, 1}));
   assert((plan.tape.indices == std::vector<std::int32_t>{0}));
@@ -431,7 +434,7 @@ void test_long_column_objective_order() {
 // The CPU oracle describes the chronological recovery format independently of
 // the GPU prefix sums. Include both sides of the long-row threshold, mask holes,
 // signed zero coefficients, negative pivots, and append into a nonempty tape.
-void test_batched_subcol_tape_matches_cpu_oracle() {
+void test_batched_singleton_column_substitution_tape_matches_cpu_oracle() {
   using namespace gpu_presolver::presolve;
   const double inf = std::numeric_limits<double>::infinity();
   const std::vector<int> lengths{1, 2, 1024, 1025, 2051, 3};
@@ -483,7 +486,7 @@ void test_batched_subcol_tape_matches_cpu_oracle() {
   stats.singleton_column_val = upload(single_val);
   PresolveParams params;
   PostsolveTape expected;
-  expected.types = {static_cast<int>(PostsolveReductionType::EqToIneq)};
+  expected.types = {static_cast<int>(PostsolveReductionType::RowDualShift)};
   expected.dual_modes = {static_cast<std::uint8_t>(PostsolveDualMode::Minimal)};
   expected.indices = {0}; expected.vals = {-0.0};
   expected.index_starts = {0, 1}; expected.value_starts = {0, 1};
@@ -501,7 +504,7 @@ void test_batched_subcol_tape_matches_cpu_oracle() {
         if (idx[p] != col && keep[idx[p]]) ++count;
       // Rows with only the pivot left are handled by the singleton-row rule.
       if (count == 0) continue;
-      expected.types.push_back(static_cast<int>(PostsolveReductionType::SubCol));
+      expected.types.push_back(static_cast<int>(PostsolveReductionType::SingletonColumnSubstitution));
       expected.dual_modes.push_back(static_cast<std::uint8_t>(PostsolveDualMode::Minimal));
       expected.indices.insert(expected.indices.end(), {col, row, count});
       expected.vals.insert(expected.vals.end(),
@@ -693,17 +696,17 @@ void test_unified_mixed_batch(bool resident, bool skip_precheck, bool enabled,
   std::vector<int> types, indices;
   std::vector<double> vals;
   if (eq) {
-    types.push_back(static_cast<int>(PostsolveReductionType::SubCol));
+    types.push_back(static_cast<int>(PostsolveReductionType::SingletonColumnSubstitution));
     indices.insert(indices.end(), {0, 0, 1, 2});
     vals.insert(vals.end(), {1.0, 5.0, -inf, inf, 3.0, 1.0, 1.0});
   }
   if (infer) {
-    types.push_back(static_cast<int>(PostsolveReductionType::EqToIneq));
+    types.push_back(static_cast<int>(PostsolveReductionType::RowDualShift));
     indices.push_back(1);
     vals.push_back(0.0);
   }
   if (eq && infer) {
-    types.push_back(static_cast<int>(PostsolveReductionType::SubCol));
+    types.push_back(static_cast<int>(PostsolveReductionType::SingletonColumnSubstitution));
     indices.insert(indices.end(), {1, 1, 1, 2});
     vals.insert(vals.end(), {1.0, 1.0, -inf, inf, 2.0, 1.0, 1.0});
   }
@@ -724,12 +727,12 @@ int main() {
   test_action_owner_and_selective_commit(false);
   test_action_owner_and_selective_commit(true);
   test_unbounded_proposal_suppresses_batch();
-  test_batched_subcol_tape_matches_cpu_oracle();
+  test_batched_singleton_column_substitution_tape_matches_cpu_oracle();
   test_long_column_objective_order();
   test_eliminates_eq_singleton_column();
   test_eq_objective_updates_are_bitwise_deterministic();
   test_dual_infer_marks_direct_unbounded();
-  test_dual_infer_records_eq_to_ineq_tape();
+  test_dual_infer_records_row_dual_shift_tape();
   test_dual_infer_tightens_one_sided_implied_free_row();
   std::cout << "test_rule_singleton_columns passed\n";
   return 0;

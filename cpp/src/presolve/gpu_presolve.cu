@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #include "gpu_presolver/detail/runtime_options.hpp"
 #include "gpu_presolver/presolve/cleanup_workspace.hpp"
 #include "gpu_presolver/offset.hpp"
@@ -1248,7 +1251,7 @@ void remap_postsolve_tape_indices(PostsolveTape& dest, const PostsolveTape& src,
                          static_cast<std::size_t>(idx1 - idx0)};
 
     switch (static_cast<PostsolveReductionType>(src.types[static_cast<std::size_t>(k)])) {
-      case PostsolveReductionType::FixedCol:
+      case PostsolveReductionType::FixedVariable:
         if (!indices.empty()) {
           indices[0] = map_local_col_to_global(indices[0], col_red2org);
           for (std::size_t p = 1; p < indices.size(); ++p) {
@@ -1256,7 +1259,7 @@ void remap_postsolve_tape_indices(PostsolveTape& dest, const PostsolveTape& src,
           }
         }
         break;
-      case PostsolveReductionType::FixedColInf:
+      case PostsolveReductionType::InfiniteBoundDualFix:
         if (indices.size() >= 2) {
           indices[1] = map_local_col_to_global(indices[1], col_red2org);
           std::size_t p = 2;
@@ -1268,7 +1271,7 @@ void remap_postsolve_tape_indices(PostsolveTape& dest, const PostsolveTape& src,
           }
         }
         break;
-      case PostsolveReductionType::SubCol:
+      case PostsolveReductionType::SingletonColumnSubstitution:
         if (indices.size() >= 3) {
           indices[0] = map_local_col_to_global(indices[0], col_red2org);
           indices[1] = map_local_row_to_global(indices[1], row_red2org);
@@ -1299,19 +1302,19 @@ void remap_postsolve_tape_indices(PostsolveTape& dest, const PostsolveTape& src,
           }
         }
         break;
-      case PostsolveReductionType::LhsChange:
-      case PostsolveReductionType::RhsChange:
-      case PostsolveReductionType::EqToIneq:
+      case PostsolveReductionType::RowLowerBoundChange:
+      case PostsolveReductionType::RowUpperBoundChange:
+      case PostsolveReductionType::RowDualShift:
         if (!indices.empty()) {
           indices[0] = map_local_row_to_global(indices[0], row_red2org);
         }
         break;
-      case PostsolveReductionType::BoundChangeNoRow:
+      case PostsolveReductionType::VariableBoundChange:
         if (!indices.empty()) {
           indices[0] = map_local_col_to_global(indices[0], col_red2org);
         }
         break;
-      case PostsolveReductionType::BoundChangeTheRow:
+      case PostsolveReductionType::RowImpliedBoundChange:
         if (indices.size() >= 2) {
           indices[0] = map_local_col_to_global(indices[0], col_red2org);
           indices[1] = map_local_row_to_global(indices[1], row_red2org);
@@ -1347,9 +1350,6 @@ void remap_postsolve_tape_indices(PostsolveTape& dest, const PostsolveTape& src,
             }
           }
         }
-        break;
-      case PostsolveReductionType::AddedRow:
-      case PostsolveReductionType::AddedRows:
         break;
     }
 

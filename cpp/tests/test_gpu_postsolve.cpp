@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #include "gpu_presolver/offset.hpp"
 #include "gpu_presolver/presolve/device_recovery.hpp"
 #include "gpu_presolver/presolve/gpu_postsolve.hpp"
@@ -39,7 +42,7 @@ std::vector<T> copy_to_host(T* device, std::size_t size) {
   return values;
 }
 
-void test_postsolve_scatter_and_fixed_column_restore() {
+void test_postsolve_scatter_and_fixed_variable_restore() {
   using gpu_presolver::presolve::GpuPostsolveResult;
   using gpu_presolver::presolve::PresolveRecordGpu;
 
@@ -105,7 +108,7 @@ void test_postsolve_allows_null_reduced_dual_inputs() {
   cudaFree(result.z_org);
 }
 
-void test_postsolve_keeps_unretrieved_fixed_column_dual_tape_based_with_original_model() {
+void test_postsolve_keeps_unretrieved_fixed_variable_dual_tape_based_with_original_model() {
   using gpu_presolver::presolve::GpuPostsolveResult;
   using gpu_presolver::presolve::LPInfoGpu;
   using gpu_presolver::presolve::PresolveRecordGpu;
@@ -153,7 +156,7 @@ void test_postsolve_keeps_unretrieved_fixed_column_dual_tape_based_with_original
   cudaFree(original.c);
 }
 
-void test_presolve_record_drives_fixed_column_postsolve() {
+void test_presolve_record_drives_fixed_variable_postsolve() {
   using gpu_presolver::presolve::GpuPostsolveResult;
   using gpu_presolver::presolve::GpuPresolveSummary;
   using gpu_presolver::presolve::LPInfoGpu;
@@ -527,7 +530,7 @@ void test_doubleton_equations_original_model_replay_splits_induced_bound_dual() 
   cudaFree(original.AU);
 }
 
-void test_sub_col_tape_replay_restores_primal_and_dual() {
+void test_singleton_column_substitution_tape_replay_restores_primal_and_dual() {
   using gpu_presolver::presolve::GpuPostsolveResult;
   using gpu_presolver::presolve::PostsolveDualMode;
   using gpu_presolver::presolve::PostsolveReductionType;
@@ -540,7 +543,7 @@ void test_sub_col_tape_replay_restores_primal_and_dual() {
   record.n1 = 2;
   record.col_red2org = {1, 2};
   record.col_org2red = {-1, 0, 1};
-  record.tape.types = {static_cast<std::int32_t>(PostsolveReductionType::SubCol)};
+  record.tape.types = {static_cast<std::int32_t>(PostsolveReductionType::SingletonColumnSubstitution)};
   record.tape.index_starts = {0, 5};
   record.tape.value_starts = {0, 8};
   record.tape.dual_modes = {static_cast<std::uint8_t>(PostsolveDualMode::Minimal)};
@@ -564,7 +567,7 @@ void test_sub_col_tape_replay_restores_primal_and_dual() {
   cudaFree(result.z_org);
 }
 
-void test_fixed_col_tape_replay_restores_exact_reduced_cost() {
+void test_fixed_variable_tape_replay_restores_exact_reduced_cost() {
   using gpu_presolver::presolve::GpuPostsolveResult;
   using gpu_presolver::presolve::PostsolveDualMode;
   using gpu_presolver::presolve::PostsolveReductionType;
@@ -577,7 +580,7 @@ void test_fixed_col_tape_replay_restores_exact_reduced_cost() {
   record.n1 = 1;
   record.row_red2org = {0};
   record.col_red2org = {1};
-  record.tape.types = {static_cast<std::int32_t>(PostsolveReductionType::FixedCol)};
+  record.tape.types = {static_cast<std::int32_t>(PostsolveReductionType::FixedVariable)};
   record.tape.index_starts = {0, 2};
   record.tape.value_starts = {0, 3};
   record.tape.dual_modes = {static_cast<std::uint8_t>(PostsolveDualMode::Minimal)};
@@ -601,7 +604,7 @@ void test_fixed_col_tape_replay_restores_exact_reduced_cost() {
   cudaFree(result.z_org);
 }
 
-void test_fme_and_eq_to_ineq_tape_replay() {
+void test_fme_and_row_dual_shift_tape_replay() {
   using gpu_presolver::presolve::GpuPostsolveResult;
   using gpu_presolver::presolve::PostsolveDualMode;
   using gpu_presolver::presolve::PostsolveReductionType;
@@ -615,7 +618,7 @@ void test_fme_and_eq_to_ineq_tape_replay() {
   record.row_red2org = {1};
   record.col_red2org = {1};
   record.tape.types = {static_cast<std::int32_t>(PostsolveReductionType::FmeCol),
-                       static_cast<std::int32_t>(PostsolveReductionType::EqToIneq)};
+                       static_cast<std::int32_t>(PostsolveReductionType::RowDualShift)};
   record.tape.index_starts = {0, 5, 6};
   record.tape.value_starts = {0, 5, 6};
   record.tape.dual_modes = {static_cast<std::uint8_t>(PostsolveDualMode::Minimal),
@@ -798,7 +801,7 @@ void test_row_bound_change_replay_refines_live_row_duals_from_original_model() {
   record.n1 = 1;
   record.row_red2org = {0};
   record.col_red2org = {0};
-  record.tape.types = {static_cast<std::int32_t>(PostsolveReductionType::BoundChangeTheRow)};
+  record.tape.types = {static_cast<std::int32_t>(PostsolveReductionType::RowImpliedBoundChange)};
   record.tape.index_starts = {0, 2};
   record.tape.value_starts = {0, 4};
   record.tape.dual_modes = {static_cast<std::uint8_t>(PostsolveDualMode::Minimal)};
@@ -833,7 +836,7 @@ void test_row_bound_change_replay_refines_live_row_duals_from_original_model() {
   cudaFree(original.AU);
 }
 
-void test_bound_change_no_row_replay_projects_unprotected_column_dual() {
+void test_variable_bound_change_replay_projects_unprotected_column_dual() {
   using gpu_presolver::presolve::GpuPostsolveResult;
   using gpu_presolver::presolve::LPInfoGpu;
   using gpu_presolver::presolve::PostsolveDualMode;
@@ -863,7 +866,7 @@ void test_bound_change_no_row_replay_projects_unprotected_column_dual() {
   record.n1 = 1;
   record.row_red2org = {0};
   record.col_red2org = {0};
-  record.tape.types = {static_cast<std::int32_t>(PostsolveReductionType::BoundChangeNoRow)};
+  record.tape.types = {static_cast<std::int32_t>(PostsolveReductionType::VariableBoundChange)};
   record.tape.index_starts = {0, 1};
   record.tape.value_starts = {0, 0};
   record.tape.dual_modes = {static_cast<std::uint8_t>(PostsolveDualMode::Minimal)};
@@ -929,7 +932,7 @@ void test_dual_tape_replay_runs_after_piecewise_linear_reformulation_absolute_va
   record.n1 = 2;
   record.row_red2org = {0};
   record.col_red2org = {0, 1};
-  record.tape.types = {static_cast<std::int32_t>(PostsolveReductionType::BoundChangeNoRow)};
+  record.tape.types = {static_cast<std::int32_t>(PostsolveReductionType::VariableBoundChange)};
   record.tape.index_starts = {0, 1};
   record.tape.value_starts = {0, 0};
   record.tape.dual_modes = {static_cast<std::uint8_t>(PostsolveDualMode::Minimal)};
@@ -1184,10 +1187,10 @@ void test_parallel_column_rule_records_globalized_postsolve_tape() {
 }  // namespace
 
 int main() {
-  test_postsolve_scatter_and_fixed_column_restore();
+  test_postsolve_scatter_and_fixed_variable_restore();
   test_postsolve_allows_null_reduced_dual_inputs();
-  test_postsolve_keeps_unretrieved_fixed_column_dual_tape_based_with_original_model();
-  test_presolve_record_drives_fixed_column_postsolve();
+  test_postsolve_keeps_unretrieved_fixed_variable_dual_tape_based_with_original_model();
+  test_presolve_record_drives_fixed_variable_postsolve();
   test_infeasible_and_fixed_variables_postsolve(0.0, true);
   test_infeasible_and_fixed_variables_postsolve(1.0e-8, true);
   test_infeasible_and_fixed_variables_postsolve(5.0e-7, false);
@@ -1195,13 +1198,13 @@ int main() {
   test_parallel_column_tape_replay_restores_primal_and_dual();
   test_doubleton_equations_tape_replay_restores_primal_and_basic_dual();
   test_doubleton_equations_original_model_replay_splits_induced_bound_dual();
-  test_sub_col_tape_replay_restores_primal_and_dual();
-  test_fixed_col_tape_replay_restores_exact_reduced_cost();
-  test_fme_and_eq_to_ineq_tape_replay();
+  test_singleton_column_substitution_tape_replay_restores_primal_and_dual();
+  test_fixed_variable_tape_replay_restores_exact_reduced_cost();
+  test_fme_and_row_dual_shift_tape_replay();
   test_parallel_row_original_model_replay_splits_dual_between_rows();
   test_deleted_row_and_bound_change_replay_with_original_model();
   test_row_bound_change_replay_refines_live_row_duals_from_original_model();
-  test_bound_change_no_row_replay_projects_unprotected_column_dual();
+  test_variable_bound_change_replay_projects_unprotected_column_dual();
   test_dual_tape_replay_runs_after_piecewise_linear_reformulation_absolute_value_recovery();
   test_tape_checkpoint_replays_after_structural_primal();
   test_structural_tape_structural_timeline_replays_exact_reverse_order();

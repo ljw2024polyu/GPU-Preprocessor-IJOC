@@ -1,4 +1,7 @@
 #!/usr/bin/env julia
+# Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+# SPDX-License-Identifier: MIT
+
 # Stream the QAP20 LP representation used by the paper, preserving row and
 # column order, explicit bound rows, and empty self-symmetry equalities.
 

@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+# SPDX-License-Identifier: MIT
+
 """CPU checks for portable build defaults and user toolchain overrides."""
 import json
 import os

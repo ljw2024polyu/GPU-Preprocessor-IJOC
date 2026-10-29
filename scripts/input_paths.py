@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+# SPDX-License-Identifier: MIT
+
 """Locate prepared models without copying or converting the input files."""
 from pathlib import Path
 

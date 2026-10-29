@@ -1,4 +1,7 @@
-#include "gpu_presolver/presolve/fixed_col_tape.hpp"
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
+#include "gpu_presolver/presolve/fixed_variable_tape.hpp"
 #include "gpu_presolver/presolve/device_recovery.hpp"
 #include <cuda_runtime.h>
 #include <cassert>
@@ -44,31 +47,31 @@ int main() {
   auto values=device(std::vector<double>{1,1,1,999,-0.0});
   auto costs=device(std::vector<double>{1e16,1,-1e16,99,7});
   PostsolveTape oracle;
-  auto compute=[&](PostsolveTape* t,FixedColObjective mode) {
-    return append_compact_fixed_col_tape_from_device(t,fixed,excluded,values,rows,costs,at,5,
+  auto compute=[&](PostsolveTape* t,FixedVariableObjective mode) {
+    return append_compact_fixed_variable_tape_from_device(t,fixed,excluded,values,rows,costs,at,5,
                                                     "fixed tape test",mode);
   };
-  assert(compute(&oracle,FixedColObjective::Compute)==1.0);
+  assert(compute(&oracle,FixedVariableObjective::Compute)==1.0);
   assert((oracle.indices==std::vector<int>{0,0,1,2,2,0,2}));
   assert((oracle.index_starts==std::vector<NnzOffset>{0,2,4,7}));
-  for (bool resident : {false,true}) for(auto mode : {FixedColObjective::Compute,FixedColObjective::Skip}) {
+  for (bool resident : {false,true}) for(auto mode : {FixedVariableObjective::Compute,FixedVariableObjective::Skip}) {
     PostsolveTape tape;tape.resident=resident;
-    assert(compute(&tape,mode)==(mode==FixedColObjective::Compute?1.0:0.0));
+    assert(compute(&tape,mode)==(mode==FixedVariableObjective::Compute?1.0:0.0));
     if(resident) {
       assert(tape.types.empty() && tape.vals.empty() && tape.segments.size()==1);
       export_local_recovery_tape(tape);
     }
     same_tape(tape,oracle);
   }
-  assert(compute(nullptr,FixedColObjective::Compute)==1.0);
-  assert(compute(nullptr,FixedColObjective::Skip)==0.0);
+  assert(compute(nullptr,FixedVariableObjective::Compute)==1.0);
+  assert(compute(nullptr,FixedVariableObjective::Skip)==0.0);
   check(cudaMemset(fixed,0,5));
   for(bool resident : {false,true}) {
     PostsolveTape tape;tape.resident=resident;
-    assert(compute(&tape,FixedColObjective::Skip)==0.0);
+    assert(compute(&tape,FixedVariableObjective::Skip)==0.0);
     assert(tape.types.empty() && tape.segments.empty());
   }
-  assert(append_compact_fixed_col_tape_from_device(nullptr,nullptr,nullptr,nullptr,nullptr,
+  assert(append_compact_fixed_variable_tape_from_device(nullptr,nullptr,nullptr,nullptr,nullptr,
                                                   nullptr,at,0,"empty")==0.0);
   for(auto p:{static_cast<void*>(at.rowPtr),static_cast<void*>(at.colVal),static_cast<void*>(at.nzVal),
               static_cast<void*>(fixed),static_cast<void*>(excluded),static_cast<void*>(rows),

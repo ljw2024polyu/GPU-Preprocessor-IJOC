@@ -1,10 +1,13 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #pragma once
 
 #include "postsolve_common.cuh"
 
 namespace gpu_presolver::presolve::postsolve {
 
-__device__ __forceinline__ void replay_row_bound_change(
+__device__ __forceinline__ void replay_row_implied_bound_change(
     double* x_org,
     double* y_org,
     double* z_org,

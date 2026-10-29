@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #pragma once
 
 #include "gpu_presolver/presolve/device_recovery.hpp"
@@ -113,7 +116,7 @@ inline void validate_recovery_col(std::int32_t col,
   }
 }
 
-__device__ __forceinline__ void replay_equation_to_inequality(
+__device__ __forceinline__ void replay_row_dual_shift(
     double* y_org,
     const std::int32_t* tape_idx,
     const double* tape_val,

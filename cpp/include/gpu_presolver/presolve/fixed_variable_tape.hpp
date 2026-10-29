@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #pragma once
 
 #include "gpu_presolver/presolve/presolve_structs.hpp"
@@ -6,15 +9,15 @@
 
 namespace gpu_presolver::presolve {
 
-enum class FixedColObjective { Compute, Skip };
+enum class FixedVariableObjective { Compute, Skip };
 
-// Packs FixedCol postsolve records on the GPU and transfers only selected
+// Packs FixedVariable postsolve records on the GPU and transfers only selected
 // columns and coefficients belonging to rows that remain in the model.
 // `tape` may be null when only the stable fixed-objective delta is needed.
 // Skip emits the same records but returns zero without objective accumulation.
 // For a resident tape, Skip never downloads the packed payload to the CPU.
 // `excluded_mask` may be null; otherwise nonzero entries are skipped.
-double append_compact_fixed_col_tape_from_device(PostsolveTape* tape,
+double append_compact_fixed_variable_tape_from_device(PostsolveTape* tape,
                                                const std::uint8_t* fixed_mask,
                                                const std::uint8_t* excluded_mask,
                                                const double* fixed_val,
@@ -23,6 +26,6 @@ double append_compact_fixed_col_tape_from_device(PostsolveTape* tape,
                                                const DeviceCsrMatrix& AT,
                                                std::int32_t n,
                                                const char* context,
-                                               FixedColObjective objective = FixedColObjective::Compute);
+                                               FixedVariableObjective objective = FixedVariableObjective::Compute);
 
 }  // namespace gpu_presolver::presolve

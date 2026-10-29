@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #include "gpu_presolver/detail/runtime_options.hpp"
 #include "gpu_presolver/presolve/device_recovery.hpp"
 #include "gpu_presolver/presolve/cleanup_workspace.hpp"
@@ -64,13 +67,13 @@ __global__ void globalize(int *data, const int *types, const NnzOffset *starts, 
   IndexSpan indices{data + starts[k], starts[k + 1] - starts[k]};
   const auto type = static_cast<PostsolveReductionType>(types[k]);
   if (long_records && indices.size() > LONG_RECOVERY_INDICES &&
-      (type == PostsolveReductionType::FixedCol || type == PostsolveReductionType::SubCol ||
+      (type == PostsolveReductionType::FixedVariable || type == PostsolveReductionType::SingletonColumnSubstitution ||
        type == PostsolveReductionType::DoubletonEquation)) {
     long_records[1 + atomicAdd(long_records, 1)] = k;
     return;
   }
   switch (static_cast<PostsolveReductionType>(types[k])) {
-  case PostsolveReductionType::FixedCol:
+  case PostsolveReductionType::FixedVariable:
     if (!indices.empty()) {
       indices[0] = map_col(indices[0], cols, n);
       for (std::size_t p = 1; p < indices.size(); ++p) {
@@ -78,7 +81,7 @@ __global__ void globalize(int *data, const int *types, const NnzOffset *starts, 
       }
     }
     break;
-  case PostsolveReductionType::FixedColInf:
+  case PostsolveReductionType::InfiniteBoundDualFix:
     if (indices.size() >= 2) {
       indices[1] = map_col(indices[1], cols, n);
       std::size_t p = 2;
@@ -90,7 +93,7 @@ __global__ void globalize(int *data, const int *types, const NnzOffset *starts, 
       }
     }
     break;
-  case PostsolveReductionType::SubCol:
+  case PostsolveReductionType::SingletonColumnSubstitution:
     if (indices.size() >= 3) {
       indices[0] = map_col(indices[0], cols, n);
       indices[1] = map_row(indices[1], rows, m);
@@ -122,19 +125,19 @@ __global__ void globalize(int *data, const int *types, const NnzOffset *starts, 
       }
     }
     break;
-  case PostsolveReductionType::LhsChange:
-  case PostsolveReductionType::RhsChange:
-  case PostsolveReductionType::EqToIneq:
+  case PostsolveReductionType::RowLowerBoundChange:
+  case PostsolveReductionType::RowUpperBoundChange:
+  case PostsolveReductionType::RowDualShift:
     if (!indices.empty()) {
       indices[0] = map_row(indices[0], rows, m);
     }
     break;
-  case PostsolveReductionType::BoundChangeNoRow:
+  case PostsolveReductionType::VariableBoundChange:
     if (!indices.empty()) {
       indices[0] = map_col(indices[0], cols, n);
     }
     break;
-  case PostsolveReductionType::BoundChangeTheRow:
+  case PostsolveReductionType::RowImpliedBoundChange:
     if (indices.size() >= 2) {
       indices[0] = map_col(indices[0], cols, n);
       indices[1] = map_row(indices[1], rows, m);
@@ -174,9 +177,6 @@ __global__ void globalize(int *data, const int *types, const NnzOffset *starts, 
       }
     }
     break;
-  case PostsolveReductionType::AddedRow:
-  case PostsolveReductionType::AddedRows:
-    break;
   }
 }
 // Each block maps one long support. Headers/counts and output positions retain
@@ -190,7 +190,7 @@ __global__ void globalize_long(int* data, const int* types, const NnzOffset* sta
     const NnzOffset size = starts[k + 1] - starts[k];
     const auto type = static_cast<PostsolveReductionType>(types[k]);
     NnzOffset first = 1, count = size - 1;
-    if (type == PostsolveReductionType::SubCol) {
+    if (type == PostsolveReductionType::SingletonColumnSubstitution) {
       first = 3;
       count = min(NnzOffset(indices[2]), size - first);
     } else if (type == PostsolveReductionType::DoubletonEquation) {
@@ -199,7 +199,7 @@ __global__ void globalize_long(int* data, const int* types, const NnzOffset* sta
     }
     if (threadIdx.x == 0) {
       indices[0] = map_col(indices[0], cols, n);
-      if (type == PostsolveReductionType::SubCol) indices[1] = map_row(indices[1], rows, m);
+      if (type == PostsolveReductionType::SingletonColumnSubstitution) indices[1] = map_row(indices[1], rows, m);
       if (type == PostsolveReductionType::DoubletonEquation) {
         indices[1] = map_col(indices[1], cols, n);
         indices[2] = map_row(indices[2], rows, m);
@@ -207,7 +207,7 @@ __global__ void globalize_long(int* data, const int* types, const NnzOffset* sta
     }
     for (NnzOffset i = threadIdx.x; i < count; i += blockDim.x) {
       int& index = indices[first + i];
-      index = type == PostsolveReductionType::SubCol ? map_col(index, cols, n)
+      index = type == PostsolveReductionType::SingletonColumnSubstitution ? map_col(index, cols, n)
                                                     : map_row(index, rows, m);
     }
   }
@@ -296,7 +296,7 @@ __global__ void simple_pack(int *types, unsigned char *modes, NnzOffset *starts,
     vstarts[k + 1] = vp + nv;
     indices[ip] = i;
     if (kind == 0) {
-      types[k] = int(PostsolveReductionType::FixedCol);
+      types[k] = int(PostsolveReductionType::FixedVariable);
       vals[vp] = lo[i];
       vals[vp + 1] = hi[i];
     } else if (kind == 1 || kind == 2) {
@@ -309,13 +309,13 @@ __global__ void simple_pack(int *types, unsigned char *modes, NnzOffset *starts,
       }
     } else if (kind == 3) {
       bool lower = a[i] && k == begin;
-      types[k] = int(lower ? PostsolveReductionType::LhsChange : PostsolveReductionType::RhsChange);
+      types[k] = int(lower ? PostsolveReductionType::RowLowerBoundChange : PostsolveReductionType::RowUpperBoundChange);
       vals[vp] = lo[i];
       vals[vp + 1] = hi[i];
       vals[vp + 2] = lower ? -INFINITY : lo[i];
       vals[vp + 3] = lower ? hi[i] : INFINITY;
     } else {
-      types[k] = int(PostsolveReductionType::BoundChangeNoRow);
+      types[k] = int(PostsolveReductionType::VariableBoundChange);
       vals[vp] = lo[i];
       vals[vp + 1] = hi[i];
       vals[vp + 2] = a[i] ? -INFINITY : lo[i];
@@ -377,7 +377,7 @@ __global__ void infinite_pack(SegmentView out, const Wide *scan, const Wide *siz
   auto k = NnzOffset(scan[col] - 1), begin = NnzOffset(col ? sizes[col - 1] : 0);
   auto p = begin;
   bool positive = value[col] > 0;
-  out.types[k] = int(PostsolveReductionType::FixedColInf);
+  out.types[k] = int(PostsolveReductionType::InfiniteBoundDualFix);
   out.modes[k] = unsigned(PostsolveDualMode::Exact);
   out.is[k + 1] = out.vs[k + 1] = NnzOffset(sizes[col]);
   out.indices[p] = positive ? 1 : -1;

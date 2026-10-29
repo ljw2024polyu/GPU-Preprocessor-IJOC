@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #pragma once
 // Isolate comparison PSLP 0.0.11 from the release's built-in PSLP 0.0.8.
 // All externally defined C symbols in the pinned 0.0.11 source are prefixed.

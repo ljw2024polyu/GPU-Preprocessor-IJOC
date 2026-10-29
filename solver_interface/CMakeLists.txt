@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+# SPDX-License-Identifier: MIT
+
 # Build rules live outside the byte-identical official v0.1.3 source tree.
 if(POLICY CMP0144)
   cmake_policy(SET CMP0144 NEW)

@@ -1,9 +1,12 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #include "gpu_presolver/presolve/cleanup_support.cuh"
 #include "gpu_presolver/offset.hpp"
 #include "gpu_presolver/presolve/device_recovery.hpp"
 #include "gpu_presolver/presolve/rules/rule_dual_fix.hpp"
 
-#include "gpu_presolver/presolve/fixed_col_tape.hpp"
+#include "gpu_presolver/presolve/fixed_variable_tape.hpp"
 
 #include <cub/cub.cuh>
 #include <cuda_runtime.h>
@@ -61,7 +64,7 @@ double sum_device_double(const double* values, std::int32_t n, const char* conte
 }
 
 
-void append_infinite_fixed_col_tape_from_device(PostsolveTape& tape,
+void append_infinite_bound_dual_fix_tape_from_device(PostsolveTape& tape,
                                                 const std::uint8_t* fixed_mask,
                                                 const std::uint8_t* infinite_fix_mask,
                                                 const double* fixed_val,
@@ -93,16 +96,16 @@ void append_infinite_fixed_col_tape_from_device(PostsolveTape& tape,
                                  static_cast<std::size_t>(n),
                                  cudaMemcpyDeviceToHost),
                       context);
-  bool has_infinite_fixed_col = false;
+  bool has_infinite_bound_dual_fix = false;
   for (std::int32_t col = 0; col < n; ++col) {
     const auto col_idx = static_cast<std::size_t>(col);
     if (host_fixed_mask[col_idx] != std::uint8_t{0} &&
         host_infinite_fix_mask[col_idx] != std::uint8_t{0}) {
-      has_infinite_fixed_col = true;
+      has_infinite_bound_dual_fix = true;
       break;
     }
   }
-  if (!has_infinite_fixed_col) {
+  if (!has_infinite_bound_dual_fix) {
     return;
   }
 
@@ -193,7 +196,7 @@ void append_infinite_fixed_col_tape_from_device(PostsolveTape& tape,
     }
     vals[0] = static_cast<double>(active_rows);
     append_postsolve_record(
-        tape, PostsolveReductionType::FixedColInf, indices, vals, PostsolveDualMode::Exact);
+        tape, PostsolveReductionType::InfiniteBoundDualFix, indices, vals, PostsolveDualMode::Exact);
   }
 }
 
@@ -574,7 +577,7 @@ void apply_rule_dual_fix(PresolvePlanGpu& plan,
     const bool row_changed = row_action != 0;
     if (pparams.record_postsolve_tape) {
       if (status[2] != 0) {
-        append_infinite_fixed_col_tape_from_device(plan.tape,
+        append_infinite_bound_dual_fix_tape_from_device(plan.tape,
                                                    fixed_mask,
                                                    infinite_fix_mask,
                                                    fixed_val,
@@ -587,7 +590,7 @@ void apply_rule_dual_fix(PresolvePlanGpu& plan,
                                                    lp.AT,
                                                    m,
                                                    n,
-                                                   "cudaMemcpy dual_fix fixed-col-inf tape",
+                                                   "cudaMemcpy dual_fix fixed-variable-inf tape",
                                                    plan.rule_entry_keep_col ? plan.rule_entry_keep_col : plan.cleanup_prefix_keep_col);
       }
       std::uint8_t* keep_row_after_for_tape = plan.keep_row_mask;
@@ -599,7 +602,7 @@ void apply_rule_dual_fix(PresolvePlanGpu& plan,
         throw_if_cuda_error(cudaGetLastError(), "_kernel_dual_fix_keep_row_after");
       }
       if (pparams.record_postsolve_tape_cpu) {
-        append_compact_fixed_col_tape_from_device(&plan.tape,
+        append_compact_fixed_variable_tape_from_device(&plan.tape,
                                                   fixed_mask,
                                                   infinite_fix_mask,
                                                   fixed_val,
@@ -607,7 +610,7 @@ void apply_rule_dual_fix(PresolvePlanGpu& plan,
                                                   plan.new_c,
                                                   lp.AT,
                                                   n,
-                                                  "dual_fix fixed-col compact tape", FixedColObjective::Skip);
+                                                  "dual_fix fixed-variable compact tape", FixedVariableObjective::Skip);
       }
     }
     const std::int32_t max_mn = m > n ? m : n;

@@ -1,6 +1,9 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #include "gpu_presolver/offset.hpp"
 #include "gpu_presolver/presolve/device_recovery.hpp"
-#include "gpu_presolver/presolve/fixed_col_tape.hpp"
+#include "gpu_presolver/presolve/fixed_variable_tape.hpp"
 
 #include <cub/cub.cuh>
 #include <cuda_runtime.h>
@@ -36,14 +39,14 @@ void throw_if_cuda_error(cudaError_t status, const char* context) {
   }
 }
 
-__device__ bool fixed_col_selected(const std::uint8_t* fixed_mask,
+__device__ bool fixed_variable_selected(const std::uint8_t* fixed_mask,
                                    const std::uint8_t* excluded_mask,
                                    std::int32_t col) {
   return fixed_mask[col] != std::uint8_t{0} &&
          (excluded_mask == nullptr || excluded_mask[col] == std::uint8_t{0});
 }
 
-__global__ void fixed_col_tape_counts(NnzOffset* selected_scan,
+__global__ void fixed_variable_tape_counts(NnzOffset* selected_scan,
                                       NnzOffset* active_nnz_scan,
                                       const std::uint8_t* fixed_mask,
                                       const std::uint8_t* excluded_mask,
@@ -55,7 +58,7 @@ __global__ void fixed_col_tape_counts(NnzOffset* selected_scan,
   if (col >= n) {
     return;
   }
-  const bool selected = fixed_col_selected(fixed_mask, excluded_mask, col);
+  const bool selected = fixed_variable_selected(fixed_mask, excluded_mask, col);
   selected_scan[col] = selected ? 1 : 0;
   NnzOffset active_nnz = 0;
   if (selected) {
@@ -66,7 +69,7 @@ __global__ void fixed_col_tape_counts(NnzOffset* selected_scan,
   active_nnz_scan[col] = active_nnz;
 }
 
-__global__ void pack_fixed_col_tape(std::int32_t* packed_cols,
+__global__ void pack_fixed_variable_tape(std::int32_t* packed_cols,
                                     double* packed_fixed_vals,
                                     double* packed_c,
                                     NnzOffset* packed_nnz_starts,
@@ -84,7 +87,7 @@ __global__ void pack_fixed_col_tape(std::int32_t* packed_cols,
                                     const double* at_nz_val,
                                     std::int32_t n) {
   const std::int32_t col = static_cast<std::int32_t>(NnzOffset(blockIdx.x) * blockDim.x + threadIdx.x);
-  if (col >= n || !fixed_col_selected(fixed_mask, excluded_mask, col)) {
+  if (col >= n || !fixed_variable_selected(fixed_mask, excluded_mask, col)) {
     return;
   }
 
@@ -116,7 +119,7 @@ __global__ void final_fixed_tape(int *types, unsigned char *modes, NnzOffset *is
     return;
   auto begin = starts[k], end = starts[k + 1];
   auto ib = NnzOffset(k) + begin, vb = NnzOffset(2) * k + begin;
-  types[k] = int(PostsolveReductionType::FixedCol);
+  types[k] = int(PostsolveReductionType::FixedVariable);
   modes[k] = unsigned(PostsolveDualMode::Minimal);
   if (k == 0) {
     is[0] = 0;
@@ -135,7 +138,7 @@ __global__ void final_fixed_tape(int *types, unsigned char *modes, NnzOffset *is
 
 }  // namespace
 
-double append_compact_fixed_col_tape_from_device(PostsolveTape* tape,
+double append_compact_fixed_variable_tape_from_device(PostsolveTape* tape,
                                                const std::uint8_t* fixed_mask,
                                                const std::uint8_t* excluded_mask,
                                                const double* fixed_val,
@@ -144,8 +147,8 @@ double append_compact_fixed_col_tape_from_device(PostsolveTape* tape,
                                                const DeviceCsrMatrix& AT,
                                                std::int32_t n,
                                                const char* context,
-                                               FixedColObjective objective) {
-  if (n <= 0 || (tape == nullptr && objective == FixedColObjective::Skip)) {
+                                               FixedVariableObjective objective) {
+  if (n <= 0 || (tape == nullptr && objective == FixedVariableObjective::Skip)) {
     return 0.0;
   }
 
@@ -157,7 +160,7 @@ double append_compact_fixed_col_tape_from_device(PostsolveTape* tape,
   auto* active_nnz_scan = selected_scan + n;
 
   const int blocks_n = (n + GPU_PRESOLVE_THREADS - 1) / GPU_PRESOLVE_THREADS;
-  fixed_col_tape_counts<<<blocks_n, GPU_PRESOLVE_THREADS>>>(selected_scan,
+  fixed_variable_tape_counts<<<blocks_n, GPU_PRESOLVE_THREADS>>>(selected_scan,
                                                            active_nnz_scan,
                                                            fixed_mask,
                                                            excluded_mask,
@@ -210,7 +213,7 @@ double append_compact_fixed_col_tape_from_device(PostsolveTape* tape,
   auto* packed_coeffs = scratch_at<double>(packed_slab, coeffs_offset);
   throw_if_cuda_error(cudaMemset(packed_nnz_starts, 0, sizeof(NnzOffset)), context);
 
-  pack_fixed_col_tape<<<blocks_n, GPU_PRESOLVE_THREADS>>>(packed_cols,
+  pack_fixed_variable_tape<<<blocks_n, GPU_PRESOLVE_THREADS>>>(packed_cols,
                                                           packed_fixed_vals,
                                                           packed_c,
                                                           packed_nnz_starts,
@@ -244,7 +247,7 @@ double append_compact_fixed_col_tape_from_device(PostsolveTape* tape,
     tape = nullptr;
   }
 
-  if (tape == nullptr && objective == FixedColObjective::Skip) {
+  if (tape == nullptr && objective == FixedVariableObjective::Skip) {
     cudaFree(scan_slab);
     cudaFree(packed_slab);
     return 0.0;
@@ -293,7 +296,7 @@ double append_compact_fixed_col_tape_from_device(PostsolveTape* tape,
 
   long double objective_delta = 0.0L;
   for (std::int32_t rec = 0; rec < record_count; ++rec) {
-    if (objective == FixedColObjective::Compute) {
+    if (objective == FixedVariableObjective::Compute) {
       objective_delta +=
           static_cast<long double>(host_c[static_cast<std::size_t>(rec)]) *
           static_cast<long double>(host_fixed_vals[static_cast<std::size_t>(rec)]);
@@ -301,7 +304,7 @@ double append_compact_fixed_col_tape_from_device(PostsolveTape* tape,
     if (tape == nullptr) {
       continue;
     }
-    tape->types.push_back(static_cast<std::int32_t>(PostsolveReductionType::FixedCol));
+    tape->types.push_back(static_cast<std::int32_t>(PostsolveReductionType::FixedVariable));
     tape->indices.push_back(host_cols[static_cast<std::size_t>(rec)]);
     tape->vals.push_back(host_fixed_vals[static_cast<std::size_t>(rec)]);
     tape->vals.push_back(host_c[static_cast<std::size_t>(rec)]);

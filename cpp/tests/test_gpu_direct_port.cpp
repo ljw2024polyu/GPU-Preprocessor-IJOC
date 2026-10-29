@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #include "gpu_presolver/detail/runtime_options.hpp"
 #include "gpu_presolver/offset.hpp"
 #include "gpu_presolver/presolve/device_recovery.hpp"
@@ -320,8 +323,8 @@ void test_post_propagation_activity_closure(bool record_activity_tape) {
   assert(summary.record.tape_gpu.index_count == 0);
   assert(summary.record.tape_gpu.value_count == 0);
   const std::int32_t bound_type = summary.record.tape.types[0];
-  assert(bound_type == static_cast<std::int32_t>(PostsolveReductionType::BoundChangeTheRow) ||
-         bound_type == static_cast<std::int32_t>(PostsolveReductionType::BoundChangeNoRow));
+  assert(bound_type == static_cast<std::int32_t>(PostsolveReductionType::RowImpliedBoundChange) ||
+         bound_type == static_cast<std::int32_t>(PostsolveReductionType::VariableBoundChange));
   if (record_activity_tape) {
     assert(summary.record.tape.types[1] == static_cast<std::int32_t>(PostsolveReductionType::DeletedRow));
   }

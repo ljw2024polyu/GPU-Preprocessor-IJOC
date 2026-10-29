@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #include "gpu_presolver/presolve/cleanup_workspace.hpp"
 #include "gpu_presolver/presolve/cleanup_support.cuh"
 #include "gpu_presolver/offset.hpp"
@@ -199,7 +202,7 @@ void apply_rule_empty_columns(PresolvePlanGpu& plan,
   } else if (flags[2] != 0) {
     if (pparams.record_postsolve_tape && pparams.record_postsolve_tape_cpu) {
       if (plan.tape.resident) {
-        append_simple_device_recovery(plan.tape, SimpleRecovery::FixedCol, fixed_mask, nullptr, n,
+        append_simple_device_recovery(plan.tape, SimpleRecovery::FixedVariable, fixed_mask, nullptr, n,
                                       nullptr, fixed_val, plan.new_c, nullptr);
       } else {
 
@@ -221,7 +224,7 @@ void apply_rule_empty_columns(PresolvePlanGpu& plan,
           if (host_fixed_mask[static_cast<std::size_t>(col)] == std::uint8_t{0}) {
             continue;
           }
-          append_postsolve_record(plan.tape, PostsolveReductionType::FixedCol,
+          append_postsolve_record(plan.tape, PostsolveReductionType::FixedVariable,
                                   std::vector<std::int32_t>{col},
                                   std::vector<double>{host_fixed_val[static_cast<std::size_t>(col)],
                                                       host_c[static_cast<std::size_t>(col)]},

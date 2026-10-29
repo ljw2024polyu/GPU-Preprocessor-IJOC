@@ -9,14 +9,15 @@ Install the following dependencies yourself before building or running:
 
 | Dependency | Requirement |
 | --- | --- |
-| CUDA | CUDA Toolkit 12 or newer, including nvcc and CUDA libraries, with a compatible NVIDIA driver |
+| CUDA | CUDA Toolkit 13.3, including nvcc and CUDA libraries, with a compatible NVIDIA driver |
 | Build tools | Git, Bash, Make, CMake 3.24 or newer, CUDA-compatible C/C++17 compilers, and zlib development headers |
 | Input generators | GNU Fortran (`gfortran`), Julia 1.10 or newer, `curl`, and `gzip` |
 | Python | Python 3.10 or newer |
 | Python packages | `matplotlib==3.10.7` and `gurobipy==12.0.2`, as listed in [requirements.txt](../requirements.txt) |
 
-The paper experiments used CUDA Toolkit 13.3.33. The complete hardware and
-software settings are recorded in [experiment_environment.json](experiment_environment.json).
+Use CUDA Toolkit 13.3 to reproduce the experiments. The paper experiments used
+version 13.3.33. The complete hardware and software settings are recorded in
+[experiment_environment.json](experiment_environment.json).
 
 Activate your Python environment before following the steps below. The scripts
 use `python3` from that environment; they do not install dependencies or create
@@ -34,6 +35,32 @@ Access to the private repository through your GitHub account is required.
 
 ## 2. Build
 
+Select CUDA Toolkit 13.3 before configuring the build. Adjust the installation
+path if needed, and keep these environment variables set when running the
+remaining steps:
+
+```sh
+export CUDAToolkit_ROOT=/usr/local/cuda-13.3
+export CUDACXX="$CUDAToolkit_ROOT/bin/nvcc"
+export PATH="$CUDAToolkit_ROOT/bin:$PATH"
+export LD_LIBRARY_PATH="$CUDAToolkit_ROOT/targets/x86_64-linux/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+```
+
+The recorded H100 environment uses NVIDIA driver 570.133.20 with the CUDA 13.3
+forward compatibility libraries. For that driver/toolkit setup, install the
+`cuda-compat-13-3` package and prepend its library directory before running
+GPU tests or experiments:
+
+```sh
+export LD_LIBRARY_PATH="$CUDAToolkit_ROOT/compat:$LD_LIBRARY_PATH"
+```
+
+Use this compatibility configuration only on supported hardware and drivers;
+see NVIDIA's [forward compatibility guide](https://docs.nvidia.com/deploy/cuda-compatibility/forward-compatibility.html).
+A driver that supports CUDA 13.3 directly does not require this extra step.
+
+Build the project:
+
 ```sh
 bash scripts/reproduce.sh setup
 ```
@@ -41,12 +68,11 @@ bash scripts/reproduce.sh setup
 This compiles GPU-Preprocessor, HPR-LP, PSLP, the command-line tools, and tests
 into `build-experiments/`. The experiment executable is
 `build-experiments/bin/hprlp_solve`. CMake discovers the installed compilers and
-CUDA Toolkit and targets the visible GPU. Optional compiler settings are
-listed in [solver integration](SOLVER_INTEGRATION.md#build).
+the selected CUDA 13.3 Toolkit and targets the visible GPU. Optional compiler
+settings are listed in [solver integration](SOLVER_INTEGRATION.md#build).
 
-If multiple CUDA Toolkits are installed, set `CUDACXX` to the `nvcc` executable
-from the toolkit you want to use. After changing compilers or CUDA Toolkits,
-reset the cached build configuration with:
+After changing compilers or switching an existing build to CUDA 13.3, reset
+the cached build configuration with:
 
 ```sh
 bash scripts/reproduce.sh setup --fresh

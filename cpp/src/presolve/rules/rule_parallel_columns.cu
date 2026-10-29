@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #include "parallel_signature_common.cuh"
 #include "gpu_presolver/detail/runtime_options.hpp"
 #include "gpu_presolver/offset.hpp"
@@ -5,7 +8,7 @@
 #include "gpu_presolver/presolve/duplicate_rule_workspace.hpp"
 #include "gpu_presolver/presolve/rules/rule_parallel_columns.hpp"
 
-#include "gpu_presolver/presolve/fixed_col_tape.hpp"
+#include "gpu_presolver/presolve/fixed_variable_tape.hpp"
 
 #include <cuda_runtime.h>
 #include <cub/block/block_reduce.cuh>
@@ -1069,7 +1072,7 @@ void apply_rule_parallel_columns(PresolvePlanGpu& plan,
     }
     if (status[2] != 0) {
       if (pparams.record_postsolve_tape) {
-        append_compact_fixed_col_tape_from_device(&plan.tape,
+        append_compact_fixed_variable_tape_from_device(&plan.tape,
                                                   fixed_mask,
                                                   nullptr,
                                                   fixed_val,
@@ -1077,7 +1080,7 @@ void apply_rule_parallel_columns(PresolvePlanGpu& plan,
                                                   plan.new_c,
                                                   lp.AT,
                                                   n,
-                                                  "parallel_columns fixed-col tape", FixedColObjective::Skip);
+                                                  "parallel_columns fixed-variable tape", FixedVariableObjective::Skip);
       }
       _kernel_parallel_column_fixed_row_shift<<<blocks_n, GPU_PRESOLVE_THREADS>>>(
           row_shift,

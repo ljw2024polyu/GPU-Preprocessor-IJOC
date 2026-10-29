@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, Xinyuan Zhao
+// SPDX-License-Identifier: MIT
+
 #include "gpu_presolver/detail/runtime_options.hpp"
 #include "gpu_presolver/offset.hpp"
 #include "gpu_presolver/presolve/rules/rule_infeasible_and_redundant_rows.hpp"
@@ -109,8 +112,8 @@ void test_activity_actions_match_julia_classification() {
   assert((plan.tape.types == std::vector<std::int32_t>{
                                  static_cast<std::int32_t>(PostsolveReductionType::DeletedRow),
                                  static_cast<std::int32_t>(PostsolveReductionType::DeletedRow),
-                                 static_cast<std::int32_t>(PostsolveReductionType::LhsChange),
-                                 static_cast<std::int32_t>(PostsolveReductionType::RhsChange)}));
+                                 static_cast<std::int32_t>(PostsolveReductionType::RowLowerBoundChange),
+                                 static_cast<std::int32_t>(PostsolveReductionType::RowUpperBoundChange)}));
   assert((plan.tape.index_starts == std::vector<NnzOffset>{0, 1, 2, 3, 4}));
   assert((plan.tape.value_starts == std::vector<NnzOffset>{0, 2, 4, 8, 12}));
   assert((plan.tape.dual_modes == std::vector<std::uint8_t>{
