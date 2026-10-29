@@ -94,6 +94,7 @@ if(GPUPRESOLVER_BUILD_TESTS)
     test_folding_pipeline
     test_gpu_direct_port
     test_gpu_postsolve
+    test_parallel_postsolve
     test_gpu_presolve_kernels
     test_lp_problem
     test_rule_piecewise_linear_reformulation_variable_pair_shifted_antipodal

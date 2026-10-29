@@ -9,6 +9,7 @@
 
 #include "postsolve/postsolve_bound_strengthening.cuh"
 #include "postsolve/postsolve_common.cuh"
+#include "postsolve/parallel_replay.cuh"
 #include "postsolve/postsolve_doubleton_equations.cuh"
 #include "postsolve/postsolve_fixed_variables.cuh"
 #include "postsolve/postsolve_parallel_columns.cuh"
@@ -80,86 +81,95 @@ __global__ void _kernel_restore_fixed_values(double* x_org,
   }
 }
 
-__global__ void _kernel_replay_postsolve_tape(double* x_org,
-                                              double* y_org,
-                                              double* z_org,
-                                              std::uint8_t* z_retrieved,
-                                              const std::int32_t* reduction_types,
-                                              const NnzOffset* idx_starts,
-                                              const NnzOffset* val_starts,
-                                              const std::int32_t* tape_idx,
-                                              const double* tape_val,
-                                              const NnzOffset* A_rowPtr,
-                                              const std::int32_t* A_colVal,
-                                              const double* A_nzVal,
-                                              const NnzOffset* AT_rowPtr,
-                                              const std::int32_t* AT_colVal,
-                                              const double* AT_nzVal,
-                                              const double* c,
-                                              const double* AL,
-                                              const double* AU,
-                                              const double* l,
-                                              const double* u,
-                                              NnzOffset record_begin,
-                                              NnzOffset record_end,
-                                              std::int32_t has_original_model,
-                                              std::int32_t replay_primal,
-                                              std::int32_t replay_dual,
-                                              std::int32_t parallel_row_doc_recovery,
-                                              double tol) {
-  if (blockIdx.x != 0 || threadIdx.x != 0) {
-    return;
+// Serial and parallel replay use the same scalar recovery handlers.
+__device__ __forceinline__ void replay_postsolve_record(parallel::State s, parallel::Tape t, NnzOffset k) {
+  double* x_org = s.x; double* y_org = s.y; double* z_org = s.z;
+  auto* z_retrieved = s.retrieved;
+  const auto* reduction_types = t.types; const auto* idx_starts = t.is;
+  const auto* val_starts = t.vs; const auto* tape_idx = t.ids; const auto* tape_val = t.values;
+  const auto* A_rowPtr = s.model.A.rowPtr; const auto* A_colVal = s.model.A.colVal;
+  const auto* A_nzVal = s.model.A.nzVal; const auto* AT_rowPtr = s.model.AT.rowPtr;
+  const auto* AT_colVal = s.model.AT.colVal; const auto* AT_nzVal = s.model.AT.nzVal;
+  const auto* c = s.model.c; const auto* l = s.model.l; const auto* u = s.model.u;
+  const int has_original_model = s.original, replay_primal = s.primal, replay_dual = s.dual;
+  const int parallel_row_doc_recovery = s.parallel_row_doc;
+  const double tol = s.tol;
+  const std::int32_t reduction_type = reduction_types[k];
+  const NnzOffset idx0 = idx_starts[k];
+  const NnzOffset idx1 = idx_starts[k + 1] - 1;
+  const NnzOffset val0 = val_starts[k];
+  const NnzOffset val1 = val_starts[k + 1] - 1;
+  if (reduction_type == static_cast<std::int32_t>(PostsolveReductionType::ParallelColumn)) {
+    replay_parallel_column(
+        x_org, z_org, z_retrieved, tape_idx, tape_val, idx0, val0, replay_primal, replay_dual, tol);
+  } else if (reduction_type == static_cast<std::int32_t>(PostsolveReductionType::DoubletonEquation)) {
+    replay_doubleton_equation(
+        x_org, y_org, z_org, z_retrieved, tape_idx, tape_val, AT_rowPtr, AT_colVal, AT_nzVal, c,
+        idx0, idx1, val0, val1, has_original_model, replay_primal, replay_dual, tol);
+  } else if (reduction_type == static_cast<std::int32_t>(PostsolveReductionType::SingletonColumnSubstitution)) {
+    replay_singleton_column_substitution(
+        x_org, y_org, z_org, z_retrieved, tape_idx, tape_val, idx0, val0, replay_primal,
+        replay_dual);
+  } else if (reduction_type == static_cast<std::int32_t>(PostsolveReductionType::FixedVariable)) {
+    replay_fixed_variable(
+        x_org, y_org, z_org, z_retrieved, tape_idx, tape_val, idx0, idx1, val0, replay_primal,
+        replay_dual);
+  } else if (reduction_type == static_cast<std::int32_t>(PostsolveReductionType::InfiniteBoundDualFix)) {
+    replay_infinite_bound_dual_fix(
+        x_org, z_org, z_retrieved, tape_idx, tape_val, idx0, val0, replay_primal, replay_dual);
+  } else if (reduction_type == static_cast<std::int32_t>(PostsolveReductionType::FmeCol)) {
+    replay_projected_column(
+        x_org, y_org, z_org, z_retrieved, tape_idx, tape_val, idx0, val0, replay_primal,
+        replay_dual);
+  } else if (replay_dual != 0 &&
+             reduction_type == static_cast<std::int32_t>(PostsolveReductionType::RowDualShift)) {
+    replay_row_dual_shift(
+        y_org, tape_idx, tape_val, idx0, val0);
+  } else if (replay_dual != 0 &&
+             reduction_type == static_cast<std::int32_t>(PostsolveReductionType::ParallelRow) &&
+             idx1 >= idx0 + 1 && val1 >= val0 + 4) {
+    replay_parallel_row(
+        x_org, y_org, tape_idx, tape_val, A_rowPtr, A_colVal, A_nzVal, idx0, val0,
+        has_original_model, parallel_row_doc_recovery, tol);
+  } else if (replay_dual != 0 &&
+             reduction_type == static_cast<std::int32_t>(PostsolveReductionType::DeletedRow) &&
+             has_original_model != 0 && idx1 >= idx0 + 1 && val1 >= val0 + 2) {
+    replay_deleted_singleton_row(
+        x_org, y_org, z_org, z_retrieved, tape_idx, tape_val, AT_rowPtr, AT_colVal, AT_nzVal, c,
+        l, u, idx0, val0, tol);
+  } else if (replay_dual != 0 &&
+             reduction_type == static_cast<std::int32_t>(PostsolveReductionType::RowImpliedBoundChange) &&
+             has_original_model != 0 && idx1 >= idx0 + 1) {
+    replay_row_implied_bound_change(
+        x_org, y_org, z_org, z_retrieved, tape_idx, tape_val, A_rowPtr, A_colVal, A_nzVal, idx0,
+        val0, tol);
   }
-  for (NnzOffset k = record_end - 1; k >= record_begin; --k) {
-    const std::int32_t reduction_type = reduction_types[k];
-    const NnzOffset idx0 = idx_starts[k];
-    const NnzOffset idx1 = idx_starts[k + 1] - 1;
-    const NnzOffset val0 = val_starts[k];
-    const NnzOffset val1 = val_starts[k + 1] - 1;
-    if (reduction_type == static_cast<std::int32_t>(PostsolveReductionType::ParallelColumn)) {
-      replay_parallel_column(
-          x_org, z_org, z_retrieved, tape_idx, tape_val, idx0, val0, replay_primal, replay_dual, tol);
-    } else if (reduction_type == static_cast<std::int32_t>(PostsolveReductionType::DoubletonEquation)) {
-      replay_doubleton_equation(
-          x_org, y_org, z_org, z_retrieved, tape_idx, tape_val, AT_rowPtr, AT_colVal, AT_nzVal, c,
-          idx0, idx1, val0, val1, has_original_model, replay_primal, replay_dual, tol);
-    } else if (reduction_type == static_cast<std::int32_t>(PostsolveReductionType::SingletonColumnSubstitution)) {
-      replay_singleton_column_substitution(
-          x_org, y_org, z_org, z_retrieved, tape_idx, tape_val, idx0, val0, replay_primal,
-          replay_dual);
-    } else if (reduction_type == static_cast<std::int32_t>(PostsolveReductionType::FixedVariable)) {
-      replay_fixed_variable(
-          x_org, y_org, z_org, z_retrieved, tape_idx, tape_val, idx0, idx1, val0, replay_primal,
-          replay_dual);
-    } else if (reduction_type == static_cast<std::int32_t>(PostsolveReductionType::InfiniteBoundDualFix)) {
-      replay_infinite_bound_dual_fix(
-          x_org, z_org, z_retrieved, tape_idx, tape_val, idx0, val0, replay_primal, replay_dual);
-    } else if (reduction_type == static_cast<std::int32_t>(PostsolveReductionType::FmeCol)) {
-      replay_projected_column(
-          x_org, y_org, z_org, z_retrieved, tape_idx, tape_val, idx0, val0, replay_primal,
-          replay_dual);
-    } else if (replay_dual != 0 &&
-               reduction_type == static_cast<std::int32_t>(PostsolveReductionType::RowDualShift)) {
-      replay_row_dual_shift(
-          y_org, tape_idx, tape_val, idx0, val0);
-    } else if (replay_dual != 0 &&
-               reduction_type == static_cast<std::int32_t>(PostsolveReductionType::ParallelRow) &&
-               idx1 >= idx0 + 1 && val1 >= val0 + 4) {
-      replay_parallel_row(
-          x_org, y_org, tape_idx, tape_val, A_rowPtr, A_colVal, A_nzVal, idx0, val0,
-          has_original_model, parallel_row_doc_recovery, tol);
-    } else if (replay_dual != 0 &&
-               reduction_type == static_cast<std::int32_t>(PostsolveReductionType::DeletedRow) &&
-               has_original_model != 0 && idx1 >= idx0 + 1 && val1 >= val0 + 2) {
-      replay_deleted_singleton_row(
-          x_org, y_org, z_org, z_retrieved, tape_idx, tape_val, AT_rowPtr, AT_colVal, AT_nzVal, c,
-          l, u, idx0, val0, tol);
-    } else if (replay_dual != 0 &&
-               reduction_type == static_cast<std::int32_t>(PostsolveReductionType::RowImpliedBoundChange) &&
-               has_original_model != 0 && idx1 >= idx0 + 1) {
-      replay_row_implied_bound_change(
-          x_org, y_org, z_org, z_retrieved, tape_idx, tape_val, A_rowPtr, A_colVal, A_nzVal, idx0,
-          val0, tol);
+}
+
+__global__ void _kernel_replay_postsolve_tape(parallel::State s, parallel::Tape t,
+    NnzOffset begin, NnzOffset end, const int* invalid) {
+  if (blockIdx.x || threadIdx.x || (invalid && !*invalid)) return;
+  for (NnzOffset k = end - 1; k >= begin; --k) replay_postsolve_record(s, t, k);
+}
+__global__ void _kernel_replay_postsolve_independent(parallel::State s, parallel::Tape t,
+    NnzOffset begin, NnzOffset end, const int* invalid) {
+  if (*invalid) return;
+  for (auto k = std::uint64_t(begin) + std::uint64_t(blockIdx.x) * blockDim.x + threadIdx.x;
+       k < std::uint64_t(end); k += std::uint64_t(blockDim.x) * gridDim.x)
+    replay_postsolve_record(s, t, NnzOffset(k));
+}
+__global__ void _kernel_replay_postsolve_components(parallel::State s, parallel::Tape t,
+    NnzOffset begin, int count, const int* invalid, const parallel::Key* ordered) {
+  if (*invalid) return;
+  for (auto p = std::uint64_t(blockIdx.x) * blockDim.x + threadIdx.x;
+       p < std::uint64_t(count); p += std::uint64_t(blockDim.x) * gridDim.x) {
+    const auto component = ordered[p] >> 32;
+    if (p && (ordered[p - 1] >> 32) == component) continue;
+    auto end = p + 1;
+    while (end < std::uint64_t(count) && (ordered[end] >> 32) == component) ++end;
+    while (end > p) {
+      const auto ordinal = std::uint32_t(ordered[--end]);
+      replay_postsolve_record(s, t, begin + NnzOffset(ordinal));
     }
   }
 }
@@ -246,52 +256,27 @@ void borrow_postsolve_tape(const PostsolveTapeGpu& tape,
   device_tape.owns_storage = false;
 }
 
-void replay_postsolve_tape_range(double* x_org,
-                                 double* y_org,
-                                 double* z_org,
-                                 std::uint8_t* z_retrieved,
-                                 const DevicePostsolveTape& tape,
-                                 const LPInfoGpu* original_model,
-                                 NnzOffset record_begin,
-                                 NnzOffset record_end,
-                                 bool replay_primal,
-                                 bool replay_dual,
-                                 double tol) {
-  if (record_begin < 0 || record_end < record_begin ||
-      record_end > tape.count) {
+void replay_postsolve_tape_range(double* x_org, double* y_org, double* z_org,
+    std::uint8_t* z_retrieved, const DevicePostsolveTape& tape, const LPInfoGpu* original_model,
+    NnzOffset begin, NnzOffset end, bool primal, bool dual, double tol,
+    parallel::Context& context, int m, int n) {
+  if (begin < 0 || end < begin || end > tape.count)
     throw std::runtime_error("invalid postsolve tape replay range");
-  }
-  if (record_begin == record_end) {
-    return;
-  }
-  _kernel_replay_postsolve_tape<<<1, 1>>>(x_org,
-                                          y_org,
-                                          z_org,
-                                          z_retrieved,
-                                          tape.types,
-                                          tape.index_starts,
-                                          tape.value_starts,
-                                          tape.indices,
-                                          tape.vals,
-                                          original_model != nullptr ? original_model->A.rowPtr : nullptr,
-                                          original_model != nullptr ? original_model->A.colVal : nullptr,
-                                          original_model != nullptr ? original_model->A.nzVal : nullptr,
-                                          original_model != nullptr ? original_model->AT.rowPtr : nullptr,
-                                          original_model != nullptr ? original_model->AT.colVal : nullptr,
-                                          original_model != nullptr ? original_model->AT.nzVal : nullptr,
-                                          original_model != nullptr ? original_model->c : nullptr,
-                                          original_model != nullptr ? original_model->AL : nullptr,
-                                          original_model != nullptr ? original_model->AU : nullptr,
-                                          original_model != nullptr ? original_model->l : nullptr,
-                                          original_model != nullptr ? original_model->u : nullptr,
-                                          record_begin,
-                                          record_end,
-                                          original_model != nullptr ? 1 : 0,
-                                          replay_primal ? 1 : 0,
-                                          replay_dual ? 1 : 0,
-                                          1,
-                                          tol);
-  throw_if_cuda_error(cudaGetLastError(), "_kernel_replay_postsolve_tape");
+  if (begin == end) return;
+  parallel::Tape view{tape.types, tape.index_starts, tape.value_starts, tape.indices, tape.vals};
+  parallel::State state{x_org, y_org, z_org, z_retrieved,
+      original_model ? *original_model : LPInfoGpu{}, m, n, original_model != nullptr,
+      primal, dual, 1, tol};
+  auto plan = context.prepare(view, state, begin, end);
+  if (plan.mode == parallel::Mode::Components)
+    _kernel_replay_postsolve_components<<<parallel::blocks(end - begin), 256>>>(
+        state, view, begin, int(end - begin), plan.control, plan.ordered);
+  else if (plan.mode != parallel::Mode::Serial)
+    _kernel_replay_postsolve_independent<<<parallel::blocks(end - begin), 256>>>(
+        state, view, begin, end, plan.control);
+  _kernel_replay_postsolve_tape<<<1, 1>>>(state, view, begin, end, plan.control);
+  throw_if_cuda_error(cudaGetLastError(), "postsolve tape replay");
+  context.record(plan, end - begin);
 }
 
 void mark_retrieved_values(std::uint8_t* z_retrieved, const std::vector<std::int32_t>& red2org) {
@@ -628,10 +613,12 @@ GpuPostsolveResult postsolve_gpu(double* x_red,
   } else {
     upload_postsolve_tape(record.tape, device_tape);
   }
+  parallel::Context parallel_context;
   auto replay_range = [&](NnzOffset begin, NnzOffset end, bool primal, bool dual) {
     if (!record.device) {
       replay_postsolve_tape_range(result.x_org, result.y_org, result.z_org, z_retrieved,
-                                  device_tape, original_model, begin, end, primal, dual, 1e-7);
+                                  device_tape, original_model, begin, end, primal, dual, 1e-7,
+                                  parallel_context, record.m0, record.n0);
       return;
     }
     NnzOffset stop = record.device->records;
@@ -642,7 +629,8 @@ GpuPostsolveResult postsolve_gpu(double* x_red,
         DevicePostsolveTape view;
         borrow_postsolve_tape(*it, view);
         replay_postsolve_tape_range(result.x_org, result.y_org, result.z_org, z_retrieved, view,
-                                    original_model, lo - start, hi - start, primal, dual, 1e-7);
+                                    original_model, lo - start, hi - start, primal, dual, 1e-7,
+                                    parallel_context, record.m0, record.n0);
       }
       stop = start;
     }
