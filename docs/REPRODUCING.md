@@ -27,11 +27,9 @@ HPR-LP-C v0.1.3 and PSLP 0.0.11 are bundled and compiled with this project.
 ## 1. Download the project
 
 ```sh
-git clone git@github.com:ljw2024polyu/GPU-Preprocessor-IJOC.git
+git clone https://github.com/ljw2024polyu/GPU-Preprocessor-IJOC.git
 cd GPU-Preprocessor-IJOC
 ```
-
-Access to the private repository through your GitHub account is required.
 
 ## 2. Build
 

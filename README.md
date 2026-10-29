@@ -2,6 +2,10 @@
 
 This repository contains the GPU-Preprocessor C++/CUDA library, its HPR-LP experiment driver, and experimental outputs for the paper by Kaihuang Chen, Jiawei Lu, Defeng Sun, Yancheng Yuan, Guojun Zhang, Xiangyu Zhang, and Xinyuan Zhao. See [AUTHORS](AUTHORS) for contact details.
 
+This repository is maintained for the IJOC submission and reproduction of the
+paper's experiments. For general use and ongoing development, see
+[GPU-Preprocessor](https://github.com/PolyU-IOR/GPU-Preprocessor).
+
 Unless otherwise noted, first-party code and accompanying materials are
 distributed under the [MIT license](LICENSE). Bundled third-party components
 retain their original licenses. Benchmark sources and usage terms are
