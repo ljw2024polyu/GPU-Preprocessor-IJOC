@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 #include "gpu_presolver/offset.hpp"
+#include "gpu_presolver/presolve/device_recovery.hpp"
 #include "gpu_presolver/presolve/rules/rule_dual_fix.hpp"
 
 #include <cuda_runtime.h>
@@ -178,7 +179,7 @@ void test_degree_guard_keeps_dense_nonzero_cost_column() {
   cudaFree(plan.new_AU);
 }
 
-void test_records_infinite_zero_objective_fix() {
+void test_records_infinite_zero_objective_fix(bool resident) {
   using gpu_presolver::presolve::LPInfoGpu;
   using gpu_presolver::presolve::PostsolveDualMode;
   using gpu_presolver::presolve::PostsolveReductionType;
@@ -198,6 +199,7 @@ void test_records_infinite_zero_objective_fix() {
            copy_to_device<double>({1.0})};
 
   PresolvePlanGpu plan;
+  plan.tape.resident = resident;
   plan.keep_col_mask = copy_to_device<std::uint8_t>({1});
   plan.keep_row_mask = copy_to_device<std::uint8_t>({1});
   plan.new_c = copy_to_device<double>({0.0});
@@ -216,17 +218,15 @@ void test_records_infinite_zero_objective_fix() {
   assert(plan.has_row_action);
   assert(plan.has_col_action);
   assert(plan.has_change);
+  gpu_presolver::presolve::export_local_recovery_tape(plan.tape);
   assert((plan.tape.types == std::vector<std::int32_t>{
                                  static_cast<std::int32_t>(PostsolveReductionType::InfiniteBoundDualFix)}));
-  assert((plan.tape.index_starts == std::vector<NnzOffset>{0, 4}));
-  assert((plan.tape.value_starts == std::vector<NnzOffset>{0, 4}));
+  assert((plan.tape.index_starts == std::vector<NnzOffset>{0, 5}));
+  assert((plan.tape.value_starts == std::vector<NnzOffset>{0, 3}));
   assert((plan.tape.dual_modes == std::vector<std::uint8_t>{
                                       static_cast<std::uint8_t>(PostsolveDualMode::Exact)}));
-  assert((plan.tape.indices == std::vector<std::int32_t>{-1, 0, 1, 0}));
-  assert(std::fabs(plan.tape.vals[0] - 1.0) < 1.0e-12);
-  assert(std::fabs(plan.tape.vals[1] - 10.0) < 1.0e-12);
-  assert(std::fabs(plan.tape.vals[2] - 5.0) < 1.0e-12);
-  assert(std::fabs(plan.tape.vals[3] - 1.0) < 1.0e-12);
+  assert((plan.tape.indices == std::vector<std::int32_t>{-1, 0, 1, 1, 0}));
+  assert((plan.tape.vals == std::vector<double>{10.0, 5.0, 1.0}));
 
   cudaFree(lp.A.rowPtr);
   cudaFree(lp.A.colVal);
@@ -247,7 +247,8 @@ int main() {
   test_fixes_improving_unlocked_column();
   test_marks_unbounded_improving_column();
   test_degree_guard_keeps_dense_nonzero_cost_column();
-  test_records_infinite_zero_objective_fix();
+  test_records_infinite_zero_objective_fix(false);
+  test_records_infinite_zero_objective_fix(true);
   std::cout << "test_rule_dual_fix passed\n";
   return 0;
 }

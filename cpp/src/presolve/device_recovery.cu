@@ -82,9 +82,9 @@ __global__ void globalize(int *data, const int *types, const NnzOffset *starts, 
     }
     break;
   case PostsolveReductionType::InfiniteBoundDualFix:
-    if (indices.size() >= 2) {
+    if (indices.size() >= 3) {
       indices[1] = map_col(indices[1], cols, n);
-      std::size_t p = 2;
+      std::size_t p = 3;
       while (p < indices.size()) {
         const NnzOffset row_len = indices[p++];
         for (std::int32_t t = 0; t < row_len && p < indices.size(); ++t, ++p) {
@@ -353,7 +353,8 @@ __global__ void infinite_counts(Wide *records, Wide *sizes, const unsigned char 
     return;
   bool selected = fixed[col] && inf[col];
   records[col] = selected;
-  Wide size = selected ? 2 : 0;
+  // Row payloads have equal lengths; record headers use three indices and one value.
+  Wide size = 0;
   if (selected)
     for (auto p = at.rowPtr[col]; p < at.rowPtr[col + 1]; ++p) {
       int row = at.colVal[p];
@@ -375,32 +376,33 @@ __global__ void infinite_pack(SegmentView out, const Wide *scan, const Wide *siz
   if (col >= n || !fixed[col] || !inf[col])
     return;
   auto k = NnzOffset(scan[col] - 1), begin = NnzOffset(col ? sizes[col - 1] : 0);
-  auto p = begin;
+  auto ip = begin + 3 * k, vp = begin + k;
   bool positive = value[col] > 0;
   out.types[k] = int(PostsolveReductionType::InfiniteBoundDualFix);
   out.modes[k] = unsigned(PostsolveDualMode::Exact);
-  out.is[k + 1] = out.vs[k + 1] = NnzOffset(sizes[col]);
-  out.indices[p] = positive ? 1 : -1;
-  out.vals[p++] = 0;
-  out.indices[p] = col;
-  out.vals[p++] = positive ? l[col] : u[col];
+  out.is[k + 1] = NnzOffset(sizes[col] + 3 * scan[col]);
+  out.vs[k + 1] = NnzOffset(sizes[col] + scan[col]);
+  out.indices[ip++] = positive ? 1 : -1;
+  out.indices[ip++] = col;
+  const auto row_count_pos = ip++;
+  out.vals[vp++] = positive ? l[col] : u[col];
   int active = 0;
   for (auto t = at.rowPtr[col]; t < at.rowPtr[col + 1]; ++t) {
     int row = at.colVal[t];
     if (!keep[row])
       continue;
     ++active;
-    const auto row_header = p;
-    out.indices[p] = 0;
-    out.vals[p++] = isfinite(al[row]) ? al[row] : au[row];
+    const auto row_header = ip;
+    out.indices[ip++] = 0;
+    out.vals[vp++] = isfinite(al[row]) ? al[row] : au[row];
     for (auto q = a.rowPtr[row]; q < a.rowPtr[row + 1]; ++q) {
       if (entry_cols && !entry_cols[a.colVal[q]]) continue;
       ++out.indices[row_header];
-      out.indices[p] = a.colVal[q];
-      out.vals[p++] = a.nzVal[q];
+      out.indices[ip++] = a.colVal[q];
+      out.vals[vp++] = a.nzVal[q];
     }
   }
-  out.vals[begin] = double(active);
+  out.indices[row_count_pos] = active;
 }
 __device__ int lower_row(DeviceCsrMatrix a, const std::int32_t* rows, const double *al, const double *au,
                          int col, int count, double *pivot, double *bound) {
@@ -801,9 +803,10 @@ void append_infinite_device_recovery(PostsolveTape &t, const unsigned char *fixe
   auto rc = download(records.data + n - 1, 1)[0], size = download(sizes.data + n - 1, 1)[0];
   if (!rc)
     return;
-  if (rc > std::numeric_limits<NnzOffset>::max() || size > std::numeric_limits<NnzOffset>::max())
+  const Wide max = std::numeric_limits<NnzOffset>::max();
+  if (rc > max / 3 || size > max - 3 * rc)
     throw std::length_error("infinite fixed recovery exceeds offset range");
-  auto s = allocate_recovery_segment(rc, size, size);
+  auto s = allocate_recovery_segment(rc, size + 3 * rc, size + rc);
   infinite_pack<<<(n + 255) / 256, 256>>>(view(s), records.data, sizes.data, fixed, inf, value,
                                           keep, l, u, al, au, a, at, n, entry_cols);
   check(cudaGetLastError());

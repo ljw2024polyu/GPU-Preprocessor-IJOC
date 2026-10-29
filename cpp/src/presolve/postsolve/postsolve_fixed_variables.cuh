@@ -51,12 +51,14 @@ __device__ __forceinline__ void replay_infinite_bound_dual_fix(
     NnzOffset val0,
     std::int32_t replay_primal,
     std::int32_t replay_dual) {
+  // indices: direction, column, row count, then (row length, column indices).
+  // values: initial extreme bound, then (row side, coefficients).
   const bool fix_to_pos_inf = tape_idx[idx0] > 0;
   const std::int32_t col = tape_idx[idx0 + 1];
-  const std::int32_t n_rows = static_cast<std::int32_t>(llround(tape_val[val0]));
-  double extreme_val = tape_val[val0 + 1];
-  NnzOffset idx_pos = idx0 + 2;
-  NnzOffset val_pos = val0 + 2;
+  const std::int32_t n_rows = tape_idx[idx0 + 2];
+  double extreme_val = tape_val[val0];
+  NnzOffset idx_pos = idx0 + 3;
+  NnzOffset val_pos = val0 + 1;
   if (replay_primal != 0) {
     for (std::int32_t r = 0; r < n_rows; ++r) {
       const NnzOffset row_len = tape_idx[idx_pos];

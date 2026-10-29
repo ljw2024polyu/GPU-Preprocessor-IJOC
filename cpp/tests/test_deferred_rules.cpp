@@ -4,6 +4,8 @@
 #include "gpu_presolver/detail/runtime_options.hpp"
 #include "gpu_presolver/presolve/gpu_presolve_kernels.hpp"
 #include "gpu_presolver/presolve/device_recovery.hpp"
+#include "gpu_presolver/presolve/gpu_postsolve.hpp"
+#include "gpu_presolver/presolve/gpu_presolve.hpp"
 #include "gpu_presolver/presolve/rules/rule_infeasible_and_fixed_variables.hpp"
 #include "gpu_presolver/presolve/rules/rule_empty_rows_and_columns.hpp"
 #include "gpu_presolver/presolve/rules/rule_singleton_rows.hpp"
@@ -99,7 +101,7 @@ std::vector<int> original_indices(const Fixture& f) {
       case PostsolveReductionType::FixedVariable:
         col(begin);for(auto p=begin+1;p<end;++p)row(p);break;
       case PostsolveReductionType::InfiniteBoundDualFix:
-        col(begin+1);for(auto p=begin+2;p<end;){int length=out[p++];for(int j=0;j<length;++j)col(p++);}break;
+        col(begin+1);for(auto p=begin+3;p<end;){int length=out[p++];for(int j=0;j<length;++j)col(p++);}break;
       case PostsolveReductionType::SingletonColumnSubstitution:
         col(begin);row(begin+1);for(auto p=begin+3;p<end;++p)col(p);break;
       case PostsolveReductionType::ParallelColumn: col(begin);col(begin+1);break;
@@ -138,6 +140,56 @@ void compare(Fixture& a,Fixture& b) {
   assert(a.plan.tape.index_starts==b.plan.tape.index_starts);
   assert(a.plan.tape.value_starts==b.plan.tape.value_starts);
   assert(original_indices(a)==original_indices(b));
+}
+void infinite_dual_fix_replay() {
+  // Three records with two, one and zero supporting rows. Unselected columns
+  // separate the records, so integer/value prefix offsets must stay independent.
+  const double inf = INFINITY;
+  Model h{3,5,{0,2,4,7},{0,1,1,2,0,2,3},{1,2,1,-1,1,2,3},
+          {0,1,0,-inf,-inf},{10,inf,10,10,7},{1,0,1,0,0},
+          {11,4,-inf},{inf,inf,17},{1,1,1},{1,1,1,1,1}};
+  PresolveParams params;
+  params.max_iters = 1;
+  params.enable_startup = false;
+  params.enable_infeasible_and_fixed_variables = false;
+  params.enable_empty_rows = false;
+  params.enable_empty_columns = false;
+  params.enable_singleton_rows = false;
+  params.enable_singleton_columns = false;
+  params.enable_infeasible_and_redundant_rows = false;
+  params.enable_bound_strengthening = false;
+  params.enable_doubleton_equations = false;
+  params.enable_parallel_rows = false;
+  params.enable_parallel_columns = false;
+  params.dual_fix_max_nonzero_cost_col_degree = 0;
+  const bool saved_device_recovery = runtime::options().device_recovery;
+  for (bool resident : {false, true}) {
+    runtime::options().device_recovery = resident;
+    Fixture f(h, false, resident);
+    auto summary = run_gpu_presolve_with_record(f.lp, params);
+    assert(!summary.has_infeasible && !summary.has_unbounded);
+    assert(summary.reduced_rows == 0 && summary.reduced_cols == 2);
+    assert(summary.obj_constant_delta == 0);
+    // Replay resident records before exporting a host snapshot.
+    auto* x_red = f.upload(std::vector<double>{1,2});
+    auto* z_red = f.upload(std::vector<double>{0.25,-0.5});
+    auto result = postsolve_gpu(x_red, nullptr, z_red, summary.record);
+    // x1 = max(1, (11-x0)/2, 4+x2), x3 = min(10, (17-x0-2*x2)/3).
+    assert((download(result.x_org, 5) == std::vector<double>{1,6,2,4,7}));
+    assert((download(result.y_org, 3) == std::vector<double>{0,0,0}));
+    assert((download(result.z_org, 5) == std::vector<double>{0.25,0,-0.5,0,0}));
+    cudaFree(result.x_org); cudaFree(result.y_org); cudaFree(result.z_org);
+    export_recovery_record(summary.record);
+    assert((summary.record.col_red2org == std::vector<int>{0,2}));
+    const auto& tape = summary.record.tape;
+    assert((tape.types == std::vector<int>(3, int(PostsolveReductionType::InfiniteBoundDualFix))));
+    assert((tape.dual_modes == std::vector<std::uint8_t>(3, std::uint8_t(PostsolveDualMode::Exact))));
+    assert((tape.index_starts == std::vector<NnzOffset>{0,9,16,19}));
+    assert((tape.value_starts == std::vector<NnzOffset>{0,7,12,13}));
+    assert((tape.indices == std::vector<int>{1,1,2,2,0,1,2,1,2, -1,3,1,3,0,2,3, -1,4,0}));
+    assert((tape.vals == std::vector<double>{1,11,1,2,4,1,-1, 10,17,1,2,3, 7}));
+  }
+  runtime::options().device_recovery = saved_device_recovery;
 }
 void rules() {
   const double inf=INFINITY;
@@ -270,6 +322,7 @@ void activity() {
 }
 }
 int main() {
+  infinite_dual_fix_replay();
   for (bool mode : {false,true}) {
     for (auto field : {&runtime::Options::adaptive_activity, &runtime::Options::extended_row_kernels, &runtime::Options::reuse_row_groups, &runtime::Options::hash_scan})
       runtime::options().*field = mode;

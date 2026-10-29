@@ -1260,9 +1260,9 @@ void remap_postsolve_tape_indices(PostsolveTape& dest, const PostsolveTape& src,
         }
         break;
       case PostsolveReductionType::InfiniteBoundDualFix:
-        if (indices.size() >= 2) {
+        if (indices.size() >= 3) {
           indices[1] = map_local_col_to_global(indices[1], col_red2org);
-          std::size_t p = 2;
+          std::size_t p = 3;
           while (p < indices.size()) {
             const NnzOffset row_len = indices[p++];
             for (std::int32_t t = 0; t < row_len && p < indices.size(); ++t, ++p) {

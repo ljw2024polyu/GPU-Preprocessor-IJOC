@@ -173,8 +173,8 @@ void append_infinite_bound_dual_fix_tape_from_device(PostsolveTape& tape,
       continue;
     }
     const bool fix_to_pos_inf = host_fixed_val[col_idx] > 0.0;
-    std::vector<std::int32_t> indices{fix_to_pos_inf ? 1 : -1, col};
-    std::vector<double> vals{0.0, fix_to_pos_inf ? host_l[col_idx] : host_u[col_idx]};
+    std::vector<std::int32_t> indices{fix_to_pos_inf ? 1 : -1, col, 0};
+    std::vector<double> vals{fix_to_pos_inf ? host_l[col_idx] : host_u[col_idx]};
     std::int32_t active_rows = 0;
     for (NnzOffset p = host_at_row_ptr[col_idx]; p < host_at_row_ptr[static_cast<std::size_t>(col + 1)]; ++p) {
       const std::int32_t row = host_at_col_val[static_cast<std::size_t>(p)];
@@ -194,7 +194,7 @@ void append_infinite_bound_dual_fix_tape_from_device(PostsolveTape& tape,
         vals.push_back(host_a_nz_val[static_cast<std::size_t>(q)]);
       }
     }
-    vals[0] = static_cast<double>(active_rows);
+    indices[2] = active_rows;
     append_postsolve_record(
         tape, PostsolveReductionType::InfiniteBoundDualFix, indices, vals, PostsolveDualMode::Exact);
   }

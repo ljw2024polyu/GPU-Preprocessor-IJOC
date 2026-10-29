@@ -111,7 +111,7 @@ static void long_support_mapping(bool reuse) {
         index(7,false); index(13,false); index(29,true); literal(length); support(true);
       }
       if (type == PostsolveReductionType::InfiniteBoundDualFix) {
-        literal(1); index(17,false); literal(length); support(false);
+        literal(1); index(17,false); literal(2); literal(length); support(false);
         literal(2); index(31,false); index(size+1,false);
       }
       tape.types.push_back(int(type)); tape.dual_modes.push_back(unsigned(PostsolveDualMode::Minimal));
