@@ -1333,7 +1333,7 @@ void remap_postsolve_tape_indices(PostsolveTape& dest, const PostsolveTape& src,
         }
         break;
       case PostsolveReductionType::FmeCol:
-        if (indices.size() >= 3) {
+        if (indices.size() >= 4) {
           const std::int32_t involved_count = indices[0];
           indices[1] = map_local_col_to_global(indices[1], col_red2org);
           for (std::int32_t t = 0; t < involved_count && 2 + t < static_cast<std::int32_t>(indices.size()); ++t) {
@@ -1341,12 +1341,15 @@ void remap_postsolve_tape_indices(PostsolveTape& dest, const PostsolveTape& src,
                 map_local_row_to_global(indices[static_cast<std::size_t>(2 + t)], row_red2org);
           }
           const std::int32_t side_count_pos = 2 + involved_count;
-          if (side_count_pos < static_cast<std::int32_t>(indices.size())) {
+          if (side_count_pos + 1 < static_cast<std::int32_t>(indices.size())) {
             const std::int32_t side_col_count = indices[static_cast<std::size_t>(side_count_pos)];
+            const std::int32_t expression_count = indices[static_cast<std::size_t>(side_count_pos + 1)];
+            const std::size_t support_begin = static_cast<std::size_t>(side_count_pos) + 2 +
+                                              2 * static_cast<std::size_t>(expression_count);
             for (std::int32_t t = 0; t < side_col_count &&
-                                     side_count_pos + 1 + t < static_cast<std::int32_t>(indices.size()); ++t) {
-              indices[static_cast<std::size_t>(side_count_pos + 1 + t)] =
-                  map_local_col_to_global(indices[static_cast<std::size_t>(side_count_pos + 1 + t)], col_red2org);
+                                     support_begin + t < indices.size(); ++t) {
+              indices[support_begin + t] =
+                  map_local_col_to_global(indices[support_begin + t], col_red2org);
             }
           }
         }

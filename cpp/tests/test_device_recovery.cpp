@@ -114,6 +114,11 @@ static void long_support_mapping(bool reuse) {
         literal(1); index(17,false); literal(2); literal(length); support(false);
         literal(2); index(31,false); index(size+1,false);
       }
+      if (type == PostsolveReductionType::FmeCol) {
+        literal(2); index(17,false); index(23,true); index(29,true);
+        literal(length); literal(2); literal(1); literal(0); literal(-1); literal(length);
+        support(false);
+      }
       tape.types.push_back(int(type)); tape.dual_modes.push_back(unsigned(PostsolveDualMode::Minimal));
       tape.indices.insert(tape.indices.end(), ids.begin(), ids.end());
       expected.insert(expected.end(), mapped.begin(), mapped.end());
@@ -121,7 +126,8 @@ static void long_support_mapping(bool reuse) {
       tape.vals.push_back(1.25); tape.value_starts.push_back(tape.vals.size());
     };
     for (auto type : {PostsolveReductionType::FixedVariable, PostsolveReductionType::SingletonColumnSubstitution,
-                     PostsolveReductionType::DoubletonEquation, PostsolveReductionType::InfiniteBoundDualFix})
+                     PostsolveReductionType::DoubletonEquation, PostsolveReductionType::InfiniteBoundDualFix,
+                     PostsolveReductionType::FmeCol})
       for (int len : {0,1,252,253,254,255,256,257,1024,65536}) add(type,len);
     for (int i=0;i<300;++i) add(PostsolveReductionType::SingletonColumnSubstitution,257);
     const auto starts=tape.index_starts, value_starts=tape.value_starts;

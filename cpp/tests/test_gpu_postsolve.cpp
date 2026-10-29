@@ -619,12 +619,12 @@ void test_fme_and_row_dual_shift_tape_replay() {
   record.col_red2org = {1};
   record.tape.types = {static_cast<std::int32_t>(PostsolveReductionType::FmeCol),
                        static_cast<std::int32_t>(PostsolveReductionType::RowDualShift)};
-  record.tape.index_starts = {0, 5, 6};
-  record.tape.value_starts = {0, 5, 6};
+  record.tape.index_starts = {0, 8, 9};
+  record.tape.value_starts = {0, 2, 3};
   record.tape.dual_modes = {static_cast<std::uint8_t>(PostsolveDualMode::Minimal),
                             static_cast<std::uint8_t>(PostsolveDualMode::Minimal)};
-  record.tape.indices = {1, 0, 0, 1, 1, 1};
-  record.tape.vals = {1.0, 1.0, 1.0, 3.0, 2.0, 1.25};
+  record.tape.indices = {1, 0, 0, 1, 1, 1, 1, 1, 1};
+  record.tape.vals = {3.0, 2.0, 1.25};
 
   double* x_red = copy_to_device<double>({2.0});
   double* y_red = copy_to_device<double>({0.75});
@@ -638,6 +638,49 @@ void test_fme_and_row_dual_shift_tape_replay() {
   assert(std::fabs(y[1] - 2.0) < 1.0e-12);
   assert(std::fabs(z[0]) < 1.0e-12);
 
+  cudaFree(x_red);
+  cudaFree(y_red);
+  cudaFree(z_red);
+  cudaFree(result.x_org);
+  cudaFree(result.y_org);
+  cudaFree(result.z_org);
+}
+
+void test_projected_column_integer_metadata() {
+  using namespace gpu_presolver::presolve;
+  PresolveRecordGpu record;
+  record.m0 = 3;
+  record.n0 = 5;
+  record.m1 = 1;
+  record.n1 = 2;
+  record.row_red2org = {2};
+  record.col_red2org = {3, 4};
+  record.tape.index_starts = {0};
+  record.tape.value_starts = {0};
+  auto append = [&](std::vector<std::int32_t> indices, std::vector<double> values) {
+    record.tape.types.push_back(static_cast<std::int32_t>(PostsolveReductionType::FmeCol));
+    record.tape.dual_modes.push_back(static_cast<std::uint8_t>(PostsolveDualMode::Minimal));
+    record.tape.indices.insert(record.tape.indices.end(), indices.begin(), indices.end());
+    record.tape.vals.insert(record.tape.vals.end(), values.begin(), values.end());
+    record.tape.index_starts.push_back(record.tape.indices.size());
+    record.tape.value_starts.push_back(record.tape.vals.size());
+  };
+  // Mixed lower/upper sides, a constant-only side, and repeated column support.
+  // x_0 = max(-4, -1 + 2*x_4), with upper side 9 + .5*x_3 - .25*x_4.
+  append({1, 0, 0, 3, 3, 1, 0, -1, 2, 1, 1, 3, 4, 4},
+         {-4., 9., .5, -.25, -1., 2.});
+  // Upper-only reconstruction: x_1 = min(10 - 2*x_3, 8 + .5*x_4).
+  append({1, 1, 1, 2, 2, -1, 1, -1, 1, 3, 4}, {10., -2., 8., .5});
+  // An empty expression list retains the zero fallback.
+  append({0, 2, 0, 0}, {});
+
+  double* x_red = copy_to_device<double>({1.5, 2.5});
+  double* y_red = copy_to_device<double>({1.25});
+  double* z_red = copy_to_device<double>({.25, -.5});
+  auto result = postsolve_gpu(x_red, y_red, z_red, record);
+  assert((copy_to_host(result.x_org, 5) == std::vector<double>{4., 7., 0., 1.5, 2.5}));
+  assert((copy_to_host(result.y_org, 3) == std::vector<double>{0., 0., 1.25}));
+  assert((copy_to_host(result.z_org, 5) == std::vector<double>{0., 0., 0., .25, -.5}));
   cudaFree(x_red);
   cudaFree(y_red);
   cudaFree(z_red);
@@ -992,14 +1035,14 @@ void test_tape_checkpoint_replays_after_structural_primal() {
   record.col_red2org = {0, 1};
   record.tape.types = {
       static_cast<std::int32_t>(PostsolveReductionType::FmeCol)};
-  record.tape.index_starts = {0, 4};
-  record.tape.value_starts = {0, 5};
+  record.tape.index_starts = {0, 7};
+  record.tape.value_starts = {0, 2};
   record.tape.dual_modes = {
       static_cast<std::uint8_t>(PostsolveDualMode::Minimal)};
   // K=0 deleted rows, eliminate col 2, one support occurrence: col 0.
-  record.tape.indices = {0, 2, 1, 0};
+  record.tape.indices = {0, 2, 1, 1, 1, 1, 0};
   // One lower affine side: z >= x_0.
-  record.tape.vals = {1.0, 1.0, 1.0, 0.0, 1.0};
+  record.tape.vals = {0.0, 1.0};
 
   PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep step;
   step.pattern = "test_tape_checkpoint_order";
@@ -1042,13 +1085,13 @@ void test_structural_tape_structural_timeline_replays_exact_reverse_order() {
   record.col_red2org = {0, 1, 3};
   record.tape.types = {
       static_cast<std::int32_t>(PostsolveReductionType::FmeCol)};
-  record.tape.index_starts = {0, 4};
-  record.tape.value_starts = {0, 5};
+  record.tape.index_starts = {0, 7};
+  record.tape.value_starts = {0, 2};
   record.tape.dual_modes = {
       static_cast<std::uint8_t>(PostsolveDualMode::Minimal)};
   // Forward chronology: S1, eliminate col 2 with x_2 >= x_0, then S2.
-  record.tape.indices = {0, 2, 1, 0};
-  record.tape.vals = {1.0, 1.0, 1.0, 0.0, 1.0};
+  record.tape.indices = {0, 2, 1, 1, 1, 1, 0};
+  record.tape.vals = {0.0, 1.0};
 
   PiecewiseLinearReformulationAbsoluteValuePrimalRecoveryStep first;
   first.pattern = "timeline_s1";
@@ -1201,6 +1244,7 @@ int main() {
   test_singleton_column_substitution_tape_replay_restores_primal_and_dual();
   test_fixed_variable_tape_replay_restores_exact_reduced_cost();
   test_fme_and_row_dual_shift_tape_replay();
+  test_projected_column_integer_metadata();
   test_parallel_row_original_model_replay_splits_dual_between_rows();
   test_deleted_row_and_bound_change_replay_with_original_model();
   test_row_bound_change_replay_refines_live_row_duals_from_original_model();

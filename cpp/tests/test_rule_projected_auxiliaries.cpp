@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 #include "gpu_presolver/offset.hpp"
+#include "gpu_presolver/detail/runtime_options.hpp"
 #include "gpu_presolver/presolve/device_recovery.hpp"
 #include "gpu_presolver/presolve/gpu_postsolve.hpp"
 #include "gpu_presolver/presolve/gpu_presolve.hpp"
@@ -203,8 +204,10 @@ gpu_presolver::presolve::PresolveParams projected_only_params() {
   return params;
 }
 
-void test_chained_projection_and_primal_recovery() {
+void test_chained_projection_and_primal_recovery(bool resident) {
   using namespace gpu_presolver::presolve;
+  const bool previous = gpu_presolver::runtime::options().device_recovery;
+  gpu_presolver::runtime::options().device_recovery = resident;
   LPInfoGpu lp = make_pair_block_lp();
   PresolveParams params = projected_only_params();
   GpuPresolveSummary summary = run_gpu_presolve_with_reduced_lp(lp, params);
@@ -240,6 +243,7 @@ void test_chained_projection_and_primal_recovery() {
   cudaFree(post.z_org);
   free_gpu_presolve_reduced_lp(summary);
   free_lp(lp);
+  gpu_presolver::runtime::options().device_recovery = previous;
 }
 
 void test_bounded_projection_fails_closed() {
@@ -400,7 +404,8 @@ void test_pending_masks_and_gpu_tape() {
 }  // namespace
 
 int main() {
-  test_chained_projection_and_primal_recovery();
+  test_chained_projection_and_primal_recovery(false);
+  test_chained_projection_and_primal_recovery(true);
   test_bounded_projection_fails_closed();
   test_mccormick_detector_is_exact_and_fail_closed();
   test_rules_are_startup_only();

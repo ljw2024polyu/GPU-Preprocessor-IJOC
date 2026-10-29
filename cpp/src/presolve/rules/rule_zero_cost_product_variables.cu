@@ -406,14 +406,12 @@ void append_projection_tape_from_device(
     }
     std::vector<std::int32_t> indices{
         3, z_col, rows[0], rows[1], rows[2],
+        static_cast<std::int32_t>(lower_pattern.endpoints.size()),
+        2, 1, 0, 1,
         static_cast<std::int32_t>(lower_pattern.endpoints.size())};
     indices.insert(indices.end(), lower_pattern.endpoints.begin(),
                    lower_pattern.endpoints.end());
-    std::vector<double> vals{
-        2.0,
-        1.0, 0.0, 0.0,
-        1.0, static_cast<double>(lower_pattern.endpoints.size()),
-        lower_pattern.constant};
+    std::vector<double> vals{0.0, lower_pattern.constant};
     vals.insert(vals.end(), lower_pattern.coeffs.begin(),
                 lower_pattern.coeffs.end());
     append_postsolve_record(tape, indices, vals);

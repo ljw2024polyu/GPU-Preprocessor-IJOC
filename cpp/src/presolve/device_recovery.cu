@@ -157,7 +157,7 @@ __global__ void globalize(int *data, const int *types, const NnzOffset *starts, 
     }
     break;
   case PostsolveReductionType::FmeCol:
-    if (indices.size() >= 3) {
+    if (indices.size() >= 4) {
       const std::int32_t involved_count = indices[0];
       indices[1] = map_col(indices[1], cols, n);
       for (std::int32_t t = 0;
@@ -166,13 +166,15 @@ __global__ void globalize(int *data, const int *types, const NnzOffset *starts, 
             map_row(indices[static_cast<std::size_t>(2 + t)], rows, m);
       }
       const std::int32_t side_count_pos = 2 + involved_count;
-      if (side_count_pos < static_cast<std::int32_t>(indices.size())) {
+      if (side_count_pos + 1 < static_cast<std::int32_t>(indices.size())) {
         const std::int32_t side_col_count = indices[static_cast<std::size_t>(side_count_pos)];
+        const std::int32_t expression_count = indices[static_cast<std::size_t>(side_count_pos + 1)];
+        const std::size_t support_begin = static_cast<std::size_t>(side_count_pos) + 2 +
+                                          2 * static_cast<std::size_t>(expression_count);
         for (std::int32_t t = 0; t < side_col_count &&
-                                 side_count_pos + 1 + t < static_cast<std::int32_t>(indices.size());
+                                 support_begin + t < indices.size();
              ++t) {
-          indices[static_cast<std::size_t>(side_count_pos + 1 + t)] =
-              map_col(indices[static_cast<std::size_t>(side_count_pos + 1 + t)], cols, n);
+          indices[support_begin + t] = map_col(indices[support_begin + t], cols, n);
         }
       }
     }
@@ -457,30 +459,30 @@ __global__ void projection_pack(SegmentView out, const Wide *records, const Wide
     return;
   auto k = NnzOffset(records[col] - 1), s = NnzOffset(col ? support[col - 1] : 0),
        length = NnzOffset(support[col]) - s;
-  auto ip = NnzOffset(nr + 3) * k + s, vp = NnzOffset(7) * k + s;
+  auto ip = NnzOffset(nr + 8) * k + s, vp = NnzOffset(2) * k + s;
   out.types[k] = int(PostsolveReductionType::FmeCol);
   out.modes[k] = unsigned(PostsolveDualMode::Minimal);
-  out.is[k + 1] = ip + nr + 3 + length;
-  out.vs[k + 1] = vp + 7 + length;
+  out.is[k + 1] = ip + nr + 8 + length;
+  out.vs[k + 1] = vp + 2 + length;
   out.indices[ip] = nr;
   out.indices[ip + 1] = col;
   for (int j = 0; j < nr; ++j)
     out.indices[ip + 2 + j] = rows[std::size_t(col) * nr + j];
   out.indices[ip + 2 + nr] = length;
+  out.indices[ip + 3 + nr] = 2;
+  out.indices[ip + 4 + nr] = 1;
+  out.indices[ip + 5 + nr] = 0;
+  out.indices[ip + 6 + nr] = 1;
+  out.indices[ip + 7 + nr] = length;
   double pivot = 0, bound = 0;
   int row = lower_row(a, rows, al, au, col, nr, &pivot, &bound);
-  out.vals[vp] = 2;
-  out.vals[vp + 1] = 1;
-  out.vals[vp + 2] = 0;
-  out.vals[vp + 3] = nr == 2 ? lower[col] : 0;
-  out.vals[vp + 4] = 1;
-  out.vals[vp + 5] = double(length);
-  out.vals[vp + 6] = __ddiv_rn(bound, pivot);
+  out.vals[vp] = nr == 2 ? lower[col] : 0;
+  out.vals[vp + 1] = __ddiv_rn(bound, pivot);
   int j = 0;
   for (auto p = a.rowPtr[row]; p < a.rowPtr[row + 1]; ++p)
     if (a.colVal[p] != col && (!keep_col || keep_col[a.colVal[p]])) {
-      out.indices[ip + nr + 3 + j] = a.colVal[p];
-      out.vals[vp + 7 + j] = __ddiv_rn(-a.nzVal[p], pivot);
+      out.indices[ip + nr + 8 + j] = a.colVal[p];
+      out.vals[vp + 2 + j] = __ddiv_rn(-a.nzVal[p], pivot);
       ++j;
     }
 }
@@ -832,9 +834,9 @@ void append_projection_device_recovery(PostsolveTape &t, const LPInfoGpu &lp,
   if (!rc)
     return;
   auto max = std::numeric_limits<NnzOffset>::max();
-  if (rc > max || rc * 7 + nz > max || rc * (nr + 3) + nz > max)
+  if (rc > max || rc * 2 + nz > max || rc * (nr + 8) + nz > max)
     throw std::length_error("projection recovery exceeds offset range");
-  auto s = allocate_recovery_segment(rc, rc * (nr + 3) + nz, rc * 7 + nz);
+  auto s = allocate_recovery_segment(rc, rc * (nr + 8) + nz, rc * 2 + nz);
   projection_pack<<<(n + 255) / 256, 256>>>(view(s), records.data, support.data, selected, lp.A,
                                             rows, keep_col, lp.AL, lp.AU, lp.l, nr);
   check(cudaGetLastError());

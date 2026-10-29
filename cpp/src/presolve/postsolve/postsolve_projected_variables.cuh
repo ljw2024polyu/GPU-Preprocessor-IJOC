@@ -8,6 +8,8 @@
 namespace gpu_presolver::presolve::postsolve {
 
 // Projected-column records shared by zero-cost product and two-row variable elimination.
+// indices: [K, eliminated_col, row_ids[K], N, L, (orient, len)[L], col_ids[N]].
+// vals: [(constant, coefficients[len])[L]], in the same expression order.
 
 __device__ __forceinline__ void replay_projected_column(
     double* x_org,
@@ -22,31 +24,32 @@ __device__ __forceinline__ void replay_projected_column(
     std::int32_t replay_dual) {
   const std::int32_t K = tape_idx[idx0];
   const std::int32_t elim_col = tape_idx[idx0 + 1];
-  const std::int32_t L = static_cast<std::int32_t>(llround(tape_val[val0]));
-  NnzOffset col_cursor = idx0 + 3 + K;
-  NnzOffset vpos = val0 + 1;
+  const std::int32_t L = tape_idx[idx0 + 3 + K];
+  NnzOffset metadata_cursor = idx0 + 4 + K;
+  NnzOffset col_cursor = metadata_cursor + NnzOffset{2} * L;
+  NnzOffset vpos = val0;
   double lo = -INFINITY;
   double hi = INFINITY;
   bool has_lo = false;
   bool has_hi = false;
   if (replay_primal != 0) {
     for (std::int32_t s = 0; s < L; ++s) {
-      const double orient = tape_val[vpos];
-      const NnzOffset len = static_cast<NnzOffset>(llround(tape_val[vpos + 1]));
-      double cand = tape_val[vpos + 2];
+      const std::int32_t orient = tape_idx[metadata_cursor++];
+      const NnzOffset len = tape_idx[metadata_cursor++];
+      double cand = tape_val[vpos];
       for (std::int32_t t = 0; t < len; ++t) {
         const std::int32_t row_col = tape_idx[col_cursor++];
-        const double coeff = tape_val[vpos + 3 + t];
+        const double coeff = tape_val[vpos + 1 + t];
         cand += coeff * x_org[row_col];
       }
-      if (orient > 0.0) {
+      if (orient > 0) {
         lo = fmax(lo, cand);
         has_lo = true;
       } else {
         hi = fmin(hi, cand);
         has_hi = true;
       }
-      vpos += 3 + len;
+      vpos += 1 + len;
     }
     x_org[elim_col] = has_lo ? lo : (has_hi ? hi : 0.0);
   }

@@ -494,14 +494,12 @@ void append_projection_tape_from_device(
         affine0.gives_lower ? affine0 : affine1;
     std::vector<std::int32_t> indices{
         2, col, row0, row1,
+        static_cast<std::int32_t>(lower_affine.cols.size()),
+        2, 1, 0, 1,
         static_cast<std::int32_t>(lower_affine.cols.size())};
     indices.insert(indices.end(), lower_affine.cols.begin(),
                    lower_affine.cols.end());
-    std::vector<double> vals{
-        2.0,
-        1.0, 0.0, lower[static_cast<std::size_t>(col)],
-        1.0, static_cast<double>(lower_affine.cols.size()),
-        lower_affine.constant};
+    std::vector<double> vals{lower[static_cast<std::size_t>(col)], lower_affine.constant};
     vals.insert(vals.end(), lower_affine.coeffs.begin(),
                 lower_affine.coeffs.end());
     append_postsolve_record(tape, indices, vals);
