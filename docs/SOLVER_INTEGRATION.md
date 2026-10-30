@@ -28,9 +28,8 @@ bash scripts/reproduce.sh setup
 ```
 
 The executable is `build-experiments/bin/hprlp_solve`. HPR-LP and PSLP are built
-from the bundled sources. The reproduction script automatically enables Gurobi
-when its separately installed SDK and license pass preflight; otherwise it
-builds without the Gurobi adapter. Direct CMake builds retain the opt-in
+from the bundled sources. See [Gurobi setup](#gurobi-optional) for its
+requirements and automatic selection. Direct CMake builds retain the opt-in
 `HPRLP_GUROBI=ON` option.
 
 CMake detects the visible GPU architecture. To select different compilers,
@@ -73,28 +72,27 @@ reproduction workflow:
 ```sh
 export GUROBI_HOME=/path/to/gurobi1202/linux64
 export GRB_LICENSE_FILE=/path/to/gurobi.lic
-WITH_GUROBI=ON bash scripts/reproduce.sh setup
+export WITH_GUROBI=ON
+bash scripts/reproduce.sh setup
 ./build-experiments/bin/hprlp_solve -i examples/model.mps --presolver gurobi
 ```
 
 `GRB_LICENSE_FILE` is optional when your license is in Gurobi's standard search
 locations; see the [license-file instructions](https://support.gurobi.com/hc/en-us/articles/360013417211-Where-do-I-place-the-Gurobi-license-file-gurobi-lic).
-Provide your own license outside this repository. Both reproduction entry points
-default to `WITH_GUROBI=AUTO`: they check the SDK header/runtime version and start an isolated,
-quiet license probe with a trivial 2,001-variable LP. This rejects the
+Provide your own license outside this repository. A
 [size-limited license](https://support.gurobi.com/hc/en-us/articles/360051597492-How-do-I-resolve-a-Model-too-large-for-size-limited-Gurobi-license-error)
-that is insufficient for these benchmarks. The check has a 30-second timeout and
-does not print license contents or runtime licensing details.
+is insufficient for these benchmarks.
 
-Without a usable SDK/license, automatic mode prints a skip reason and continues
-with the other four methods. `WITH_GUROBI=OFF` disables Gurobi without probing;
-`WITH_GUROBI=ON` requires it and fails early if preflight fails. The `run`, `resume`,
-`smoke` and `test` stages also check that the build was configured with the adapter.
-The Python entry point applies these same checks when `gurobi` is explicitly
-listed in `--methods`; selections without `gurobi` do not probe its license.
-If the license is unavailable at test time, automatic mode skips Gurobi-specific
-CTest checks while retaining the other regression tests. Data preparation and
-result reconstruction do not activate the benchmark license probe.
+Both `reproduce.sh` and `run_experiments.py` use the following Gurobi selection
+policy:
+
+| `WITH_GUROBI` | Behavior |
+| --- | --- |
+| `AUTO` (default) | Enable Gurobi when available; otherwise report the reason and continue without it. |
+| `ON` | Require Gurobi and stop with an error if its requirements are unmet. |
+| `OFF` | Skip Gurobi comparisons. |
+
+The same policy applies when `gurobi` is explicitly selected with `--methods`.
 
 Gurobi uses automatic presolve (`Presolve=-1`) without a presolve time limit.
 The solve time limit applies to the subsequent HPR-LP solve.
@@ -109,8 +107,8 @@ without recovering a solution to the original model.
 Follow [REPRODUCING.md](REPRODUCING.md) to prepare the data and run the complete
 experiment set. For a smaller selection, choose the datasets, instances, and
 methods explicitly. The Python entry point defaults to all experiment groups
-and automatically checks Gurobi, just like `reproduce.sh run`.
-This example runs only GPU-Preprocessor and PSLP on tho40:
+as described in that guide. This example runs only GPU-Preprocessor and PSLP
+on tho40:
 
 ```sh
 python3 scripts/run_experiments.py --input-root runs/reproduction/inputs \
@@ -118,8 +116,8 @@ python3 scripts/run_experiments.py --input-root runs/reproduction/inputs \
   --output-dir runs/qap20-check
 ```
 
-Add `--dry-run` to preview the commands. Gurobi preflight still runs for previews
-that select it, and skip reasons are written to stderr so stdout remains JSON.
+Add `--dry-run` to preview the commands without running benchmark models;
+Gurobi availability is still checked when it is selected.
 `--datasets` and `--instances` filter only benchmarks; use `--suite benchmarks`
 to exclude the QAP scalability group. For scalability, omit `--datasets`
 and `--instances` and select the scale with `--suite scalability --sizes 20`.

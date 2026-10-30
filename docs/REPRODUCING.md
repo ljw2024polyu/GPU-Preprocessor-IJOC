@@ -57,6 +57,10 @@ Use this compatibility configuration only on supported hardware and drivers;
 see NVIDIA's [forward compatibility guide](https://docs.nvidia.com/deploy/cuda-compatibility/forward-compatibility.html).
 A driver that supports CUDA 13.3 directly does not require this extra step.
 
+To reproduce all comparisons in the paper, follow the
+[Gurobi setup instructions](SOLVER_INTEGRATION.md#gurobi-optional) before
+building and keep `WITH_GUROBI=ON` set for the remaining steps.
+
 Build the project:
 
 ```sh
@@ -121,26 +125,18 @@ bash scripts/reproduce.sh run
 ```
 
 Both `reproduce.sh run` and `run_experiments.py` default to all experiment groups
-and `WITH_GUROBI=AUTO`. With the Gurobi 12.0.2 C SDK, a usable full-size license,
-and a Gurobi-enabled build, they run all five
-methods: 435 benchmark calls and 15 scalability calls (450 total). Without those
-requirements they report why Gurobi is skipped and run no preprocessing, folding
-only, GPU-Preprocessor, and PSLP: 348 benchmark calls and 10 scalability calls
-(358 total). Every method uses HPR-LP to solve the resulting LP.
-Both use one visible GPU (logical device 0), a tolerance of 1e-6, a solve time
-limit of 1000 seconds per call, and a check interval of 150.
+and `WITH_GUROBI=AUTO`, which includes Gurobi when the required SDK, license,
+and build are available. Otherwise, they report the reason and continue with
+the remaining methods. If a license is configured after an earlier build
+without Gurobi, rerun `setup`.
+
+The full suite comprises 435 benchmark calls and 15 scalability calls (450
+total). Without Gurobi, it comprises 348 benchmark calls and 10 scalability
+calls (358 total). Every method uses HPR-LP to solve the resulting LP on one
+visible GPU (logical device 0), with a tolerance of 1e-6, a solve time limit of
+1000 seconds per call, and a check interval of 150.
 The shared [experiment configuration](../scripts/experiment_config.json)
 defines the command arguments, output paths, and recorded environment settings.
-
-To include Gurobi automatically, set `GUROBI_HOME` before step 2 and keep it set
-for step 4. Configure your own license in a standard Gurobi location, or set
-`GRB_LICENSE_FILE` to its path; see [Gurobi setup](SOLVER_INTEGRATION.md#gurobi-optional).
-The preflight checks both the C runtime and a trivial CPU-only LP above the
-restricted-license size limit. Missing, expired, unavailable or size-limited
-licenses do not enable Gurobi comparisons. No license is downloaded or bundled.
-If a license is configured after an earlier build without Gurobi, rerun `setup`.
-Set `WITH_GUROBI=OFF` to skip it explicitly, or `WITH_GUROBI=ON` to require it;
-the latter stops before the build or experiments if its requirements are unmet.
 
 After building and preparing the inputs, the equivalent Python entry point is:
 
@@ -151,12 +147,7 @@ python3 scripts/run_experiments.py --input-root runs/reproduction/inputs \
 
 This also includes the QAP scalability experiments. Use `--suite benchmarks`
 to run only Hans49, MIPLIB Large, and QAP20, or `--suite scalability` for only
-the five QAP scales. The Python entry point uses the same Gurobi preflight and
-`WITH_GUROBI` policy, including for an explicit `--methods` selection containing
-`gurobi`. Its selected solver must have a Gurobi-enabled CMake build; the check
-reads `CMakeCache.txt` in the parent of the executable's `bin/` directory.
-`--dry-run` prints the selected command plan without running benchmark models;
-the small CPU-only license probe still runs when Gurobi is a candidate.
+the five QAP scales.
 
 A run writes to a new `runs/reproduction/experiment/` directory and can take
 several hours. For another run, set `RUN_DIR` to a new directory before steps
