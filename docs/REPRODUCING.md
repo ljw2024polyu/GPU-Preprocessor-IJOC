@@ -46,8 +46,8 @@ export LD_LIBRARY_PATH="$CUDAToolkit_ROOT/targets/x86_64-linux/lib${LD_LIBRARY_P
 
 The recorded H100 environment uses NVIDIA driver 570.133.20 with the CUDA 13.3
 forward compatibility libraries. For that driver/toolkit setup, install the
-`cuda-compat-13-3` package and prepend its library directory before running
-GPU tests or experiments:
+`cuda-compat-13-3` package and prepend its library directory before configuring
+the build, running GPU tests, or running experiments:
 
 ```sh
 export LD_LIBRARY_PATH="$CUDAToolkit_ROOT/compat:$LD_LIBRARY_PATH"
@@ -73,8 +73,9 @@ into `build-experiments/`. The experiment executable is
 the selected CUDA 13.3 Toolkit and targets the visible GPU. Optional compiler
 settings are listed in [solver integration](SOLVER_INTEGRATION.md#build).
 
-After changing compilers or switching an existing build to CUDA 13.3, reset
-the cached build configuration with:
+If this build directory was configured with another compiler or CUDA Toolkit,
+including a failed configuration attempt, use the following command instead
+of `setup` to reset the cached configuration:
 
 ```sh
 bash scripts/reproduce.sh setup --fresh
@@ -141,11 +142,13 @@ defines the command arguments, output paths, and recorded environment settings.
 After building and preparing the inputs, the equivalent Python entry point is:
 
 ```sh
-python3 scripts/run_experiments.py --input-root runs/reproduction/inputs \
-  --output-dir runs/reproduction/experiment
+python3 scripts/run_experiments.py \
+  --input-root "${INPUT_ROOT:-runs/reproduction/inputs}" \
+  --output-dir "${RUN_DIR:-runs/reproduction/experiment}"
 ```
 
-This also includes the QAP scalability experiments. Use `--suite benchmarks`
+This honors `INPUT_ROOT` and `RUN_DIR` when set and otherwise uses the default
+paths shown above. It also includes the QAP scalability experiments. Use `--suite benchmarks`
 to run only Hans49, MIPLIB Large, and QAP20, or `--suite scalability` for only
 the five QAP scales.
 

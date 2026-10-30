@@ -20,8 +20,10 @@ presolve and applies the selected external preprocessor.
 
 ## Build
 
-Install the [required dependencies](REPRODUCING.md#requirements) yourself, then
-run from the repository root:
+Install the [required dependencies](REPRODUCING.md#requirements), then select
+CUDA and configure its library paths using the
+[build environment instructions](REPRODUCING.md#2-build). Keep those environment
+variables set in the same shell for all commands below. From the repository root:
 
 ```sh
 bash scripts/reproduce.sh setup
@@ -66,8 +68,9 @@ Install the Gurobi 12.0.2 C SDK, including its headers and shared library, and
 configure a full license. The `gurobipy` package used for data preparation
 does not provide the C SDK required by this adapter.
 
-Set these variables before building and keep them set when running the full
-reproduction workflow:
+Replace the example paths below with your SDK and license-file paths. Set
+these variables before building and keep them set when running the full
+reproduction workflow, together with the CUDA environment configured above:
 
 ```sh
 export GUROBI_HOME=/path/to/gurobi1202/linux64
@@ -108,13 +111,14 @@ After building and preparing the inputs as described in
 [REPRODUCING.md](REPRODUCING.md), run a selected instance with:
 
 ```sh
-python3 scripts/run_experiments.py --input-root runs/reproduction/inputs \
+python3 scripts/run_experiments.py --input-root "${INPUT_ROOT:-runs/reproduction/inputs}" \
   --suite benchmarks --datasets hans --instances FOME13 --methods gpu \
   --output-dir runs/hans-fome13
 ```
 
-This example runs GPU-Preprocessor on `FOME13` from the Mittelmann (Hans)
-dataset, then solves the reduced LP with HPR-LP. The `--methods` option can be
+This example uses `INPUT_ROOT` when set, or `runs/reproduction/inputs` otherwise.
+It runs GPU-Preprocessor on `FOME13` from the Mittelmann (Hans) dataset, then
+solves the reduced LP with HPR-LP. The `--methods` option can be
 set to `none`, `gpu`, `pslp`, or `gurobi`. Here, `none` disables preprocessing,
 and `gpu` enables both folding and presolve. All methods use HPR-LP for solving;
 `gurobi` requires the [Gurobi setup](#gurobi-optional).
