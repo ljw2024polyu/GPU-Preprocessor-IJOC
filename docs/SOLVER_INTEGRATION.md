@@ -104,27 +104,30 @@ without recovering a solution to the original model.
 
 ## Running selected experiments
 
-Follow [REPRODUCING.md](REPRODUCING.md) to prepare the data and run the complete
-experiment set. For a smaller selection, choose the datasets, instances, and
-methods explicitly. The Python entry point defaults to all experiment groups
-as described in that guide. This example runs only GPU-Preprocessor and PSLP
-on tho40:
+After building and preparing the inputs as described in
+[REPRODUCING.md](REPRODUCING.md), run a selected instance with:
 
 ```sh
 python3 scripts/run_experiments.py --input-root runs/reproduction/inputs \
-  --suite benchmarks --datasets qap20 --instances tho40 --methods gpu pslp \
-  --output-dir runs/qap20-check
+  --suite benchmarks --datasets hans --instances FOME13 --methods gpu \
+  --output-dir runs/hans-fome13
 ```
+
+This example runs GPU-Preprocessor on `FOME13` from the Mittelmann (Hans)
+dataset, then solves the reduced LP with HPR-LP. The `--methods` option can be
+set to `none`, `gpu`, `pslp`, or `gurobi`. Here, `none` disables preprocessing,
+and `gpu` enables both folding and presolve. All methods use HPR-LP for solving;
+`gurobi` requires the [Gurobi setup](#gurobi-optional).
 
 Add `--dry-run` to preview the commands without running benchmark models;
 Gurobi availability is still checked when it is selected.
-`--datasets` and `--instances` filter only benchmarks; use `--suite benchmarks`
-to exclude the QAP scalability group. For scalability, omit `--datasets`
-and `--instances` and select the scale with `--suite scalability --sizes 20`.
-Each run needs a new output directory. Generate its table rows with:
+Use a new output directory for each new experiment. To resume an interrupted
+experiment, repeat the original command with `--resume` and the same output
+directory. After the run finishes, generate result CSVs for the selected
+instances and methods:
 
 ```sh
-RUN_DIR="$PWD/runs/qap20-check" bash scripts/reproduce.sh results
+RUN_DIR="$PWD/runs/hans-fome13" bash scripts/reproduce.sh results
 ```
 
 The shared [experiment configuration](../scripts/experiment_config.json)
