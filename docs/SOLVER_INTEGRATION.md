@@ -97,8 +97,12 @@ CTest checks while retaining the other regression tests. Data preparation and
 result reconstruction do not activate the benchmark license probe.
 
 Gurobi uses automatic presolve (`Presolve=-1`) without a presolve time limit.
-The solve time limit applies to the subsequent HPR-LP solve. This adapter
-reports reduced-LP results and does not recover original-space solutions.
+The solve time limit applies to the subsequent HPR-LP solve.
+
+Gurobi does not expose its postsolve (uncrush) mapping through the public API;
+see [Gurobi's explanation](https://support.gurobi.com/hc/en-us/articles/360024738352-How-does-presolve-work).
+Consequently, this adapter reports the reduced-LP solution computed by HPR-LP
+without recovering a solution to the original model.
 
 ## Running selected experiments
 
