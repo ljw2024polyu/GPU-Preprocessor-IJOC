@@ -54,11 +54,54 @@ BibTeX for this repository:
 
 ## Building
 
-The library requires Linux, Make, CMake 3.24 or newer, a C++17 compiler, CUDA Toolkit 12 or newer with nvcc and cuSPARSE, and an NVIDIA GPU. The paper experiments used CUDA Toolkit 13.3.33. From the repository root:
+The library requires Linux, Make, CMake 3.24 or newer, a CUDA-compatible C++17
+compiler, CUDA Toolkit 12 or newer with nvcc and cuSPARSE, and an NVIDIA GPU
+with a compatible driver. The commands below use CUDA Toolkit 13.3, as in the
+paper experiments (13.3.33).
+
+From the repository root, select the CUDA installation before configuring the
+build. Adjust the path to your installation and keep these variables set in
+the same shell for all commands below. Set both `CUDACXX` and `PATH` so that
+`nvcc` and its tools, including `ptxas`, use the same CUDA installation:
 
 ~~~sh
+export CUDAToolkit_ROOT=/usr/local/cuda-13.3
+export CUDACXX="$CUDAToolkit_ROOT/bin/nvcc"
+export PATH="$CUDAToolkit_ROOT/bin:$PATH"
+export LD_LIBRARY_PATH="$CUDAToolkit_ROOT/targets/x86_64-linux/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+~~~
+
+On the paper's H100 server, NVIDIA driver 570.133.20 also requires the
+`cuda-compat-13-3` package. With that package installed, prepend its library
+directory **before building or running**:
+
+~~~sh
+export LD_LIBRARY_PATH="$CUDAToolkit_ROOT/compat:$LD_LIBRARY_PATH"
+~~~
+
+This extra step is unnecessary with a driver that supports CUDA 13.3 directly.
+Use the compatibility package only on supported hardware and drivers; see
+NVIDIA's [forward compatibility guide](https://docs.nvidia.com/deploy/cuda-compatibility/forward-compatibility.html).
+
+Check that both tools report the selected CUDA version, then build:
+
+~~~sh
+nvcc --version
+ptxas --version
 make
 ~~~
+
+If `build/` was already configured with another CUDA compiler, including a
+failed build attempt, use the following command instead of `make` after
+setting the variables above. [CMake caches the compiler path](https://cmake.org/cmake/help/latest/envvar/CUDACXX.html), so changing
+`PATH` or `CUDACXX` alone does not switch an existing build:
+
+~~~sh
+make CMAKE_ARGS=--fresh
+~~~
+
+This resets the CMake configuration in `build/` and rebuilds the library,
+tools, and example. Experiment-driver setup is described below.
 
 ## Usage
 
@@ -75,6 +118,7 @@ first build the experiment driver using the `setup` step in the
 [reproduction guide](docs/REPRODUCING.md), then run:
 
 ~~~sh
+bash scripts/reproduce.sh setup
 ./build-experiments/bin/hprlp_solve -i examples/model.mps --presolver gpu
 ~~~
 
