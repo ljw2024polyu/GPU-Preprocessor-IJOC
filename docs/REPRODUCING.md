@@ -206,5 +206,6 @@ Batch summary CSVs contain `name`, `status`, `preprocessing_time`, `solve_time`,
 
 Use the same `RUN_DIR` for running and generating results. New outputs are
 separate from the archived paper measurements in the repository's `results/`.
-For timing definitions, aggregation, and recovered-solution checks, see
+For timing definitions, aggregation, reduction ratios, and the solved-instance
+criterion, see
 [statistics and provenance](STATISTICS_AND_PROVENANCE.md).

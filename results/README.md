@@ -15,7 +15,7 @@ New experiment outputs are written separately under
 | [Table3_Ablation/](Table3_Ablation/) | Folding and presolve ablation table CSV |
 | [Table4_Preprocessing/](Table4_Preprocessing/) | Preprocessing time and reduction table CSV |
 | [Table5_EndToEnd/](Table5_EndToEnd/) | Preprocessing and solve timing table CSV |
-| [Table6_QAPScalability/](Table6_QAPScalability/) | Scalability table CSV and full-precision measurements with solver and recovery status |
+| [Table6_QAPScalability/](Table6_QAPScalability/) | Scalability table CSV and full-precision per-instance timings, reduction ratios, and solver status |
 | [Figure2_QAPScalability/](Figure2_QAPScalability/) | Plot data CSV and Figure 2 PDF |
 
 ## Raw outputs and source records
@@ -34,5 +34,5 @@ repository root. The `source_batch` fields identify batches in the shared
 [experiment configuration](../scripts/experiment_config.json).
 
 See [statistics and provenance](../docs/STATISTICS_AND_PROVENANCE.md) for
-timing definitions, SGM10 aggregation, reduction ratios, and the interpretation
-of solver and recovery status.
+timing definitions, SGM10 aggregation, reduction ratios, and the solved-instance
+criterion.

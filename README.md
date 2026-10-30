@@ -136,7 +136,7 @@ GPU-Preprocessor applies folding and presolve to continuous linear programs befo
 
 The raw outputs comprise 435 benchmark logs, 15 benchmark summary CSVs, and 15 scalability logs. Logs used by multiple tables are stored once. Per-instance measurements are in the [benchmark CSV](results/tables_3_4_5_instance_results.csv) and [full-precision scalability CSV](results/Table6_QAPScalability/table_6_full_precision_results.csv), which identify their source logs.
 
-See [statistical definitions](docs/STATISTICS_AND_PROVENANCE.md) for timing, aggregation, reduction ratios, and the meaning of solver status. The [environment record](docs/experiment_environment.json) contains the hardware, software versions, and stopping settings used in the paper.
+See [statistical definitions](docs/STATISTICS_AND_PROVENANCE.md) for timing definitions, aggregation, reduction ratios, and the solved-instance criterion. The [environment record](docs/experiment_environment.json) contains the hardware, software versions, and stopping settings used in the paper.
 
 ## Replicating
 
